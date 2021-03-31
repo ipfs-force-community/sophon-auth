@@ -1,0 +1,18 @@
+Port = "8989"
+Secret = "88b8a61690ee648bef9bc73463b8a05917f1916df169c775a3896719466be04a"
+ReadTimeout = "1m"
+WriteTimeout = "1m"
+IdleTimeout = "1m"
+
+[log]
+logLevel = 6
+type = 1
+hookSwitch = true
+[log.influxdb]
+serverURL = "http://192.168.1.141:8086"
+authToken = "jcomkQ-dVBRoCrKSEWMuYxA4COj_EfyCvwgPW5Ql-tT-cCizIjE24rPJQNx8Kkqzz4gCW8YNFq0wcDaHJOcGMQ=="
+org = "venus-oauth"
+bucket = "bkt2"
+measurement = "verify"
+flushInterval = "30s"
+batchSize = 100

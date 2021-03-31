@@ -1,0 +1,18 @@
+Port = "8989"
+Secret = "88b8a61690ee648bef9bc73463b8a05917f1916df169c775a3896719466be04a"
+ReadTimeout = 60000000000
+WriteTimeout = 60000000000
+IdleTimeout = 60000000000
+
+[Log]
+  LogLevel = "trace"
+  Type = 1
+  HookSwitch = true
+  [Log.InfluxDB]
+    ServerURL = "http://192.168.1.141:8086"
+    AuthToken = "jcomkQ-dVBRoCrKSEWMuYxA4COj_EfyCvwgPW5Ql-tT-cCizIjE24rPJQNx8Kkqzz4gCW8YNFq0wcDaHJOcGMQ=="
+    Org = "venus-oauth"
+    Bucket = "bkt2"
+    Measurement = "verify"
+    FlushInterval = 30000000000
+    BatchSize = 100

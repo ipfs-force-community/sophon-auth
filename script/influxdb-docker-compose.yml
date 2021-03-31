@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  influxdb:
+    image: influxdb:2.0.4
+    user: root
+    container_name: aouth-influxdb
+    volumes:
+      - /opt/influxdb/config:/etc/influxdb2
+      - /opt/influxdb/data:/var/lib/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=11111111
+      - DOCKER_INFLUXDB_INIT_ORG=venus-oauth
+      - DOCKER_INFLUXDB_INIT_BUCKET=oauth
+      - TZ=Asia/Shanghai
+    restart: always
+    ports:
+      - "8086:8086"

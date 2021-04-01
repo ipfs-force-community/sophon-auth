@@ -38,6 +38,7 @@ func verifyLog(begin time.Time, c *gin.Context, writer *bytes.Buffer) {
 		"preHost": c.Request.Header["preHost"], //nolint
 		"elapsed": time.Since(begin).Milliseconds(),
 		"token":   c.Request.Form.Get("token"),
+		"svcName": c.Request.Header["svcName"], //nolint
 	}
 	fields[core.MTMethod] = "verify"
 	errs := c.Errors

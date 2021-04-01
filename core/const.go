@@ -34,16 +34,13 @@ func AdaptOldStrategy(perm Permission) []Permission {
 	switch perm {
 	case PermAdmin:
 		perms = append(perms, PermAdmin, PermSign, PermWrite, PermRead)
-		break
 	case PermSign:
 		perms = append(perms, PermSign, PermWrite, PermRead)
-		break
 	case PermWrite:
 		perms = append(perms, PermWrite, PermRead)
-		break
 	case PermRead:
 		perms = append(perms, PermRead)
-		break
+	default:
 	}
 	return perms
 }

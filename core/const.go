@@ -1,5 +1,7 @@
 package core
 
+import "context"
+
 const EmptyString = ""
 
 type DBPrefix = []byte
@@ -26,6 +28,33 @@ const (
 	PermSign  Permission = "sign"  // Use wallet keys for signing
 	PermAdmin Permission = "admin" // Manage permissions
 )
+
+func AdaptOldStrategy(perm Permission) []Permission {
+	perms := make([]Permission, 0)
+	switch perm {
+	case PermAdmin:
+		perms = append(perms, PermAdmin, PermSign, PermWrite, PermRead)
+		break
+	case PermSign:
+		perms = append(perms, PermSign, PermWrite, PermRead)
+		break
+	case PermWrite:
+		perms = append(perms, PermWrite, PermRead)
+		break
+	case PermRead:
+		perms = append(perms, PermRead)
+		break
+	}
+	return perms
+}
+
+type permKey int
+
+var permCtxKey permKey
+
+func WithPerm(ctx context.Context, perms []Permission) context.Context {
+	return context.WithValue(ctx, permCtxKey, perms)
+}
 
 type LogField = string
 type Measurement = string

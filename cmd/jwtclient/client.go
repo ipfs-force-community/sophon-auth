@@ -1,4 +1,4 @@
-package client
+package jwtclient
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ type JWTClient struct {
 	cli *resty.Client
 }
 
-func NewClient(url string) *JWTClient {
+func NewJWTClient(url string) *JWTClient {
 	client := resty.New().
 		SetHostURL(url).
 		SetHeader("Accept", "application/json")

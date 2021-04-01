@@ -1,6 +1,7 @@
 package jwtclient
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/go-resty/resty/v2"
 	"github.com/ipfs-force-community/venus-auth/auth"
@@ -42,7 +43,10 @@ func (c *JWTClient) Verify(spanId, serviceName, preHost, host, token string) (*a
 	}
 	switch response.StatusCode() {
 	case http.StatusOK:
-		return response.Result().(*auth.VerifyResponse), nil
+		var res = new(auth.VerifyResponse)
+		response.Body()
+		err = json.Unmarshal(response.Body(), res)
+		return res, err
 	default:
 		response.Result()
 		return nil, fmt.Errorf("response code is : %d, msg:%s", response.StatusCode(), response.Body())

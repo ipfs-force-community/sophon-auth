@@ -52,8 +52,8 @@ type permKey int
 
 var permCtxKey permKey
 
-func WithPerm(ctx context.Context, perms []Permission) context.Context {
-	return context.WithValue(ctx, permCtxKey, perms)
+func WithPerm(ctx context.Context, perm Permission) context.Context {
+	return context.WithValue(ctx, permCtxKey, AdaptOldStrategy(perm))
 }
 
 type LogField = string

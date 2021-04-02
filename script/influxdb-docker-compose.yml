@@ -4,7 +4,7 @@ services:
   influxdb:
     image: influxdb:2.0.4
     user: root
-    container_name: aouth-influxdb
+    container_name: auth-influxdb
     volumes:
       - /opt/influxdb/config:/etc/influxdb2
       - /opt/influxdb/data:/var/lib/influxdb2

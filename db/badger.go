@@ -101,9 +101,10 @@ func (s *storage) Fetch(skip, size int64) (<-chan *Pair, error) {
 	err := s.db.View(func(txn *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
 		it := txn.NewIterator(opts)
+		defer it.Close()
 		idx := int64(0)
 		for it.Rewind(); it.Valid() && idx < skip+size; it.Next() {
-			if idx > skip {
+			if idx >= skip {
 				item := it.Item()
 				k := item.Key()
 				val := new([]byte)
@@ -120,6 +121,7 @@ func (s *storage) Fetch(skip, size int64) (<-chan *Pair, error) {
 			}
 			idx++
 		}
+		close(data)
 		return nil
 	})
 	if err != nil {

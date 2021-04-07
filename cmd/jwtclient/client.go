@@ -24,6 +24,7 @@ func NewJWTClient(url string) *JWTClient {
 
 // Verify: post method for Verify token
 // @spanId: local service unique Id
+// @serviceName: e.g. venus
 // @preHost: the IP of the request server
 // @host: local service IP
 // @token: jwt token gen from this service

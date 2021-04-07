@@ -45,12 +45,12 @@ func AdaptOldStrategy(perm Permission) []Permission {
 	return perms
 }
 
-type permKey int
+type PermKey int
 
-var permCtxKey permKey
+var PermCtxKey PermKey
 
 func WithPerm(ctx context.Context, perm Permission) context.Context {
-	return context.WithValue(ctx, permCtxKey, AdaptOldStrategy(perm))
+	return context.WithValue(ctx, PermCtxKey, AdaptOldStrategy(perm))
 }
 
 type LogField = string
@@ -60,13 +60,19 @@ const (
 	MTMethod Measurement = "method"
 )
 const (
-	FieldName  LogField = "name"
-	FieldIP    LogField = "ip"
-	FieldLevel LogField = "level"
+	FieldName    LogField = "name"
+	FieldIP      LogField = "ip"
+	FieldLevel   LogField = "level"
+	FieldSvcName LogField = "svcName"
+	FieldSpanId  LogField = "spanId"
+	FieldPreHost LogField = "preHost"
+	FieldElapsed LogField = "elapsed"
+	FieldToken   LogField = "token"
 )
 
-var LogFields = []LogField{
+var TagFields = []LogField{
 	FieldName,
 	FieldIP,
 	FieldLevel,
+	FieldSvcName,
 }

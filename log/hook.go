@@ -33,7 +33,7 @@ func NewInfluxHook(c *config.InfluxDBConfig) *InfluxHook {
 	return &InfluxHook{
 		client:   cli,
 		writeAPI: writeAPI,
-		tags:     core.LogFields,
+		tags:     core.TagFields,
 	}
 }
 
@@ -43,7 +43,7 @@ func (h *InfluxHook) Levels() []logrus.Level {
 
 func (h *InfluxHook) Fire(entry *logrus.Entry) error {
 	tags := map[string]string{
-		"level": entry.Level.String(),
+		core.FieldLevel: entry.Level.String(),
 	}
 	measurement, ok := entry.Data[core.MTMethod]
 	if !ok {

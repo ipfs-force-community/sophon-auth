@@ -16,6 +16,7 @@ import (
 
 var mockCnf *config.Config
 
+//nolint
 func TestMain(m *testing.M) {
 	cnf, err := config.DefaultConfig()
 	if err != nil {
@@ -45,7 +46,7 @@ func TestMain(m *testing.M) {
 		IdleTimeout:  cnf.IdleTimeout,
 	}
 	log.Printf("server start and listen on %s", cnf.Port)
-	go server.ListenAndServe()
+	go server.ListenAndServe() //nolint
 	defer func() {
 		server.Close()
 		log.Println("server closed")

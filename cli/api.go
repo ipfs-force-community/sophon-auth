@@ -63,9 +63,7 @@ func (lc *localClient) GenerateToken(name, perm, extra string) (string, error) {
 		Name:  name,
 		Perm:  perm,
 		Extra: extra,
-	}).SetResult(&auth.GenTokenResponse{
-	}).SetError(&ErrMsg{
-	}).Post("/genToken")
+	}).SetResult(&auth.GenTokenResponse{}).SetError(&ErrMsg{}).Post("/genToken")
 	if err != nil {
 		return core.EmptyString, err
 	}
@@ -80,9 +78,7 @@ func (lc *localClient) Tokens(skip, limit int64) (auth.GetTokensResponse, error)
 	resp, err := lc.cli.R().SetQueryParams(map[string]string{
 		"skip":  strconv.FormatInt(skip, 10),
 		"limit": strconv.FormatInt(limit, 10),
-	}).SetResult(&auth.GetTokensResponse{
-	}).SetError(&ErrMsg{
-	}).Get("/tokens")
+	}).SetResult(&auth.GetTokensResponse{}).SetError(&ErrMsg{}).Get("/tokens")
 	if err != nil {
 		return nil, err
 	}
@@ -95,8 +91,7 @@ func (lc *localClient) Tokens(skip, limit int64) (auth.GetTokensResponse, error)
 func (lc *localClient) RemoveToken(token string) error {
 	resp, err := lc.cli.R().SetBody(&auth.RemoveTokenRequest{
 		Token: token,
-	}).SetError(&ErrMsg{
-	}).Delete("/token")
+	}).SetError(&ErrMsg{}).Delete("/token")
 	if err != nil {
 		return err
 	}

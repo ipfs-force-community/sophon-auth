@@ -29,4 +29,3 @@ func JWTPayloadMap(token string) (map[string]interface{}, error) {
 	}
 	return pMap, nil
 }
-

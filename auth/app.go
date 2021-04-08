@@ -100,7 +100,7 @@ func (o *oauthApp) Tokens(c *gin.Context) {
 		BadResponse(c, err)
 		return
 	}
-	res, err := o.srv.Tokens(c, req.GetPageIndex(), req.GetPageSize())
+	res, err := o.srv.Tokens(c, req.GetSkip(), req.GetLimit())
 	if err != nil {
 		BadResponse(c, err)
 		return

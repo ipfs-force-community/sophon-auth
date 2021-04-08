@@ -1,6 +1,9 @@
 package core
 
-import "context"
+import (
+	"context"
+	"errors"
+)
 
 const EmptyString = ""
 
@@ -28,6 +31,22 @@ const (
 	PermSign  Permission = "sign"  // Use wallet keys for signing
 	PermAdmin Permission = "admin" // Manage permissions
 )
+
+var (
+	PermArr = []Permission{
+		PermAdmin, PermSign, PermWrite, PermRead,
+	}
+)
+var ErrPermIllegal = errors.New("perm illegal")
+
+func ContainsPerm(perm Permission) error {
+	for _, v := range PermArr {
+		if v == perm {
+			return nil
+		}
+	}
+	return ErrPermIllegal
+}
 
 func AdaptOldStrategy(perm Permission) []Permission {
 	perms := make([]Permission, 0)

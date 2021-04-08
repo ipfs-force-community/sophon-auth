@@ -29,10 +29,7 @@ type OAuthService interface {
 	GenerateToken(ctx context.Context, cp *JWTPayload) (string, error)
 	Verify(ctx context.Context, token string) (*JWTPayload, error)
 	RemoveToken(ctx context.Context, token string) error
-	Tokens(ctx context.Context, pageIndex, pageSize int64) ([]*TokenInfo, error)
-	// limit token generate,use to protect the service when a malicious user registers a new token
-	// true: lock    false: unlock
-	//KeepCalm(bool) error
+	Tokens(ctx context.Context, skip, limit int64) ([]*TokenInfo, error)
 }
 
 type jwtOAuth struct {
@@ -102,7 +99,32 @@ type TokenInfo struct {
 	CreatTime time.Time `json:"createTime"`
 }
 
-func (o *jwtOAuth) Tokens(ctx context.Context, pageIndex, pageSize int64) ([]*TokenInfo, error) {
+func (o *jwtOAuth) Tokens(ctx context.Context, skip, limit int64) ([]*TokenInfo, error) {
+	pairs, err := o.store.Fetch(skip, limit)
+	if err != nil {
+		return nil, err
+	}
+	tks := make([]*TokenInfo, 0, limit)
+	for ch := range pairs {
+		tm := time.Time{}
+		err = tm.UnmarshalBinary(ch.Val)
+		if err != nil {
+			return nil, err
+		}
+		jwtPayload, err := util.JWTPayloadMap(string(ch.Key))
+		if err != nil {
+			return nil, err
+		}
+		tks = append(tks, &TokenInfo{
+			Token:     string(ch.Key),
+			CreatTime: tm,
+			Name:      jwtPayload["name"].(string),
+		})
+	}
+	return tks, nil
+}
+
+/*func (o *jwtOAuth) Tokens(ctx context.Context, pageIndex, pageSize int64) ([]*TokenInfo, error) {
 	skip := (pageIndex - 1) * pageSize
 	pairs, err := o.store.Fetch(skip, pageSize)
 	if err != nil {
@@ -126,7 +148,7 @@ func (o *jwtOAuth) Tokens(ctx context.Context, pageIndex, pageSize int64) ([]*To
 		})
 	}
 	return tks, nil
-}
+}*/
 func (o *jwtOAuth) RemoveToken(ctx context.Context, token string) error {
 	tk := []byte(token)
 	err := o.store.Remove(tk)

@@ -3,7 +3,6 @@ package util
 import (
 	"encoding/base64"
 	"encoding/json"
-	"net"
 	"strings"
 )
 
@@ -29,20 +28,4 @@ func JWTPayloadMap(token string) (map[string]interface{}, error) {
 		return nil, err
 	}
 	return pMap, nil
-}
-
-func MacAddr() string {
-	interfaces, err := net.Interfaces()
-	if err != nil {
-		panic("net interfaces" + err.Error())
-	}
-	mac := ""
-	for _, netInterface := range interfaces {
-		mac = netInterface.HardwareAddr.String()
-		if len(mac) == 0 {
-			continue
-		}
-		break
-	}
-	return mac
 }

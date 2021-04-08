@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/ipfs-force-community/venus-auth/auth"
+	locli "github.com/ipfs-force-community/venus-auth/cli"
 	"github.com/ipfs-force-community/venus-auth/config"
 	"github.com/ipfs-force-community/venus-auth/log"
 	"github.com/mitchellh/go-homedir"
@@ -32,9 +33,10 @@ func newApp() (app *cli.App) {
 				Name:    "repo",
 				EnvVars: []string{"OAUTH_HOME"},
 				Hidden:  true,
-				Value:   "~/.oauth_home",
+				Value:   "~/.auth_home",
 			},
 		},
+		Commands: locli.Commands,
 	}
 	return app
 
@@ -94,7 +96,7 @@ func run(cliCtx *cli.Context) error {
 	if err != nil {
 		log.Fatalf("Failed to init oauthApp : %s", err)
 	}
-	router := initRouter(app)
+	router := auth.InitRouter(app)
 	server := &http.Server{
 		Addr:         ":" + cnf.Port,
 		Handler:      router,

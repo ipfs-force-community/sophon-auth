@@ -6,9 +6,9 @@ type VerifyRequest struct {
 type VerifyResponse = JWTPayload
 
 type GenTokenRequest struct {
-	Name  string `form:"name" binding:"required"`
-	Perm  string `form:"perm"`
-	Extra string `form:"extra"`
+	Name  string `form:"name" json:"name" binding:"required"`
+	Perm  string `form:"perm" json:"perm"`
+	Extra string `form:"extra" json:"extra"`
 }
 
 type GenTokenResponse struct {
@@ -16,27 +16,25 @@ type GenTokenResponse struct {
 }
 
 type RemoveTokenRequest struct {
-	Token string `form:"token" binding:"required"`
+	Token string `form:"token" json:"token" binding:"required"`
 }
 
 type GetTokensRequest struct {
-	PageIndex int64 `form:"pageIndex"`
-	PageSize  int64 `form:"pageSize"`
+	Skip  int64 `form:"skip" json:"skip"`
+	Limit int64 `form:"limit" json:"limit"`
 }
 
-func (o *GetTokensRequest) GetPageIndex() int64 {
-	if o.PageIndex < 1 {
-		return 1
+func (o *GetTokensRequest) GetSkip() int64 {
+	if o.Skip < 0 {
+		o.Skip = 0
 	}
-	return o.PageIndex
+	return o.Skip
 }
-func (o *GetTokensRequest) GetPageSize() int64 {
-	if o.PageSize < 1 {
-		return 1
-	} else if o.PageSize > 100 {
-		return 100
+func (o *GetTokensRequest) GetLimit() int64 {
+	if o.Limit < 0 || o.Limit > 20 {
+		o.Limit = 20
 	}
-	return o.PageSize
+	return o.Limit
 }
 
 type GetTokensResponse = []*TokenInfo

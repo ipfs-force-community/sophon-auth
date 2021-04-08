@@ -1,21 +1,20 @@
-package main
+package auth
 
 import (
 	"bytes"
 	"github.com/gin-gonic/gin"
-	"github.com/ipfs-force-community/venus-auth/auth"
 	"github.com/ipfs-force-community/venus-auth/core"
 	"github.com/ipfs-force-community/venus-auth/log"
 	"net/http"
 	"time"
 )
 
-func initRouter(app auth.OAuthApp) http.Handler {
+func InitRouter(app OAuthApp) http.Handler {
 	router := gin.New()
 	router.Use(CorsMiddleWare())
 	router.POST("/verify", verifyInterceptor(), app.Verify)
 	router.POST("/genToken", app.GenerateToken)
-	router.POST("/removeToken", app.RemoveToken)
+	router.DELETE("/token", app.RemoveToken)
 	router.GET("/tokens", app.Tokens)
 	return router
 }
@@ -62,7 +61,7 @@ func (w bodyLogWriter) Write(b []byte) (int, error) {
 func CorsMiddleWare() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")
-		c.Header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
 		c.Header("Access-Control-Allow-Headers",
 			"DNT,X-Mx-ReqToken,Keep-Alive,User-Agent,X-Requested-With,"+
 				"If-Modified-Since,Cache-Control,Content-Type,Authorization,X-Forwarded-For,Origin,"+

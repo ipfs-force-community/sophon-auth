@@ -12,7 +12,6 @@ type JWTClient struct {
 	cli *resty.Client
 }
 
-
 func NewJWTClient(url string) *JWTClient {
 	client := resty.New().
 		SetHostURL(url).

@@ -12,6 +12,7 @@ type JWTClient struct {
 	cli *resty.Client
 }
 
+
 func NewJWTClient(url string) *JWTClient {
 	client := resty.New().
 		SetHostURL(url).
@@ -29,13 +30,12 @@ func NewJWTClient(url string) *JWTClient {
 // @host: local service IP
 // @token: jwt token gen from this service
 func (c *JWTClient) Verify(spanId, serviceName, preHost, host, token string) (*auth.VerifyResponse, error) {
-	response, err := c.cli.SetHeader("X-Forwarded-For", host).
+	response, err := c.cli.R().SetHeader("X-Forwarded-For", host).
 		SetHeader("X-Real-Ip", host).
 		SetHeader("spanId", spanId).
 		SetHeader("preHost", preHost).
 		SetHeader("svcName", serviceName).
 		SetHeader("Origin", host).
-		R().
 		SetFormData(map[string]string{
 			"token": token,
 		}).Post("/verify")

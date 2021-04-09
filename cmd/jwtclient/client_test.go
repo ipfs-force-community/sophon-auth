@@ -25,3 +25,11 @@ func TestClient_Verify(t *testing.T) {
 	}
 	t.Log(res)
 }
+func BenchmarkJWTClient_Verify(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		MockCli.Verify("miner-1", "mockSvc", "192.168.22.22", "192.168.22.21",
+			"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiUmVubmJvbiIsInBlcm0iOiJhZG1pbiIsImV4dCI6ImV5SkJiR3h2ZH"+
+				"lJNld5SnlaV0ZrSWl3aWQzSnBkR1VpTENKemFXZHVJaXdpWVdSdGFXNGlYWDAifQ.gONkC1v8AuY-ZP2WhU62EonWmyPeOW1pFhnRM-Fl7ko")
+
+	}
+}

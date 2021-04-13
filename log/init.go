@@ -6,6 +6,13 @@ import (
 	"os"
 )
 
+func init() {
+	localLog = logrus.New()
+	localLog.SetFormatter(&logrus.TextFormatter{ForceColors: true, FullTimestamp: true})
+	localLog.SetOutput(os.Stdout)
+	localLog.SetLevel(logrus.TraceLevel)
+}
+
 func InitLog(c *config.LogConfig) {
 	localLog = logrus.New()
 	localLog.SetFormatter(&logrus.TextFormatter{ForceColors: true, FullTimestamp: true})

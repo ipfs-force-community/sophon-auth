@@ -11,8 +11,8 @@ services:
     environment:
       - DOCKER_INFLUXDB_INIT_USERNAME=admin
       - DOCKER_INFLUXDB_INIT_PASSWORD=11111111
-      - DOCKER_INFLUXDB_INIT_ORG=venus-oauth
-      - DOCKER_INFLUXDB_INIT_BUCKET=oauth
+      - DOCKER_INFLUXDB_INIT_ORG=venus-auth
+      - DOCKER_INFLUXDB_INIT_BUCKET=auth
       - TZ=Asia/Shanghai
     restart: always
     ports:

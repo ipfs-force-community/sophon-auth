@@ -86,7 +86,7 @@ var tokensCmd = &cli.Command{
 			if len(name) < 8 {
 				name = name + "\t"
 			}
-			fmt.Printf("%d\t%s\t%s\t%s\n", k+1, name, v.CreatTime.Format("2006-01-02 15:04:05"), v.Token)
+			fmt.Printf("%d\t%s\t%s\t%s\n", k+1, name, v.CreateTime.Format("2006-01-02 15:04:05"), v.Token)
 		}
 		return nil
 	},

@@ -170,6 +170,18 @@ ReadTimeout = "1m"
 WriteTimeout = "1m"
 IdleTimeout = "1m"
 
+[db]
+# support: badger (default), mysql 
+# the mysql DDL is in the script package 
+type = "badger" 
+# The following parameters apply to MySQL
+DSN = "rennbon:111111@(127.0.0.1:3306)/auth?parseTime=true&loc=Local&charset=utf8mb4&collation=utf8mb4_unicode_ci&readTimeout=10s&writeTimeout=10s"
+# conns 1500 concurrent
+maxOpenConns = 64
+maxIdleConns = 128
+maxLifeTime = "120s"
+maxIdleTime = "30s"
+
 [log]
 # trace,debug,info,warning,error,fatal,panic
 # output level
@@ -179,6 +191,7 @@ type = 1
 # db hook switch
 hookSwitch = true
 [log.influxdb]
+# the influxDB view config is in the script package 
 serverURL = "http://192.168.1.141:8086"
 authToken = "jcomkQ-dVBRoCrKSEWMuYxA4COj_EfyCvwgPW5Ql-tT-cCizIjE24rPJQNx8Kkqzz4gCW8YNFq0wcDaHJOcGMQ=="
 org = "venus-oauth"
@@ -187,3 +200,9 @@ measurement = "verify"
 flushInterval = "30s"
 batchSize = 100
 ```
+## [Script](./script)
+- mysql.sql => mysql storage DDL
+- influxdb-docker-compose.yml => rename docker-compose.yml and install influxdb in docker
+- influxDB_view.md => histogram and graph view config
+
+

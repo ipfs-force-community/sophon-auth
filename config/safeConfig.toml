@@ -5,7 +5,7 @@ WriteTimeout = 60000000000
 IdleTimeout = 60000000000
 
 [Log]
-  LogLevel = "trace"
+  LogLevel = "6"
   Type = 1
   HookSwitch = true
   [Log.InfluxDB]
@@ -13,6 +13,13 @@ IdleTimeout = 60000000000
     AuthToken = "jcomkQ-dVBRoCrKSEWMuYxA4COj_EfyCvwgPW5Ql-tT-cCizIjE24rPJQNx8Kkqzz4gCW8YNFq0wcDaHJOcGMQ=="
     Org = "venus-oauth"
     Bucket = "bkt2"
-    Measurement = "verify"
     FlushInterval = 30000000000
     BatchSize = 100
+
+[DB]
+  Type = "badger"
+  DSN = "root:111111@(127.0.0.1:3306)/auth?parseTime=true&loc=Local&charset=utf8mb4&collation=utf8mb4_unicode_ci&readTimeout=10s&writeTimeout=10s"
+  MaxOpenConns = 64
+  MaxIdleConns = 128
+  MaxLifeTime = 120000000000
+  MaxIdleTime = 30000000000

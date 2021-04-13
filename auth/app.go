@@ -2,6 +2,7 @@ package auth
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/ipfs-force-community/venus-auth/config"
 	"net/http"
 )
 
@@ -16,8 +17,8 @@ type oauthApp struct {
 	srv OAuthService
 }
 
-func NewOAuthApp(secret, dbPath string) (OAuthApp, error) {
-	srv, err := NewOAuthService(secret, dbPath)
+func NewOAuthApp(secret, dbPath string, cnf *config.DBConfig) (OAuthApp, error) {
+	srv, err := NewOAuthService(secret, dbPath, cnf)
 	if err != nil {
 		return nil, err
 	}

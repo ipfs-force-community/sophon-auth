@@ -33,7 +33,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("failed to create temp dir err:%s", err)
 	}
 	defer os.RemoveAll(tmpPath)
-	app, err := auth.NewOAuthApp(cnf.Secret, tmpPath)
+	app, err := auth.NewOAuthApp(cnf.Secret, tmpPath, cnf.DB)
 	if err != nil {
 		log.Fatalf("Failed to init oauthApp : %s", err)
 	}

@@ -4,6 +4,15 @@ ReadTimeout = "1m"
 WriteTimeout = "1m"
 IdleTimeout = "1m"
 
+[db]
+type = "badger"
+DSN = "root:111111@(127.0.0.1:3306)/auth?parseTime=true&loc=Local&charset=utf8mb4&collation=utf8mb4_unicode_ci&readTimeout=10s&writeTimeout=10s"
+# conns 1500 concurrent
+maxOpenConns = 64
+maxIdleConns = 128
+maxLifeTime = "120s"
+maxIdleTime = "30s"
+
 [log]
 logLevel = 6
 type = 1

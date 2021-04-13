@@ -5,8 +5,9 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"github.com/gbrlsnchs/jwt/v3"
+	"github.com/ipfs-force-community/venus-auth/config"
 	"github.com/ipfs-force-community/venus-auth/core"
-	"github.com/ipfs-force-community/venus-auth/db"
+	"github.com/ipfs-force-community/venus-auth/storage"
 	"github.com/ipfs-force-community/venus-auth/util"
 	"golang.org/x/xerrors"
 	"time"
@@ -34,7 +35,7 @@ type OAuthService interface {
 
 type jwtOAuth struct {
 	secret *jwt.HMACSHA
-	store  db.Database
+	store  storage.Store
 }
 
 type JWTPayload struct {
@@ -43,12 +44,12 @@ type JWTPayload struct {
 	Extra string          `json:"ext"`
 }
 
-func NewOAuthService(secret string, dbPath string) (OAuthService, error) {
+func NewOAuthService(secret string, dbPath string, cnf *config.DBConfig) (OAuthService, error) {
 	sec, err := hex.DecodeString(secret)
 	if err != nil {
 		return nil, err
 	}
-	store, err := db.Open(dbPath)
+	store, err := storage.NewStore(cnf, dbPath)
 	if err != nil {
 		return nil, err
 	}
@@ -64,94 +65,66 @@ func (o *jwtOAuth) GenerateToken(ctx context.Context, pl *JWTPayload) (string, e
 	if err != nil {
 		return core.EmptyString, xerrors.Errorf("gen token failed :%s", err)
 	}
-	token := string(tk)
-	val, err := time.Now().MarshalBinary()
+	token := storage.Token(tk)
+	has, err := o.store.Has(token)
 	if err != nil {
-		return core.EmptyString, xerrors.Errorf("failed to marshal time :%s", err)
+		return core.EmptyString, err
 	}
-	err = o.store.Put(tk, val)
+	if has {
+		return token.String(), nil
+	}
+	err = o.store.Put(&storage.KeyPair{Token: token, CreateTime: time.Now()})
 	if err != nil {
 		return core.EmptyString, xerrors.Errorf("store token failed :%s", err)
 	}
-	return token, nil
+	return token.String(), nil
 }
 
 func (o *jwtOAuth) Verify(ctx context.Context, token string) (*JWTPayload, error) {
 	p := new(JWTPayload)
 	tk := []byte(token)
-	_, err := o.store.Get(tk)
+	has, err := o.store.Has(storage.Token(token))
 	if err != nil {
-		if err.Error() == "Key not found" {
-			return nil, ErrorNonRegisteredToken
-		}
 		return nil, err
+	}
+	if !has {
+		return nil, ErrorNonRegisteredToken
 	}
 	if _, err := jwt.Verify(tk, o.secret, p); err != nil {
 		return nil, ErrorVerificationFailed
 	}
-
 	return p, nil
 }
 
 type TokenInfo struct {
-	Token     string    `json:"token"`
-	Name      string    `json:"name"`
-	CreatTime time.Time `json:"createTime"`
+	Token      string    `json:"token"`
+	Name       string    `json:"name"`
+	CreateTime time.Time `json:"createTime"`
 }
 
 func (o *jwtOAuth) Tokens(ctx context.Context, skip, limit int64) ([]*TokenInfo, error) {
-	pairs, err := o.store.Fetch(skip, limit)
+	pairs, err := o.store.List(skip, limit)
 	if err != nil {
 		return nil, err
 	}
 	tks := make([]*TokenInfo, 0, limit)
-	for ch := range pairs {
-		tm := time.Time{}
-		err = tm.UnmarshalBinary(ch.Val)
-		if err != nil {
-			return nil, err
-		}
-		jwtPayload, err := util.JWTPayloadMap(string(ch.Key))
+	for _, v := range pairs {
+		jwtPayload, err := util.JWTPayloadMap(string(v.Token))
 		if err != nil {
 			return nil, err
 		}
 		tks = append(tks, &TokenInfo{
-			Token:     string(ch.Key),
-			CreatTime: tm,
-			Name:      jwtPayload["name"].(string),
+			Token:      v.Token.String(),
+			CreateTime: v.CreateTime,
+			Name:       jwtPayload["name"].(string),
 		})
 	}
 	return tks, nil
 }
 
-/*func (o *jwtOAuth) Tokens(ctx context.Context, pageIndex, pageSize int64) ([]*TokenInfo, error) {
-	skip := (pageIndex - 1) * pageSize
-	pairs, err := o.store.Fetch(skip, pageSize)
-	if err != nil {
-		return nil, err
-	}
-	tks := make([]*TokenInfo, 0, pageSize)
-	for ch := range pairs {
-		tm := time.Time{}
-		err = tm.UnmarshalBinary(ch.Val)
-		if err != nil {
-			return nil, err
-		}
-		jwtPayload, err := util.JWTPayloadMap(string(ch.Key))
-		if err != nil {
-			return nil, err
-		}
-		tks = append(tks, &TokenInfo{
-			Token:     string(ch.Key),
-			CreatTime: tm,
-			Name:      jwtPayload["name"].(string),
-		})
-	}
-	return tks, nil
-}*/
 func (o *jwtOAuth) RemoveToken(ctx context.Context, token string) error {
 	tk := []byte(token)
-	err := o.store.Remove(tk)
+	err := o.store.Delete(storage.Token(tk))
 	if err != nil {
 		return ErrorRemoveFailed
 	}

@@ -19,6 +19,23 @@ type Config struct {
 	WriteTimeout time.Duration `json:"writeTimeout"`
 	IdleTimeout  time.Duration `json:"idleTimeout"`
 	Log          *LogConfig    `json:"log"`
+	DB           *DBConfig     `json:"db"`
+}
+
+type DBType = string
+
+const (
+	Mysql  DBType = "mysql"
+	Badger DBType = "badger"
+)
+
+type DBConfig struct {
+	Type         DBType        `json:"type"`
+	DSN          string        `json:"dsn"`
+	MaxOpenConns int           `json:"maxOpenConns"`
+	MaxIdleConns int           `json:"maxIdleConns"`
+	MaxLifeTime  time.Duration `json:"maxLifeTime"`
+	MaxIdleTime  time.Duration `json:"maxIdleTime"`
 }
 
 // RandSecret If the daemon does not have a secret key configured, it is automatically generated
@@ -44,6 +61,9 @@ func DefaultConfig() (*Config, error) {
 		Log: &LogConfig{
 			LogLevel:   "trace",
 			HookSwitch: false,
+		},
+		DB: &DBConfig{
+			Type: Badger,
 		},
 	}, nil
 }

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"github.com/gin-gonic/gin"
 	"github.com/ipfs-force-community/venus-auth/auth"
 	"github.com/ipfs-force-community/venus-auth/config"
 	"github.com/ipfs-force-community/venus-auth/core"
@@ -18,6 +19,7 @@ var mockCnf *config.Config
 
 //nolint
 func TestMain(m *testing.M) {
+	gin.SetMode("test")
 	cnf, err := config.DefaultConfig()
 	if err != nil {
 		log.Fatalf("failed to get default config err:%s", err)

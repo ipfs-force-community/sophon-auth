@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/ipfs-force-community/venus-auth/auth"
 	locli "github.com/ipfs-force-community/venus-auth/cli"
 	"github.com/ipfs-force-community/venus-auth/config"
@@ -16,7 +18,8 @@ func main() {
 	app := newApp()
 	err := app.Run(os.Args)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }
 
@@ -78,6 +81,7 @@ func configScan(path string) *config.Config {
 }
 
 func run(cliCtx *cli.Context) error {
+	gin.SetMode(gin.ReleaseMode)
 	cnfPath := cliCtx.String("config")
 	repo := cliCtx.String("repo")
 	repo, err := homedir.Expand(repo)

@@ -53,7 +53,7 @@ func GetCli(ctx *cli.Context) (*localClient, error) {
 
 func newClient(port string) (*localClient, error) {
 	client := resty.New().
-		SetHostURL("http://127.0.0.1:"+port).
+		SetHostURL("http://localhost:"+port).
 		SetHeader("Accept", "application/json")
 	return &localClient{cli: client}, nil
 }

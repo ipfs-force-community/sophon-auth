@@ -25,7 +25,7 @@ func newMySQLStore(cnf *config.DBConfig) (Store, error) {
 }
 
 func (s *mysqlStore) Put(kp *KeyPair) error {
-	res, err := s.db.NamedExec(`INSERT INTO token (token,createTime) VALUES (:token,:createTime )`, kp)
+	res, err := s.db.NamedExec(`INSERT INTO token (token,createTime,name) VALUES (:token,:createTime,:name )`, kp)
 	if err != nil {
 		return err
 	}

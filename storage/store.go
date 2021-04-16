@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"github.com/ipfs-force-community/venus-auth/config"
 	"github.com/ipfs-force-community/venus-auth/log"
+	"strings"
 	"time"
 )
 
 func NewStore(cnf *config.DBConfig, dataPath string) (Store, error) {
-	switch cnf.Type {
+
+	switch strings.ToLower(cnf.Type) {
 	case config.Mysql:
 		log.Warn("mysql storage")
 		return newMySQLStore(cnf)
@@ -29,6 +31,7 @@ type Store interface {
 type KeyPair struct {
 	Token      Token     `db:"token"`
 	CreateTime time.Time `db:"createTime"`
+	Name       string    `db:"name"`
 }
 
 type Token string
@@ -39,6 +42,7 @@ func (t Token) Bytes() []byte {
 func (t Token) String() string {
 	return string(t)
 }
+
 func (t *KeyPair) CreateTimeBytes() ([]byte, error) {
 	val, err := t.CreateTime.MarshalBinary()
 	if err != nil {

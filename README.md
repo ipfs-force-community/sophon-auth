@@ -175,7 +175,7 @@ IdleTimeout = "1m"
 # the mysql DDL is in the script package 
 type = "badger" 
 # The following parameters apply to MySQL
-DSN = "rennbon:111111@(127.0.0.1:3306)/auth?parseTime=true&loc=Local&charset=utf8mb4&collation=utf8mb4_unicode_ci&readTimeout=10s&writeTimeout=10s"
+DSN = "rennbon:111111@(127.0.0.1:3306)/auth_server?parseTime=true&loc=Local&charset=utf8mb4&collation=utf8mb4_unicode_ci&readTimeout=10s&writeTimeout=10s"
 # conns 1500 concurrent
 maxOpenConns = 64
 maxIdleConns = 128
@@ -185,7 +185,7 @@ maxIdleTime = "30s"
 [log]
 # trace,debug,info,warning,error,fatal,panic
 # output level
-logLevel = 6
+logLevel = trace
 # db type, 1:influxDB
 type = 1
 # db hook switch

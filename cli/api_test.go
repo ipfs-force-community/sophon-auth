@@ -19,7 +19,7 @@ var mockCnf *config.Config
 
 //nolint
 func TestMain(m *testing.M) {
-	gin.SetMode("test")
+	gin.SetMode(gin.TestMode)
 	cnf, err := config.DefaultConfig()
 	if err != nil {
 		log.Fatalf("failed to get default config err:%s", err)

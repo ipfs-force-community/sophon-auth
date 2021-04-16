@@ -1,10 +1,10 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"github.com/ipfs-force-community/venus-auth/core"
 	cli "github.com/urfave/cli/v2"
-	"golang.org/x/xerrors"
 )
 
 var Commands = []*cli.Command{
@@ -35,7 +35,7 @@ var genTokenCmd = &cli.Command{
 			return err
 		}
 		if ctx.NArg() < 1 {
-			return xerrors.New("usage: genToken name")
+			return errors.New("usage: genToken name")
 		}
 		name := ctx.Args().Get(0)
 
@@ -98,7 +98,7 @@ var removeTokenCmd = &cli.Command{
 	ArgsUsage: "[token]",
 	Action: func(ctx *cli.Context) error {
 		if ctx.NArg() < 1 {
-			return xerrors.New("usage: rmToken [token]")
+			return errors.New("usage: rmToken [token]")
 		}
 		client, err := GetCli(ctx)
 		if err != nil {

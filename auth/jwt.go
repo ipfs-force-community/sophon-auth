@@ -73,7 +73,7 @@ func (o *jwtOAuth) GenerateToken(ctx context.Context, pl *JWTPayload) (string, e
 	if has {
 		return token.String(), nil
 	}
-	err = o.store.Put(&storage.KeyPair{Token: token, CreateTime: time.Now()})
+	err = o.store.Put(&storage.KeyPair{Token: token, CreateTime: time.Now(), Name: pl.Name})
 	if err != nil {
 		return core.EmptyString, xerrors.Errorf("store token failed :%s", err)
 	}

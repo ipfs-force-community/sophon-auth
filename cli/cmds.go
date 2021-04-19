@@ -38,11 +38,11 @@ var genTokenCmd = &cli.Command{
 			return errors.New("usage: genToken name")
 		}
 		name := ctx.Args().Get(0)
-
 		perm := ctx.String("perm")
 		if err = core.ContainsPerm(perm); err != nil {
 			return err
 		}
+
 		extra := ctx.String("extra")
 		tk, err := client.GenerateToken(name, perm, extra)
 		if err != nil {

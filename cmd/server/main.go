@@ -36,7 +36,7 @@ func newApp() (app *cli.App) {
 				Name:    "repo",
 				EnvVars: []string{"OAUTH_HOME"},
 				Hidden:  true,
-				Value:   "~/.auth_home",
+				Value:   "~/.venus-auth",
 			},
 		},
 		Commands: locli.Commands,

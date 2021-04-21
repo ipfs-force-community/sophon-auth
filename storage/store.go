@@ -31,7 +31,9 @@ type Store interface {
 type KeyPair struct {
 	Token      Token     `db:"token"`
 	CreateTime time.Time `db:"createTime"`
+	Perm       string    `db:"perm"`
 	Name       string    `db:"name"`
+	Extra      string    `db:"extra"`
 }
 
 type Token string

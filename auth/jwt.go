@@ -73,7 +73,7 @@ func (o *jwtOAuth) GenerateToken(ctx context.Context, pl *JWTPayload) (string, e
 	if has {
 		return token.String(), nil
 	}
-	err = o.store.Put(&storage.KeyPair{Token: token, CreateTime: time.Now(), Name: pl.Name})
+	err = o.store.Put(&storage.KeyPair{Token: token, CreateTime: time.Now(), Name: pl.Name, Perm: pl.Perm, Extra: pl.Extra})
 	if err != nil {
 		return core.EmptyString, xerrors.Errorf("store token failed :%s", err)
 	}
@@ -99,6 +99,8 @@ func (o *jwtOAuth) Verify(ctx context.Context, token string) (*JWTPayload, error
 type TokenInfo struct {
 	Token      string    `json:"token"`
 	Name       string    `json:"name"`
+	Perm       string    `json:"perm"`
+	Custom     string    `json:"custom"`
 	CreateTime time.Time `json:"createTime"`
 }
 
@@ -117,6 +119,7 @@ func (o *jwtOAuth) Tokens(ctx context.Context, skip, limit int64) ([]*TokenInfo,
 			Token:      v.Token.String(),
 			CreateTime: v.CreateTime,
 			Name:       jwtPayload["name"].(string),
+			Perm:       jwtPayload["perm"].(string),
 		})
 	}
 	return tks, nil

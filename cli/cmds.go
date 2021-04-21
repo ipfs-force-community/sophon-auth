@@ -80,13 +80,13 @@ var tokensCmd = &cli.Command{
 		//	Token     string    `json:"token"`
 		//	Name      string    `json:"name"`
 		//	CreatTime time.Time `json:"createTime"`
-		fmt.Println("num\tname\t\tcreateTime\t\ttoken")
+		fmt.Println("num\tname\t\tperm\t\tcreateTime\t\ttoken")
 		for k, v := range tks {
 			name := v.Name
 			if len(name) < 8 {
 				name = name + "\t"
 			}
-			fmt.Printf("%d\t%s\t%s\t%s\n", k+1, name, v.CreateTime.Format("2006-01-02 15:04:05"), v.Token)
+			fmt.Printf("%d\t%s\t%s\t%s\t%s\n", k+1, name, v.Perm, v.CreateTime.Format("2006-01-02 15:04:05"), v.Token)
 		}
 		return nil
 	},

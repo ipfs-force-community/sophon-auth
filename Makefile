@@ -1,18 +1,18 @@
 SHELL=/usr/bin/env bash
 
-all: clean auth-server
+all: clean venus-auth
 
-auth-server:
-	go build -o auth-server ./cmd/server/*.go
+venus-auth:
+	go build -o venus-auth ./cmd/server/*.go
 
 lint:
 	gofmt -s -w ./
 	golangci-lint run
 
 linux: clean
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o auth-server ./cmd/server/*.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o venus-auth ./cmd/server/*.go
 
 clean:
-	rm -rf auth-server
+	rm -rf venus-auth
 
 .PHONY: clean

@@ -5,6 +5,12 @@ import (
 	"errors"
 )
 
+var CurrentCommit string
+
+const BuildVersion = "1.0.0"
+
+var Version = BuildVersion + CurrentCommit
+
 const EmptyString = ""
 
 type DBPrefix = []byte

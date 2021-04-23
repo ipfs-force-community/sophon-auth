@@ -6,6 +6,7 @@ import (
 	"github.com/ipfs-force-community/venus-auth/auth"
 	locli "github.com/ipfs-force-community/venus-auth/cli"
 	"github.com/ipfs-force-community/venus-auth/config"
+	"github.com/ipfs-force-community/venus-auth/core"
 	"github.com/ipfs-force-community/venus-auth/log"
 	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli/v2"
@@ -25,7 +26,8 @@ func main() {
 
 func newApp() (app *cli.App) {
 	app = &cli.App{
-		Action: run,
+		Action:  run,
+		Version: core.Version,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "config",

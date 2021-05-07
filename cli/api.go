@@ -2,10 +2,10 @@ package cli
 
 import (
 	"errors"
+	"github.com/filecoin-project/venus-auth/auth"
+	"github.com/filecoin-project/venus-auth/config"
+	"github.com/filecoin-project/venus-auth/core"
 	"github.com/go-resty/resty/v2"
-	"github.com/ipfs-force-community/venus-auth/auth"
-	"github.com/ipfs-force-community/venus-auth/config"
-	"github.com/ipfs-force-community/venus-auth/core"
 	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"

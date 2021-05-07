@@ -1,6 +1,6 @@
 # venus-auth
-[![Go Report Card](https://goreportcard.com/badge/github.com/ipfs-force-community/venus-auth)](https://goreportcard.com/report/github.com/ipfs-force-community/venus-auth)
-![Go](https://github.com/ipfs-force-community/venus-auth/workflows/Go/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/filecoin-project/venus-auth)](https://goreportcard.com/report/github.com/filecoin-project/venus-auth)
+![Go](https://github.com/filecoin-project/venus-auth/workflows/Go/badge.svg)
 
 Unified authorization service for Venus cluster 
 - Permission Validation
@@ -10,8 +10,9 @@ Unified authorization service for Venus cluster
 ---
 # Get Started
 ```
-$ git clone https://github.com/ipfs-force-community/venus-auth.git
-
+$ git clone https://github.com/filecoin-project/venus-auth.git
+$ export GOPROXY=https://goproxy.io,direct
+$ export GO111MODULE=on
 $ make
 
 $ venus-auth

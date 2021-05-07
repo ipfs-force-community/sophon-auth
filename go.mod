@@ -1,4 +1,4 @@
-module github.com/ipfs-force-community/venus-auth
+module github.com/filecoin-project/venus-auth
 
 go 1.15
 

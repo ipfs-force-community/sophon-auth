@@ -1,11 +1,11 @@
 package cli
 
 import (
+	"github.com/filecoin-project/venus-auth/auth"
+	"github.com/filecoin-project/venus-auth/config"
+	"github.com/filecoin-project/venus-auth/core"
+	"github.com/filecoin-project/venus-auth/util"
 	"github.com/gin-gonic/gin"
-	"github.com/ipfs-force-community/venus-auth/auth"
-	"github.com/ipfs-force-community/venus-auth/config"
-	"github.com/ipfs-force-community/venus-auth/core"
-	"github.com/ipfs-force-community/venus-auth/util"
 	"gotest.tools/assert"
 	"io/ioutil"
 	"log"

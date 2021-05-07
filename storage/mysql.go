@@ -3,8 +3,8 @@ package storage
 import (
 	"context"
 	"errors"
+	"github.com/filecoin-project/venus-auth/config"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/ipfs-force-community/venus-auth/config"
 	"github.com/jmoiron/sqlx"
 )
 

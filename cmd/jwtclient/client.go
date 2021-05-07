@@ -3,8 +3,8 @@ package jwtclient
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/go-resty/resty/v2"
-	"github.com/ipfs-force-community/venus-auth/auth"
 	"net/http"
 )
 

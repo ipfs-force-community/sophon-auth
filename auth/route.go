@@ -2,9 +2,9 @@ package auth
 
 import (
 	"bytes"
+	"github.com/filecoin-project/venus-auth/core"
+	"github.com/filecoin-project/venus-auth/log"
 	"github.com/gin-gonic/gin"
-	"github.com/ipfs-force-community/venus-auth/core"
-	"github.com/ipfs-force-community/venus-auth/log"
 	"net/http"
 	"time"
 )

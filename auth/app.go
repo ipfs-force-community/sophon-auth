@@ -1,8 +1,8 @@
 package auth
 
 import (
+	"github.com/filecoin-project/venus-auth/config"
 	"github.com/gin-gonic/gin"
-	"github.com/ipfs-force-community/venus-auth/config"
 	"net/http"
 )
 

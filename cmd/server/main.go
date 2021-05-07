@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/filecoin-project/venus-auth/auth"
+	locli "github.com/filecoin-project/venus-auth/cli"
+	"github.com/filecoin-project/venus-auth/config"
+	"github.com/filecoin-project/venus-auth/core"
+	"github.com/filecoin-project/venus-auth/log"
 	"github.com/gin-gonic/gin"
-	"github.com/ipfs-force-community/venus-auth/auth"
-	locli "github.com/ipfs-force-community/venus-auth/cli"
-	"github.com/ipfs-force-community/venus-auth/config"
-	"github.com/ipfs-force-community/venus-auth/core"
-	"github.com/ipfs-force-community/venus-auth/log"
 	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli/v2"
 	"net/http"

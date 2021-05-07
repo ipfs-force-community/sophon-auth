@@ -2,8 +2,8 @@ package storage
 
 import (
 	"fmt"
-	"github.com/ipfs-force-community/venus-auth/config"
-	"github.com/ipfs-force-community/venus-auth/log"
+	"github.com/filecoin-project/venus-auth/config"
+	"github.com/filecoin-project/venus-auth/log"
 	"strings"
 	"time"
 )

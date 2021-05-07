@@ -1,7 +1,7 @@
 package log
 
 import (
-	"github.com/ipfs-force-community/venus-auth/config"
+	"github.com/filecoin-project/venus-auth/config"
 	"github.com/sirupsen/logrus"
 	"os"
 )

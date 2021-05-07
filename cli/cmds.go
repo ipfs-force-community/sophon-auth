@@ -3,7 +3,7 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"github.com/ipfs-force-community/venus-auth/core"
+	"github.com/filecoin-project/venus-auth/core"
 	cli "github.com/urfave/cli/v2"
 )
 

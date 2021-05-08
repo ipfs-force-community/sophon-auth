@@ -12,7 +12,6 @@ jobs:
       - uses: actions/checkout@v2
       - name: golangci-lint
         env:
-          GOPROXY: "https://goproxy.io,direct"
           GO111MODULE: "on"
         uses: golangci/golangci-lint-action@v2
         with:

@@ -21,7 +21,6 @@ jobs:
 
       - name: Build
         env:
-          GOPROXY: "https://goproxy.io,direct"
           GO111MODULE: "on"
         run: go build -v ./...
 

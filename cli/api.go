@@ -59,7 +59,7 @@ func newClient(port string) (*localClient, error) {
 }
 
 func (lc *localClient) GenerateToken(name, perm, extra string) (string, error) {
-	resp, err := lc.cli.R().SetBody(&auth.GenTokenRequest{
+	resp, err := lc.cli.R().SetBody(auth.GenTokenRequest{
 		Name:  name,
 		Perm:  perm,
 		Extra: extra,
@@ -89,7 +89,7 @@ func (lc *localClient) Tokens(skip, limit int64) (auth.GetTokensResponse, error)
 }
 
 func (lc *localClient) RemoveToken(token string) error {
-	resp, err := lc.cli.R().SetBody(&auth.RemoveTokenRequest{
+	resp, err := lc.cli.R().SetBody(auth.RemoveTokenRequest{
 		Token: token,
 	}).SetError(&ErrMsg{}).Delete("/token")
 	if err != nil {

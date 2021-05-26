@@ -2,6 +2,7 @@ package auth
 
 import (
 	"github.com/filecoin-project/venus-auth/config"
+	"github.com/filecoin-project/venus-auth/storage"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -11,6 +12,9 @@ type OAuthApp interface {
 	GenerateToken(c *gin.Context)
 	RemoveToken(c *gin.Context)
 	Tokens(c *gin.Context)
+
+	UpdateUser(c *gin.Context)
+	ListUsers(c *gin.Context)
 }
 
 type oauthApp struct {
@@ -102,6 +106,36 @@ func (o *oauthApp) Tokens(c *gin.Context) {
 		return
 	}
 	res, err := o.srv.Tokens(c, req.GetSkip(), req.GetLimit())
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	SuccessResponse(c, res)
+}
+
+func (o *oauthApp) UpdateUser(c *gin.Context) {
+	req := new(storage.User)
+	if err := c.ShouldBind(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+	//todo add user id
+	err := o.srv.UpdateUser(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	Response(c, err)
+}
+
+func (o *oauthApp) ListUsers(c *gin.Context) {
+	req := new(ListUsersRequest)
+	if err := c.ShouldBind(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+	//todo add user id
+	res, err := o.srv.ListUsers(c, req.GetSkip(), req.GetLimit())
 	if err != nil {
 		BadResponse(c, err)
 		return

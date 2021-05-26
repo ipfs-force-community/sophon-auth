@@ -1,16 +1,22 @@
 package cli
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/filecoin-project/venus-auth/core"
+	"github.com/filecoin-project/venus-auth/storage"
+	"github.com/google/uuid"
 	cli "github.com/urfave/cli/v2"
+	"math"
 )
 
 var Commands = []*cli.Command{
 	genTokenCmd,
 	tokensCmd,
 	removeTokenCmd,
+	addUserCmd,
+	listUsersCmd,
 }
 
 var genTokenCmd = &cli.Command{
@@ -110,6 +116,67 @@ var removeTokenCmd = &cli.Command{
 			return err
 		}
 		fmt.Printf("remove token success: %s\n", tk)
+		return nil
+	},
+}
+
+var addUserCmd = &cli.Command{
+	Name:  "add-user",
+	Usage: "add user",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:     "name",
+			Required: true,
+		},
+		&cli.StringFlag{
+			Name: "miner",
+		},
+		&cli.StringFlag{
+			Name: "comment",
+		},
+	},
+	ArgsUsage: "[add user]",
+	Action: func(ctx *cli.Context) error {
+		client, err := GetCli(ctx)
+		if err != nil {
+			return err
+		}
+
+		name := ctx.String("name")
+		miner := ctx.String("miner")
+		comment := ctx.String("comment")
+		user := &storage.User{
+			Id:      uuid.New().String(),
+			Name:    name,
+			Miner:   miner,
+			Comment: comment,
+			State:   0,
+		}
+		return client.UpdateUser(user)
+	},
+}
+
+var listUsersCmd = &cli.Command{
+	Name:      "list-user",
+	Usage:     "list users",
+	Flags:     []cli.Flag{},
+	ArgsUsage: "[add user]",
+	Action: func(ctx *cli.Context) error {
+		client, err := GetCli(ctx)
+		if err != nil {
+			return err
+		}
+
+		users, err := client.ListUsers(0, math.MaxInt64)
+		if err != nil {
+			return err
+		}
+
+		userJson, err := json.MarshalIndent(users, " ", "\t")
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(userJson))
 		return nil
 	},
 }

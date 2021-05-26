@@ -31,6 +31,9 @@ type OAuthService interface {
 	Verify(ctx context.Context, token string) (*JWTPayload, error)
 	RemoveToken(ctx context.Context, token string) error
 	Tokens(ctx context.Context, skip, limit int64) ([]*TokenInfo, error)
+
+	UpdateUser(ctx context.Context, user *storage.User) error
+	ListUsers(ctx context.Context, skip, limit int64) ([]*storage.User, error)
 }
 
 type jwtOAuth struct {
@@ -134,6 +137,13 @@ func (o *jwtOAuth) RemoveToken(ctx context.Context, token string) error {
 	return nil
 }
 
+func (o *jwtOAuth) UpdateUser(ctx context.Context, user *storage.User) error {
+	return o.store.UpdateUser(user)
+}
+
+func (o *jwtOAuth) ListUsers(ctx context.Context, skip, limit int64) ([]*storage.User, error) {
+	return o.store.ListUser(skip, limit)
+}
 func DecodeToBytes(enc []byte) ([]byte, error) {
 	encoding := base64.RawURLEncoding
 	dec := make([]byte, encoding.DecodedLen(len(enc)))

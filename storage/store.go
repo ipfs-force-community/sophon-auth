@@ -26,6 +26,11 @@ type Store interface {
 	Delete(token Token) error
 	Has(token Token) (bool, error)
 	List(skip, limit int64) ([]*KeyPair, error)
+
+	//user
+	GetUser(name string) (*User, error)
+	UpdateUser(*User) error
+	ListUser(skip, limit int64) ([]*User, error)
 }
 
 type KeyPair struct {
@@ -62,4 +67,20 @@ func (t *KeyPair) FromBytes(key []byte, val []byte) error {
 	}
 	t.CreateTime = tm
 	return nil
+}
+
+//user
+const (
+	UserInit = iota
+	UserActive
+)
+
+type User struct {
+	Id         string
+	Name       string
+	Miner      string
+	Comment    string
+	State      int //0 for init, 1 for active
+	CreateTime uint64
+	UpdateTime uint64
 }

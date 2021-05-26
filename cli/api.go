@@ -5,6 +5,7 @@ import (
 	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/core"
+	"github.com/filecoin-project/venus-auth/storage"
 	"github.com/go-resty/resty/v2"
 	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli/v2"
@@ -99,4 +100,29 @@ func (lc *localClient) RemoveToken(token string) error {
 		return nil
 	}
 	return resp.Error().(*ErrMsg).Err()
+}
+
+func (lc *localClient) UpdateUser(user *storage.User) error {
+	resp, err := lc.cli.R().SetBody(user).SetError(&ErrMsg{}).Post("/user/update")
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode() == http.StatusOK {
+		return nil
+	}
+	return resp.Error().(*ErrMsg).Err()
+}
+
+func (lc *localClient) ListUsers(skip, limit int64) (auth.ListUsersResponse, error) {
+	resp, err := lc.cli.R().SetQueryParams(map[string]string{
+		"skip":  strconv.FormatInt(skip, 10),
+		"limit": strconv.FormatInt(limit, 10),
+	}).SetResult(&auth.ListUsersResponse{}).SetError(&ErrMsg{}).Get("/user/list")
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusOK {
+		return *(resp.Result().(*auth.ListUsersResponse)), nil
+	}
+	return nil, resp.Error().(*ErrMsg).Err()
 }

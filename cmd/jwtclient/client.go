@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/filecoin-project/venus-auth/auth"
+	"github.com/filecoin-project/venus-auth/errcode"
 	"github.com/go-resty/resty/v2"
 	"net/http"
+	"strconv"
 )
 
 type JWTClient struct {
@@ -51,4 +53,21 @@ func (c *JWTClient) Verify(spanId, serviceName, preHost, host, token string) (*a
 		response.Result()
 		return nil, fmt.Errorf("response code is : %d, msg:%s", response.StatusCode(), response.Body())
 	}
+}
+
+func (c *JWTClient) ListUsers(req *auth.ListUsersRequest) (auth.ListUsersResponse, error) {
+	resp, err := c.cli.R().SetQueryParams(map[string]string{
+		"skip":       strconv.FormatInt(req.Skip, 10),
+		"limit":      strconv.FormatInt(req.Limit, 10),
+		"sourceType": strconv.Itoa(req.SourceType),
+		"state":      strconv.Itoa(req.State),
+		"keySum":     strconv.Itoa(req.KeySum),
+	}).SetResult(&auth.ListUsersResponse{}).SetError(&errcode.ErrMsg{}).Get("/user/list")
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusOK {
+		return *(resp.Result().(*auth.ListUsersResponse)), nil
+	}
+	return nil, resp.Error().(*errcode.ErrMsg).Err()
 }

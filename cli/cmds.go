@@ -3,14 +3,19 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/core"
 	cli "github.com/urfave/cli/v2"
+	"time"
 )
 
 var Commands = []*cli.Command{
 	genTokenCmd,
 	tokensCmd,
 	removeTokenCmd,
+	addUserCmd,
+	updateUserCmd,
+	listUsersCmd,
 }
 
 var genTokenCmd = &cli.Command{
@@ -54,7 +59,7 @@ var genTokenCmd = &cli.Command{
 }
 
 var tokensCmd = &cli.Command{
-	Name:  "tokens",
+	Name:  "listTokens",
 	Usage: "list token info",
 	Flags: []cli.Flag{
 		&cli.UintFlag{
@@ -110,6 +115,173 @@ var removeTokenCmd = &cli.Command{
 			return err
 		}
 		fmt.Printf("remove token success: %s\n", tk)
+		return nil
+	},
+}
+
+var addUserCmd = &cli.Command{
+	Name:  "addUser",
+	Usage: "add user",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:     "name",
+			Required: true,
+			Usage:    "required",
+		},
+		&cli.StringFlag{
+			Name: "miner",
+		},
+		&cli.StringFlag{
+			Name: "comment",
+		},
+		&cli.IntFlag{
+			Name:  "sourceType",
+			Value: 0,
+		},
+	},
+	Action: func(ctx *cli.Context) error {
+		client, err := GetCli(ctx)
+		if err != nil {
+			return err
+		}
+		name := ctx.String("name")
+		miner := ctx.String("miner")
+		comment := ctx.String("comment")
+		sourceType := ctx.Int("sourceType")
+		user := &auth.CreateUserRequest{
+			Name:       name,
+			Miner:      miner,
+			Comment:    comment,
+			State:      0,
+			SourceType: sourceType,
+		}
+		res, err := client.CreateUser(user)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("add user success: %s\n", res.Id)
+		return nil
+	},
+}
+
+var updateUserCmd = &cli.Command{
+	Name:  "updateUser",
+	Usage: "update user",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:     "name",
+			Required: true,
+		},
+		&cli.StringFlag{
+			Name: "miner",
+		},
+		&cli.StringFlag{
+			Name: "comment",
+		},
+		&cli.IntFlag{
+			Name: "sourceType",
+		},
+		&cli.IntFlag{
+			Name: "state",
+		},
+	},
+	Action: func(ctx *cli.Context) error {
+		client, err := GetCli(ctx)
+		if err != nil {
+			return err
+		}
+		/*	type UpdateUserRequest struct {
+			KeySum     KeyCode         `form:"setKeys"` // keyCode Sum
+			Name       string          `form:"name"`
+			Miner      string          `form:"miner"`      // keyCode:1
+			Comment    string          `form:"comment"`    // keyCode:2
+			State      int             `form:"state"`      // keyCode:4
+			SourceType core.SourceType `form:"sourceType"` // keyCode:8
+		}*/
+		req := &auth.UpdateUserRequest{
+			Name: ctx.String("name"),
+		}
+		if ctx.IsSet("miner") {
+			req.Miner = ctx.String("miner")
+			req.KeySum += 1
+		}
+		if ctx.IsSet("comment") {
+			req.Comment = ctx.String("comment")
+			req.KeySum += 2
+		}
+		if ctx.IsSet("state") {
+			req.State = ctx.Int("state")
+			req.KeySum += 4
+		}
+		if ctx.IsSet("sourceType") {
+			req.SourceType = ctx.Int("sourceType")
+			req.KeySum += 8
+		}
+		err = client.UpdateUser(req)
+		if err != nil {
+			return err
+		}
+		fmt.Println("update user success")
+		return nil
+	},
+}
+
+var listUsersCmd = &cli.Command{
+	Name:  "listUsers",
+	Usage: "list users",
+	Flags: []cli.Flag{
+		&cli.UintFlag{
+			Name:  "skip",
+			Value: 0,
+		},
+		&cli.UintFlag{
+			Name:  "limit",
+			Value: 20,
+		},
+		&cli.IntFlag{
+			Name:  "state",
+			Value: 0,
+		},
+		&cli.IntFlag{
+			Name:  "sourceType",
+			Value: 0,
+		},
+	},
+	Action: func(ctx *cli.Context) error {
+		client, err := GetCli(ctx)
+		if err != nil {
+			return err
+		}
+		req := &auth.ListUsersRequest{
+			Page: &core.Page{
+				Limit: ctx.Int64("limit"),
+				Skip:  ctx.Int64("skip"),
+			},
+			SourceType: ctx.Int("sourceType"),
+			State:      ctx.Int("state"),
+		}
+		if ctx.IsSet("sourceType") {
+			req.KeySum += 1
+		}
+		if ctx.IsSet("state") {
+			req.KeySum += 2
+		}
+		users, err := client.ListUsers(req)
+		if err != nil {
+			return err
+		}
+
+		for k, v := range users {
+			fmt.Println("number:", k+1)
+			fmt.Println("name:", v.Name)
+			fmt.Println("miner:", v.Miner)
+			fmt.Println("sourceType:", v.SourceType, "\t// miner:1")
+			fmt.Println("state", v.State, "\t// 0: disable, 1: enable")
+			fmt.Println("comment:", v.Comment)
+			fmt.Println("createTime:", time.Unix(v.CreateTime, 0).Format(time.RFC1123))
+			fmt.Println("updateTime:", time.Unix(v.CreateTime, 0).Format(time.RFC1123))
+			fmt.Println()
+		}
 		return nil
 	},
 }

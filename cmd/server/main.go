@@ -100,7 +100,7 @@ func run(cliCtx *cli.Context) error {
 	log.InitLog(cnf.Log)
 	app, err := auth.NewOAuthApp(cnf.Secret, dataPath, cnf.DB)
 	if err != nil {
-		log.Fatalf("Failed to init oauthApp : %s", err)
+		log.Fatalf("Failed to init venus-auth: %s", err)
 	}
 	router := auth.InitRouter(app)
 	server := &http.Server{

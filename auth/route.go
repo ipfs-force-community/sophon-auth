@@ -16,6 +16,11 @@ func InitRouter(app OAuthApp) http.Handler {
 	router.POST("/genToken", app.GenerateToken)
 	router.DELETE("/token", app.RemoveToken)
 	router.GET("/tokens", app.Tokens)
+
+	userGroup := router.Group("/user")
+	userGroup.PUT("/new", app.CreateUser)
+	userGroup.POST("/update", app.UpdateUser)
+	userGroup.GET("/list", app.ListUsers)
 	return router
 }
 
@@ -58,6 +63,7 @@ func (w bodyLogWriter) Write(b []byte) (int, error) {
 	w.body.Write(b)
 	return w.ResponseWriter.Write(b)
 }
+
 func CorsMiddleWare() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")

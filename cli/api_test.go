@@ -94,3 +94,54 @@ func TestTokenBusiness(t *testing.T) {
 	assert.Equal(t, len(tks2), 1)
 	assert.DeepEqual(t, tks2[0].Token, tk2)
 }
+
+func TestUserBusiness(t *testing.T) {
+	cli := mockClient(t)
+	res1, err := cli.CreateUser(&auth.CreateUserRequest{
+		Name:       "name1",
+		Miner:      "f01234",
+		Comment:    "this is a comment",
+		State:      0,
+		SourceType: 1,
+	})
+	if err != nil {
+		t.Fatalf("create user err:%s", err)
+	}
+	t.Logf("user name: %s", res1.Name)
+
+	res2, err := cli.CreateUser(&auth.CreateUserRequest{
+		Name:       "name2",
+		Miner:      "f02345",
+		Comment:    "this is a comment",
+		State:      0,
+		SourceType: 1,
+	})
+	if err != nil {
+		t.Fatalf("create user err:%s", err)
+	}
+	users, err := cli.ListUsers(&auth.ListUsersRequest{
+		Page: &core.Page{
+			Limit: 10,
+			Skip:  0,
+		},
+
+		SourceType: 1,
+		State:      0,
+	})
+	if err != nil {
+		t.Fatalf("get tokens err:%s", err)
+	}
+	assert.DeepEqual(t, res1, users[0])
+	assert.DeepEqual(t, res2, users[1])
+
+	err = cli.UpdateUser(&auth.UpdateUserRequest{
+		Name:       res1.Name,
+		Miner:      "f01111",
+		Comment:    "this is a comment?",
+		State:      1,
+		SourceType: 2,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}

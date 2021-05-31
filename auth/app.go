@@ -146,7 +146,7 @@ func (o *oauthApp) ListUsers(c *gin.Context) {
 		BadResponse(c, err)
 		return
 	}
-	res, err := o.srv.ListUsers(c,req)
+	res, err := o.srv.ListUsers(c, req)
 	if err != nil {
 		BadResponse(c, err)
 		return

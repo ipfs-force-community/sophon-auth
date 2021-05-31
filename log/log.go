@@ -10,7 +10,6 @@ import (
 
 type Fields = logrus.Fields
 
-
 var localLog *logrus.Logger
 
 // SetOutput sets the standard logger output.

@@ -33,7 +33,7 @@ type Store interface {
 	GetUser(name string) (*User, error)
 	PutUser(*User) error
 	UpdateUser(*User) error
-	ListUsers(skip, limit int64, state int, sourceType core.SourceType,code core.KeyCode) ([]*User, error)
+	ListUsers(skip, limit int64, state int, sourceType core.SourceType, code core.KeyCode) ([]*User, error)
 }
 
 type KeyPair struct {

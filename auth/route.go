@@ -17,8 +17,10 @@ func InitRouter(app OAuthApp) http.Handler {
 	router.DELETE("/token", app.RemoveToken)
 	router.GET("/tokens", app.Tokens)
 
-	router.POST("user/update", app.UpdateUser)
-	router.GET("user/list", app.ListUsers)
+	userGroup := router.Group("/user")
+	userGroup.PUT("/new", app.CreateUser)
+	userGroup.POST("/update", app.UpdateUser)
+	userGroup.GET("/list", app.ListUsers)
 	return router
 }
 

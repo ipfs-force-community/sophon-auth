@@ -1,19 +1,17 @@
 package storage
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/dgraph-io/badger/v3"
+	"github.com/filecoin-project/venus-auth/core"
 	"golang.org/x/xerrors"
-	"math"
 	"time"
 )
 
 var _ Store = &badgerStore{}
 
 type badgerStore struct {
-	db         *badger.DB
-	userPrefix string
+	db *badger.DB
 }
 
 func newBadgerStore(filePath string) (Store, error) {
@@ -22,8 +20,7 @@ func newBadgerStore(filePath string) (Store, error) {
 		return nil, xerrors.Errorf("open db failed :%s", err)
 	}
 	s := &badgerStore{
-		db:         db,
-		userPrefix: "users_",
+		db: db,
 	}
 	go func() {
 		ticker := time.NewTicker(5 * time.Minute)
@@ -120,69 +117,78 @@ func (s *badgerStore) List(skip, limit int64) ([]*KeyPair, error) {
 }
 
 func (s *badgerStore) GetUser(name string) (*User, error) {
-	key := []byte(s.userPrefix + name)
-	var user User
+	user := new(User)
 	err := s.db.View(func(txn *badger.Txn) error {
-		val, err := txn.Get(key)
-		if err == nil || err == badger.ErrKeyNotFound {
+		val, err := txn.Get(s.userKey(name))
+		if err != nil || err == badger.ErrKeyNotFound {
 			return xerrors.Errorf("users %s not exit", name)
 		}
 
 		return val.Value(func(val []byte) error {
-			return json.Unmarshal(val, &user)
+			return user.FromBytes(val)
 		})
 	})
 	if err != nil {
 		return nil, err
 	}
-	return &user, nil
+	return user, nil
 }
 
 func (s *badgerStore) UpdateUser(user *User) error {
-	allUsers, err := s.ListUser(0, math.MaxInt64)
+	old, err := s.GetUser(user.Name)
 	if err != nil {
 		return err
 	}
-	if len(user.Id) > 0 {
-		//update
-		for _, oldUser := range allUsers {
-			if oldUser.Id == user.Id {
-				continue
-			}
-			if oldUser.Name == user.Name {
-				return xerrors.Errorf("user %s has exit", user.Name)
-			}
-		}
-	} else {
-		//create
-		for _, oldUser := range allUsers {
-			if oldUser.Name == user.Name {
-				return xerrors.Errorf("user %s has exit", user.Name)
-			}
-		}
+	user.CreateTime = old.CreateTime
+	user.Id = old.Id
+	val, err := user.Bytes()
+	if err != nil {
+		return err
 	}
-	key := []byte(s.userPrefix + user.Name)
 	return s.db.Update(func(txn *badger.Txn) error {
-		//insert
-		userBytes, err := json.Marshal(user)
-		if err != nil {
-			return err
-		}
-		return txn.Set(key, userBytes)
+		return txn.Set(s.userKey(user.Name), val)
 	})
 }
 
-func (s *badgerStore) ListUser(skip, limit int64) ([]*User, error) {
+func (s *badgerStore) HasUser(name string) (bool, error) {
+	var value []byte
+	err := s.db.View(func(txn *badger.Txn) error {
+		item, err := txn.Get(s.userKey(name))
+		if err != nil {
+			return err
+		}
+
+		value, err = item.ValueCopy(value)
+		return err
+	})
+	if err != nil {
+		if err.Error() == "Key not found" {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+func (s *badgerStore) PutUser(user *User) error {
+	val, err := user.Bytes()
+	if err != nil {
+		return err
+	}
+	return s.db.Update(func(txn *badger.Txn) error {
+		return txn.Set(s.userKey(user.Name), val)
+	})
+}
+
+func (s *badgerStore) ListUsers(skip, limit int64, state int, sourceType core.SourceType, code core.KeyCode) ([]*User, error) {
 	var data []*User
 	err := s.db.View(func(txn *badger.Txn) error {
 		opts := badger.IteratorOptions{
 			PrefetchValues: true,
-			PrefetchSize:   100,
 			Reverse:        false,
 			AllVersions:    false,
-			Prefix:         []byte(s.userPrefix),
+			Prefix:         []byte(PrefixUser),
 		}
-
 		it := txn.NewIterator(opts)
 		defer it.Close()
 		idx := int64(0)
@@ -200,13 +206,32 @@ func (s *badgerStore) ListUser(skip, limit int64) ([]*User, error) {
 					return err
 				}
 				user := new(User)
-				err = json.Unmarshal(*val, user)
+				err = user.FromBytes(*val)
 				if err != nil {
 					return err
 				}
-				data = append(data, user)
+				// aggregation multi-select
+				need := false
+				if code&1 == 1 {
+					need = user.SourceType == sourceType
+				} else {
+					need = true
+				}
+
+				if !need {
+					continue
+				}
+				if code&2 == 2 {
+					need = need && user.State == state
+				} else {
+					need = need && true
+				}
+				if need {
+
+					data = append(data, user)
+					idx++
+				}
 			}
-			idx++
 		}
 		return nil
 	})

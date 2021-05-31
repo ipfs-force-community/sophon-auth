@@ -1,14 +1,12 @@
 package cli
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/core"
-	"github.com/filecoin-project/venus-auth/storage"
-	"github.com/google/uuid"
 	cli "github.com/urfave/cli/v2"
-	"math"
+	"time"
 )
 
 var Commands = []*cli.Command{
@@ -16,6 +14,7 @@ var Commands = []*cli.Command{
 	tokensCmd,
 	removeTokenCmd,
 	addUserCmd,
+	updateUserCmd,
 	listUsersCmd,
 }
 
@@ -60,7 +59,7 @@ var genTokenCmd = &cli.Command{
 }
 
 var tokensCmd = &cli.Command{
-	Name:  "tokens",
+	Name:  "listTokens",
 	Usage: "list token info",
 	Flags: []cli.Flag{
 		&cli.UintFlag{
@@ -121,8 +120,53 @@ var removeTokenCmd = &cli.Command{
 }
 
 var addUserCmd = &cli.Command{
-	Name:  "add-user",
+	Name:  "addUser",
 	Usage: "add user",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:     "name",
+			Required: true,
+			Usage:    "required",
+		},
+		&cli.StringFlag{
+			Name: "miner",
+		},
+		&cli.StringFlag{
+			Name: "comment",
+		},
+		&cli.IntFlag{
+			Name:  "sourceType",
+			Value: 0,
+		},
+	},
+	Action: func(ctx *cli.Context) error {
+		client, err := GetCli(ctx)
+		if err != nil {
+			return err
+		}
+		name := ctx.String("name")
+		miner := ctx.String("miner")
+		comment := ctx.String("comment")
+		sourceType := ctx.Int("sourceType")
+		user := &auth.CreateUserRequest{
+			Name:       name,
+			Miner:      miner,
+			Comment:    comment,
+			State:      0,
+			SourceType: sourceType,
+		}
+		res, err := client.CreateUser(user)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("add user success: %s\n", res.Id)
+		return nil
+	},
+}
+
+var updateUserCmd = &cli.Command{
+	Name:  "updateUser",
+	Usage: "update user",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:     "name",
@@ -134,49 +178,110 @@ var addUserCmd = &cli.Command{
 		&cli.StringFlag{
 			Name: "comment",
 		},
+		&cli.IntFlag{
+			Name: "sourceType",
+		},
+		&cli.IntFlag{
+			Name: "state",
+		},
 	},
-	ArgsUsage: "[add user]",
 	Action: func(ctx *cli.Context) error {
 		client, err := GetCli(ctx)
 		if err != nil {
 			return err
 		}
-
-		name := ctx.String("name")
-		miner := ctx.String("miner")
-		comment := ctx.String("comment")
-		user := &storage.User{
-			Id:      uuid.New().String(),
-			Name:    name,
-			Miner:   miner,
-			Comment: comment,
-			State:   0,
+		/*	type UpdateUserRequest struct {
+			KeySum     KeyCode         `form:"setKeys"` // keyCode Sum
+			Name       string          `form:"name"`
+			Miner      string          `form:"miner"`      // keyCode:1
+			Comment    string          `form:"comment"`    // keyCode:2
+			State      int             `form:"state"`      // keyCode:4
+			SourceType core.SourceType `form:"sourceType"` // keyCode:8
+		}*/
+		req := &auth.UpdateUserRequest{
+			Name: ctx.String("name"),
 		}
-		return client.UpdateUser(user)
+		if ctx.IsSet("miner") {
+			req.Miner = ctx.String("miner")
+			req.KeySum += 1
+		}
+		if ctx.IsSet("comment") {
+			req.Comment = ctx.String("comment")
+			req.KeySum += 2
+		}
+		if ctx.IsSet("state") {
+			req.State = ctx.Int("state")
+			req.KeySum += 4
+		}
+		if ctx.IsSet("sourceType") {
+			req.SourceType = ctx.Int("sourceType")
+			req.KeySum += 8
+		}
+		err = client.UpdateUser(req)
+		if err != nil {
+			return err
+		}
+		fmt.Println("update user success")
+		return nil
 	},
 }
 
 var listUsersCmd = &cli.Command{
-	Name:      "list-user",
-	Usage:     "list users",
-	Flags:     []cli.Flag{},
-	ArgsUsage: "[add user]",
+	Name:  "listUsers",
+	Usage: "list users",
+	Flags: []cli.Flag{
+		&cli.UintFlag{
+			Name:  "skip",
+			Value: 0,
+		},
+		&cli.UintFlag{
+			Name:  "limit",
+			Value: 20,
+		},
+		&cli.IntFlag{
+			Name:  "state",
+			Value: 0,
+		},
+		&cli.IntFlag{
+			Name:  "sourceType",
+			Value: 0,
+		},
+	},
 	Action: func(ctx *cli.Context) error {
 		client, err := GetCli(ctx)
 		if err != nil {
 			return err
 		}
-
-		users, err := client.ListUsers(0, math.MaxInt64)
+		req := &auth.ListUsersRequest{
+			Page: &core.Page{
+				Limit: ctx.Int64("limit"),
+				Skip:  ctx.Int64("skip"),
+			},
+			SourceType: ctx.Int("sourceType"),
+			State:      ctx.Int("state"),
+		}
+		if ctx.IsSet("sourceType") {
+			req.KeySum += 1
+		}
+		if ctx.IsSet("state") {
+			req.KeySum += 2
+		}
+		users, err := client.ListUsers(req)
 		if err != nil {
 			return err
 		}
 
-		userJson, err := json.MarshalIndent(users, " ", "\t")
-		if err != nil {
-			return err
+		for k, v := range users {
+			fmt.Println("number:", k+1)
+			fmt.Println("name:", v.Name)
+			fmt.Println("miner:", v.Miner)
+			fmt.Println("sourceType:", v.SourceType, "\t// miner:1")
+			fmt.Println("state", v.State, "\t// 0: disable, 1: enable")
+			fmt.Println("comment:", v.Comment)
+			fmt.Println("createTime:", time.Unix(v.CreateTime, 0).Format(time.RFC1123))
+			fmt.Println("updateTime:", time.Unix(v.CreateTime, 0).Format(time.RFC1123))
+			fmt.Println()
 		}
-		fmt.Println(string(userJson))
 		return nil
 	},
 }

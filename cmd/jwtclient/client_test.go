@@ -1,6 +1,7 @@
 package jwtclient
 
 import (
+	"github.com/filecoin-project/venus-auth/auth"
 	"os"
 	"testing"
 )
@@ -24,6 +25,16 @@ func TestClient_Verify(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(res)
+}
+
+func TestJWTClient_ListUsers(t *testing.T) {
+	res, err := MockCli.ListUsers(auth.NewListUsersRequest(0, 20, 0, 0, 1+2))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, v := range res {
+		t.Log(v)
+	}
 }
 
 //nolint

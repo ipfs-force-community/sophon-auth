@@ -102,7 +102,7 @@ func (c *JWTClient) HasMiner(req *auth.HasMinerRequest) (bool, error) {
 	var has bool
 	resp, err := c.cli.R().SetQueryParams(map[string]string{
 		"miner": req.Miner,
-	}).SetResult(&has).SetError(&errcode.ErrMsg{}).Get("/has-miner")
+	}).SetResult(&has).SetError(&errcode.ErrMsg{}).Get("/miner/has-miner")
 	if err != nil {
 		return false, err
 	}

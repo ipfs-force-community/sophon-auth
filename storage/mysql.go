@@ -228,7 +228,7 @@ func (s *mysqlStore) ListUsers(skip, limit int64, state int, sourceType core.Sou
 	query += "ORDER BY createTime LIMIT ?,?"
 	params = append(params, skip, limit)
 
-	err := s.db.Select(&arr, query, params)
+	err := s.db.Select(&arr, query, params...)
 	if err != nil {
 		log.WithFields(
 			log.Fields{

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/auth"
 	locli "github.com/filecoin-project/venus-auth/cli"
 	"github.com/filecoin-project/venus-auth/config"
@@ -16,6 +17,7 @@ import (
 )
 
 func main() {
+	address.CurrentNetwork = address.Mainnet
 	app := newApp()
 	err := app.Run(os.Args)
 	if err != nil {

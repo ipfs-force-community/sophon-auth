@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/errcode"
@@ -244,6 +245,40 @@ func (s *mysqlStore) ListUsers(skip, limit int64, state int, sourceType core.Sou
 func (s *mysqlStore) GetUser(name string) (*User, error) {
 	var user User
 	err := s.db.Get(&user, "SELECT * FROM users where name=?", name)
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			return nil, errcode.ErrDataNotExists
+		}
+		log.WithFields(
+			log.Fields{
+				"pkg":    s.pkg,
+				"method": "GetUser/Get",
+			},
+		).Error(err)
+		return nil, errcode.ErrSystemExecFailed
+	}
+	return &user, nil
+}
+
+func (s mysqlStore) HasMiner(maddr address.Address) (bool, error) {
+	var count int64
+	row := s.db.QueryRow(`SELECT COUNT(*) as count FROM users WHERE miner=?`, maddr.String())
+	err := row.Scan(&count)
+	if err != nil {
+		log.WithFields(
+			log.Fields{
+				"pkg":    s.pkg,
+				"method": "HasUser/Scan",
+			},
+		).Error(err)
+		return false, errcode.ErrSystemExecFailed
+	}
+	return count > 0, nil
+}
+
+func (s *mysqlStore) GetMiner(maddr address.Address) (*User, error) {
+	var user User
+	err := s.db.Get(&user, "SELECT * FROM users where miner=?", maddr.String())
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
 			return nil, errcode.ErrDataNotExists

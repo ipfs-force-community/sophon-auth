@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/core"
@@ -19,6 +20,7 @@ var mockCnf *config.Config
 
 //nolint
 func TestMain(m *testing.M) {
+	address.CurrentNetwork = address.Mainnet
 	gin.SetMode(gin.TestMode)
 	cnf, err := config.DefaultConfig()
 	if err != nil {
@@ -101,7 +103,7 @@ func TestUserBusiness(t *testing.T) {
 		Name:       "name1",
 		Miner:      "f01234",
 		Comment:    "this is a comment",
-		State:      0,
+		State:      1,
 		SourceType: 1,
 	})
 	if err != nil {
@@ -113,7 +115,7 @@ func TestUserBusiness(t *testing.T) {
 		Name:       "name2",
 		Miner:      "f02345",
 		Comment:    "this is a comment",
-		State:      0,
+		State:      1,
 		SourceType: 1,
 	})
 	if err != nil {
@@ -144,4 +146,36 @@ func TestUserBusiness(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	miner, err := cli.GetMiner(&auth.GetMinerRequest{
+		Miner: "f02345",
+	})
+	if err != nil {
+		t.Fatalf("get miner err:%s", err)
+	}
+	assert.DeepEqual(t, users[1], miner)
+
+	has, err := cli.HasMiner(&auth.HasMinerRequest{
+		Miner: "f02345",
+	})
+	if err != nil {
+		t.Fatalf("has miner err:%s", err)
+	}
+	assert.DeepEqual(t, true, has)
+
+	has, err = cli.HasMiner(&auth.HasMinerRequest{
+		Miner: "f023452",
+	})
+	if err != nil {
+		t.Fatalf("has miner err:%s", err)
+	}
+	assert.DeepEqual(t, false, has)
+
+	user, err := cli.GetUser(&auth.GetUserRequest{
+		Name: "name2",
+	})
+	if err != nil {
+		t.Fatalf("get user err:%s", err)
+	}
+	assert.DeepEqual(t, users[1], user)
 }

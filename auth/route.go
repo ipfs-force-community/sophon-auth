@@ -21,6 +21,11 @@ func InitRouter(app OAuthApp) http.Handler {
 	userGroup.PUT("/new", app.CreateUser)
 	userGroup.POST("/update", app.UpdateUser)
 	userGroup.GET("/list", app.ListUsers)
+	userGroup.GET("", app.GetUser)
+
+	minerGroup := router.Group("/miner")
+	minerGroup.GET("/has-miner", app.HasMiner)
+	minerGroup.GET("", app.GetMiner)
 	return router
 }
 

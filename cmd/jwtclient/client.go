@@ -71,3 +71,43 @@ func (c *JWTClient) ListUsers(req *auth.ListUsersRequest) (auth.ListUsersRespons
 	}
 	return nil, resp.Error().(*errcode.ErrMsg).Err()
 }
+
+func (c *JWTClient) GetUser(req *auth.GetUserRequest) (*auth.OutputUser, error) {
+	resp, err := c.cli.R().SetQueryParams(map[string]string{
+		"name": req.Name,
+	}).SetResult(&auth.OutputUser{}).SetError(&errcode.ErrMsg{}).Get("/user")
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusOK {
+		return resp.Result().(*auth.OutputUser), nil
+	}
+	return nil, resp.Error().(*errcode.ErrMsg).Err()
+}
+
+func (c *JWTClient) GetMiner(req *auth.GetMinerRequest) (*auth.OutputUser, error) {
+	resp, err := c.cli.R().SetQueryParams(map[string]string{
+		"miner": req.Miner,
+	}).SetResult(&auth.OutputUser{}).SetError(&errcode.ErrMsg{}).Get("/miner")
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusOK {
+		return resp.Result().(*auth.OutputUser), nil
+	}
+	return nil, resp.Error().(*errcode.ErrMsg).Err()
+}
+
+func (c *JWTClient) HasMiner(req *auth.HasMinerRequest) (bool, error) {
+	var has bool
+	resp, err := c.cli.R().SetQueryParams(map[string]string{
+		"miner": req.Miner,
+	}).SetResult(&has).SetError(&errcode.ErrMsg{}).Get("/has-miner")
+	if err != nil {
+		return false, err
+	}
+	if resp.StatusCode() == http.StatusOK {
+		return *resp.Result().(*bool), nil
+	}
+	return false, resp.Error().(*errcode.ErrMsg).Err()
+}

@@ -15,6 +15,9 @@ type OAuthApp interface {
 	UpdateUser(c *gin.Context)
 	CreateUser(c *gin.Context)
 	ListUsers(c *gin.Context)
+	GetMiner(c *gin.Context)
+	HasMiner(c *gin.Context)
+	GetUser(c *gin.Context)
 }
 
 type oauthApp struct {
@@ -112,6 +115,7 @@ func (o *oauthApp) Tokens(c *gin.Context) {
 	}
 	SuccessResponse(c, res)
 }
+
 func (o *oauthApp) CreateUser(c *gin.Context) {
 	req := new(CreateUserRequest)
 	if err := c.ShouldBind(req); err != nil {
@@ -142,11 +146,53 @@ func (o *oauthApp) UpdateUser(c *gin.Context) {
 
 func (o *oauthApp) ListUsers(c *gin.Context) {
 	req := new(ListUsersRequest)
-	if err := c.ShouldBind(req); err != nil {
+	if err := c.ShouldBindQuery(req); err != nil {
 		BadResponse(c, err)
 		return
 	}
 	res, err := o.srv.ListUsers(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	SuccessResponse(c, res)
+}
+
+func (o *oauthApp) GetMiner(c *gin.Context) {
+	req := new(GetMinerRequest)
+	if err := c.ShouldBindQuery(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+	res, err := o.srv.GetMiner(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	SuccessResponse(c, res)
+}
+
+func (o *oauthApp) HasMiner(c *gin.Context) {
+	req := new(HasMinerRequest)
+	if err := c.ShouldBindQuery(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+	res, err := o.srv.HasMiner(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	SuccessResponse(c, res)
+}
+
+func (o *oauthApp) GetUser(c *gin.Context) {
+	req := new(GetUserRequest)
+	if err := c.ShouldBindQuery(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+	res, err := o.srv.GetUser(c, req)
 	if err != nil {
 		BadResponse(c, err)
 		return

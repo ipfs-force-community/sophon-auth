@@ -3,6 +3,7 @@ package storage
 import (
 	"fmt"
 	"github.com/dgraph-io/badger/v3"
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/core"
 	"golang.org/x/xerrors"
 	"time"
@@ -237,6 +238,91 @@ func (s *badgerStore) ListUsers(skip, limit int64, state int, sourceType core.So
 	})
 	if err != nil {
 		return nil, err
+	}
+	return data, nil
+}
+
+func (s *badgerStore) HasMiner(maddr address.Address) (bool, error) {
+	var has bool
+	err := s.db.View(func(txn *badger.Txn) error {
+		opts := badger.IteratorOptions{
+			PrefetchValues: true,
+			Reverse:        false,
+			AllVersions:    false,
+			Prefix:         []byte(PrefixUser),
+		}
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			k := item.Key()
+			val := new([]byte)
+			err := item.Value(func(v []byte) error {
+				fmt.Printf("key=%s, value=%s\n", k, v)
+				val = &v
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+			user := new(User)
+			err = user.FromBytes(*val)
+			if err != nil {
+				return err
+			}
+			if user.Miner == maddr.String() && user.State == 1 {
+				has = true
+				return nil
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return false, err
+	}
+	return has, nil
+}
+
+func (s *badgerStore) GetMiner(maddr address.Address) (*User, error) {
+	var data *User
+	err := s.db.View(func(txn *badger.Txn) error {
+		opts := badger.IteratorOptions{
+			PrefetchValues: true,
+			Reverse:        false,
+			AllVersions:    false,
+			Prefix:         []byte(PrefixUser),
+		}
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			k := item.Key()
+			val := new([]byte)
+			err := item.Value(func(v []byte) error {
+				fmt.Printf("key=%s, value=%s\n", k, v)
+				val = &v
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+			user := new(User)
+			err = user.FromBytes(*val)
+			if err != nil {
+				return err
+			}
+			if user.Miner == maddr.String() {
+				data = user
+				return nil
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if data == nil {
+		return nil, xerrors.Errorf("miner %s not exit", maddr)
 	}
 	return data, nil
 }

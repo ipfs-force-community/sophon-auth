@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/storage"
@@ -37,6 +38,9 @@ type OAuthService interface {
 	CreateUser(ctx context.Context, req *CreateUserRequest) (*CreateUserResponse, error)
 	UpdateUser(ctx context.Context, req *UpdateUserRequest) error
 	ListUsers(ctx context.Context, req *ListUsersRequest) (ListUsersResponse, error)
+	GetMiner(ctx context.Context, req *GetMinerRequest) (*OutputUser, error)
+	HasMiner(ctx context.Context, req *HasMinerRequest) (bool, error)
+	GetUser(ctx context.Context, req *GetUserRequest) (*OutputUser, error)
 }
 
 type jwtOAuth struct {
@@ -199,6 +203,38 @@ func (o *jwtOAuth) ListUsers(ctx context.Context, req *ListUsersRequest) (ListUs
 	}
 	return o.mp.ToOutPutUsers(users), nil
 
+}
+
+func (o *jwtOAuth) GetMiner(ctx context.Context, req *GetMinerRequest) (*OutputUser, error) {
+	addr, err := address.NewFromString(req.Miner)
+	if err != nil {
+		return nil, err
+	}
+	user, err := o.store.GetMiner(addr)
+	if err != nil {
+		return nil, err
+	}
+	return o.mp.ToOutPutUser(user), nil
+}
+
+func (o *jwtOAuth) HasMiner(ctx context.Context, req *HasMinerRequest) (bool, error) {
+	addr, err := address.NewFromString(req.Miner)
+	if err != nil {
+		return false, err
+	}
+	has, err := o.store.HasMiner(addr)
+	if err != nil {
+		return false, err
+	}
+	return has, nil
+}
+
+func (o *jwtOAuth) GetUser(ctx context.Context, req *GetUserRequest) (*OutputUser, error) {
+	user, err := o.store.GetUser(req.Name)
+	if err != nil {
+		return nil, err
+	}
+	return o.mp.ToOutPutUser(user), nil
 }
 
 func DecodeToBytes(enc []byte) ([]byte, error) {

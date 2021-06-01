@@ -5,6 +5,7 @@ go 1.15
 require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/dgraph-io/badger/v3 v3.2011.1
+	github.com/filecoin-project/go-address v0.0.5 // indirect
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/gbrlsnchs/jwt/v3 v3.0.0
 	github.com/gin-gonic/gin v1.6.3

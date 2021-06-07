@@ -31,10 +31,10 @@ func newMySQLStore(cnf *config.DBConfig) (Store, error) {
 		db:  db,
 		pkg: util.PackagePath(mysqlStore{}),
 	}
-	err = store.initTable()
+	/*err = store.initTable()
 	if err != nil {
 		return nil, err
-	}
+	}*/
 	return store, nil
 }
 

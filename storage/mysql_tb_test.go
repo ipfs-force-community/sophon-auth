@@ -35,6 +35,9 @@ func TestInitTable(t *testing.T) {
 }
 
 func TestCompressionDDL(t *testing.T) {
+	if os.Getenv("CI") == "test" {
+		t.Skip()
+	}
 	str := "CREATE TABLE `users` (\n  `id` varchar(255) NOT NULL,\n  `name` varchar(255) DEFAULT NULL,\n  `miner` varchar(255) DEFAULT NULL,\n  `comment` varchar(255) DEFAULT NULL,\n  `createtime` timestamp NULL DEFAULT NULL,\n  `upadtetime` timestamp NULL DEFAULT NULL,\n  PRIMARY KEY (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8  table=users"
 	str = compressionDDL(str)
 	assert.Equal(t, str, "CREATETABLEusers(idvarchar(255)NOTNULL,namevarchar(255)DEFAULTNULL,minervarchar(255)DEFAULTNULL,commentvarchar(255)DEFAULTNULL,createtimetimestampNULLDEFAULTNULL,upadtetimetimestampNULLDEFAULTNULL,PRIMARYKEY(id))ENGINE=InnoDBDEFAULTCHARSET=utf8table=users")

@@ -47,12 +47,15 @@ func checkTableExist(db *sqlx.DB, table string) (bool, error) {
 	}
 	// check the table is up to date
 	if !compareDDL(tb.DDL, tables[table]) {
+
 		log.WithFields(log.Fields{
 			"current table": tb.Table,
 		}).Warn(strings.ReplaceAll(tb.DDL, "`", ""))
+
 		log.WithFields(log.Fields{
 			"newest table": tb.Table,
 		}).Warn(tables[table])
+
 		return false, fmt.Errorf("table %s out of date", table)
 	}
 	return true, nil
@@ -81,8 +84,7 @@ CREATE TABLE token (
   perm varchar(50) NOT NULL,
   extra varchar(255) DEFAULT NULL,
   UNIQUE KEY token_token_IDX (token) USING HASH
-) ENGINE=InnoDB
-  DEFAULT CHARSET = utf8;
+) ENGINE=InnoDB DEFAULT CHARSET = utf8;
 `
 
 const userSchema = `
@@ -97,6 +99,7 @@ CREATE TABLE users (
   stype tinyint(4) NOT NULL DEFAULT '0',
   PRIMARY KEY (id),
   UNIQUE KEY users_name_IDX (name) USING BTREE
+  UNIQUE KEY users_miner_IDX (miner) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 `

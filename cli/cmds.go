@@ -69,6 +69,7 @@ var tokensCmd = &cli.Command{
 		&cli.UintFlag{
 			Name:  "limit",
 			Value: 20,
+			Usage: "max value:100 (default: 20)",
 		},
 	},
 	Action: func(ctx *cli.Context) error {

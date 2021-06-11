@@ -122,8 +122,8 @@ func (o *Page) GetSkip() int64 {
 	return o.Skip
 }
 func (o *Page) GetLimit() int64 {
-	if o.Limit < 0 || o.Limit > 20 {
-		o.Limit = 20
+	if o.Limit < 0 || o.Limit > 100 {
+		o.Limit = 100
 	}
 	return o.Limit
 }

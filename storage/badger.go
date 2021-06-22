@@ -41,21 +41,24 @@ func (s *badgerStore) Put(kp *KeyPair) error {
 	if err != nil {
 		return xerrors.Errorf("failed to marshal time :%s", err)
 	}
+	key := s.tokenKey(kp.Token.String())
 	return s.db.Update(func(txn *badger.Txn) error {
-		return txn.Set(kp.Token.Bytes(), val)
+		return txn.Set(key, val)
 	})
 }
 
 func (s *badgerStore) Delete(token Token) error {
+	key := s.tokenKey(token.String())
 	return s.db.Update(func(txn *badger.Txn) error {
-		return txn.Delete(token.Bytes())
+		return txn.Delete(key)
 	})
 }
 
 func (s *badgerStore) Has(token Token) (bool, error) {
+	key := s.tokenKey(token.String())
 	var value []byte
 	err := s.db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get(token.Bytes())
+		item, err := txn.Get(key)
 		if err != nil {
 			return err
 		}
@@ -75,7 +78,12 @@ func (s *badgerStore) Has(token Token) (bool, error) {
 func (s *badgerStore) List(skip, limit int64) ([]*KeyPair, error) {
 	data := make(chan *KeyPair, limit)
 	err := s.db.View(func(txn *badger.Txn) error {
-		opts := badger.DefaultIteratorOptions
+		opts := badger.IteratorOptions{
+			PrefetchValues: true,
+			Reverse:        false,
+			AllVersions:    false,
+			Prefix:         []byte(PrefixToken),
+		}
 		it := txn.NewIterator(opts)
 		defer it.Close()
 		idx := int64(0)

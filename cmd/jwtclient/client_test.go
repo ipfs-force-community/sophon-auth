@@ -1,6 +1,7 @@
 package jwtclient
 
 import (
+	"context"
 	"github.com/filecoin-project/venus-auth/auth"
 	"os"
 	"testing"
@@ -18,7 +19,8 @@ func TestClient_Verify(t *testing.T) {
 	if os.Getenv("CI") == "test" {
 		t.Skip()
 	}
-	res, err := MockCli.Verify("miner-1", "mockSvc", "192.168.22.22", "192.168.22.21",
+
+	res, err := MockCli.Verify(context.TODO(),
 		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiUmVubmJvbiIsInBlcm0iOiJhZG1pbiIsImV4dCI6ImV5SkJiR3h2ZH"+
 			"lJNld5SnlaV0ZrSWl3aWQzSnBkR1VpTENKemFXZHVJaXdpWVdSdGFXNGlYWDAifQ.gONkC1v8AuY-ZP2WhU62EonWmyPeOW1pFhnRM-Fl7ko")
 	if err != nil {
@@ -40,13 +42,13 @@ func TestJWTClient_ListUsers(t *testing.T) {
 	}
 }
 
-//nolint
+// nolint
 func BenchmarkJWTClient_Verify(b *testing.B) {
 	if os.Getenv("CI") == "test" {
 		b.Skip()
 	}
 	for i := 0; i < b.N; i++ {
-		MockCli.Verify("miner-1", "mockSvc", "192.168.22.22", "192.168.22.21",
+		MockCli.Verify(context.TODO(),
 			"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiUmVubmJvbiIsInBlcm0iOiJhZG1pbiIsImV4dCI6ImV5SkJiR3h2ZH"+
 				"lJNld5SnlaV0ZrSWl3aWQzSnBkR1VpTENKemFXZHVJaXdpWVdSdGFXNGlYWDAifQ.gONkC1v8AuY-ZP2WhU62EonWmyPeOW1pFhnRM-Fl7ko")
 

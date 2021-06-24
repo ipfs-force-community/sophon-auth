@@ -43,11 +43,11 @@ func verifyInterceptor() gin.HandlerFunc {
 func verifyLog(begin time.Time, c *gin.Context, writer *bytes.Buffer) {
 	fields := log.Fields{
 		core.FieldIP:      c.ClientIP(),
-		core.FieldSpanId:  c.Request.Header["spanId"],  //nolint
-		core.FieldPreHost: c.Request.Header["preHost"], //nolint
+		core.FieldSpanId:  c.Request.Header["spanId"],  // nolint
+		core.FieldPreHost: c.Request.Header["preHost"], // nolint
 		core.FieldElapsed: time.Since(begin).Milliseconds(),
 		core.FieldToken:   c.Request.Form.Get("token"),
-		core.FieldSvcName: c.Request.Header["svcName"], //nolint
+		core.FieldSvcName: c.Request.Header["svcName"], // nolint
 	}
 	fields[core.MTMethod] = "verify"
 	errs := c.Errors

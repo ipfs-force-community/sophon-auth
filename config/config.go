@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"github.com/BurntSushi/toml"
+	"github.com/ipfs-force-community/metrics"
 	"golang.org/x/xerrors"
 	"io"
 	"io/ioutil"
@@ -13,13 +14,14 @@ import (
 )
 
 type Config struct {
-	Port         string        `json:"port"`
-	Secret       string        `json:"secret"`
-	ReadTimeout  time.Duration `json:"readTimeout"`
-	WriteTimeout time.Duration `json:"writeTimeout"`
-	IdleTimeout  time.Duration `json:"idleTimeout"`
-	Log          *LogConfig    `json:"log"`
-	DB           *DBConfig     `json:"db"`
+	Port         string               `json:"port"`
+	Secret       string               `json:"secret"`
+	ReadTimeout  time.Duration        `json:"readTimeout"`
+	WriteTimeout time.Duration        `json:"writeTimeout"`
+	IdleTimeout  time.Duration        `json:"idleTimeout"`
+	Log          *LogConfig           `json:"log"`
+	DB           *DBConfig            `json:"db"`
+	Trace        *metrics.TraceConfig `json:"traceConfig"`
 }
 
 type DBType = string
@@ -58,6 +60,12 @@ func DefaultConfig() (*Config, error) {
 		ReadTimeout:  time.Minute,
 		WriteTimeout: time.Minute,
 		IdleTimeout:  time.Minute,
+		Trace: &metrics.TraceConfig{
+			JaegerTracingEnabled: false,
+			ProbabilitySampler:   1.0,
+			JaegerEndpoint:       "localhost:6831",
+			ServerName:           "venus-auth",
+		},
 		Log: &LogConfig{
 			LogLevel:   "trace",
 			HookSwitch: false,

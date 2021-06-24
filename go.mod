@@ -1,6 +1,6 @@
 module github.com/filecoin-project/venus-auth
 
-go 1.15
+go 1.16
 
 require (
 	github.com/BurntSushi/toml v0.3.1
@@ -34,3 +34,5 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gotest.tools v2.2.0+incompatible
 )
+
+replace github.com/google/flatbuffers => github.com/google/flatbuffers v1.12.1

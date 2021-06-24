@@ -106,6 +106,7 @@ func (lc *localClient) CreateUser(req *auth.CreateUserRequest) (*auth.CreateUser
 	}
 	return nil, resp.Error().(*errcode.ErrMsg).Err()
 }
+
 func (lc *localClient) UpdateUser(req *auth.UpdateUserRequest) error {
 	resp, err := lc.cli.R().SetBody(req).SetError(&errcode.ErrMsg{}).Post("/user/update")
 	if err != nil {
@@ -132,4 +133,44 @@ func (lc *localClient) ListUsers(req *auth.ListUsersRequest) (auth.ListUsersResp
 		return *(resp.Result().(*auth.ListUsersResponse)), nil
 	}
 	return nil, resp.Error().(*errcode.ErrMsg).Err()
+}
+
+func (lc *localClient) GetUser(req *auth.GetUserRequest) (*auth.OutputUser, error) {
+	resp, err := lc.cli.R().SetQueryParams(map[string]string{
+		"name": req.Name,
+	}).SetResult(&auth.OutputUser{}).SetError(&errcode.ErrMsg{}).Get("/user")
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusOK {
+		return resp.Result().(*auth.OutputUser), nil
+	}
+	return nil, resp.Error().(*errcode.ErrMsg).Err()
+}
+
+func (lc *localClient) GetMiner(req *auth.GetMinerRequest) (*auth.OutputUser, error) {
+	resp, err := lc.cli.R().SetQueryParams(map[string]string{
+		"miner": req.Miner,
+	}).SetResult(&auth.OutputUser{}).SetError(&errcode.ErrMsg{}).Get("/miner")
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusOK {
+		return resp.Result().(*auth.OutputUser), nil
+	}
+	return nil, resp.Error().(*errcode.ErrMsg).Err()
+}
+
+func (lc *localClient) HasMiner(req *auth.HasMinerRequest) (bool, error) {
+	var has bool
+	resp, err := lc.cli.R().SetQueryParams(map[string]string{
+		"miner": req.Miner,
+	}).SetResult(&has).SetError(&errcode.ErrMsg{}).Get("/miner/has-miner")
+	if err != nil {
+		return false, err
+	}
+	if resp.StatusCode() == http.StatusOK {
+		return *resp.Result().(*bool), nil
+	}
+	return false, resp.Error().(*errcode.ErrMsg).Err()
 }

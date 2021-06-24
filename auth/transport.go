@@ -81,3 +81,15 @@ type OutputUser struct {
 	CreateTime int64           `json:"createTime"`
 	UpdateTime int64           `json:"updateTime"`
 }
+
+type GetUserRequest struct {
+	Name string `form:"name"`
+}
+
+type HasMinerRequest struct {
+	Miner string `form:"miner"`
+}
+
+type GetMinerRequest struct {
+	Miner string `form:"miner"`
+}

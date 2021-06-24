@@ -3,6 +3,7 @@ package storage
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/log"
@@ -31,6 +32,8 @@ type Store interface {
 	//user
 	HasUser(name string) (bool, error)
 	GetUser(name string) (*User, error)
+	HasMiner(maddr address.Address) (bool, error)
+	GetMiner(maddr address.Address) (*User, error)
 	PutUser(*User) error
 	UpdateUser(*User) error
 	ListUsers(skip, limit int64, state int, sourceType core.SourceType, code core.KeyCode) ([]*User, error)

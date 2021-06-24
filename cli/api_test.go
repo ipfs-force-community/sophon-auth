@@ -1,11 +1,6 @@
 package cli
 
 import (
-	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/venus-auth/auth"
-	"github.com/filecoin-project/venus-auth/config"
-	"github.com/filecoin-project/venus-auth/core"
-	"github.com/filecoin-project/venus-auth/util"
 	"github.com/gin-gonic/gin"
 	"gotest.tools/assert"
 	"io/ioutil"
@@ -14,6 +9,14 @@ import (
 	"os"
 	"strconv"
 	"testing"
+
+	"github.com/filecoin-project/go-address"
+
+	"github.com/filecoin-project/venus-auth/auth"
+	"github.com/filecoin-project/venus-auth/config"
+	"github.com/filecoin-project/venus-auth/core"
+	"github.com/filecoin-project/venus-auth/storage"
+	"github.com/filecoin-project/venus-auth/util"
 )
 
 var mockCnf *config.Config
@@ -72,18 +75,19 @@ func TestTokenBusiness(t *testing.T) {
 	if err != nil {
 		t.Fatalf("gen token err:%s", err)
 	}
-	t.Logf("gen token: %s", tk1)
 
 	tk2, err := cli.GenerateToken("Rennbon2", core.PermRead, "custom params")
 	if err != nil {
 		t.Fatalf("gen token err:%s", err)
 	}
+
 	tks, err := cli.Tokens(0, 10)
 	if err != nil {
 		t.Fatalf("get tokens err:%s", err)
 	}
-	assert.DeepEqual(t, tk1, tks[0].Token)
-	assert.DeepEqual(t, tk2, tks[1].Token)
+
+	assert.DeepEqual(t, storage.PrefixToken+tk1, tks[0].Token)
+	assert.DeepEqual(t, storage.PrefixToken+tk2, tks[1].Token)
 
 	err = cli.RemoveToken(tk1)
 	if err != nil {
@@ -94,7 +98,7 @@ func TestTokenBusiness(t *testing.T) {
 		t.Fatalf("get tokens err:%s", err)
 	}
 	assert.Equal(t, len(tks2), 1)
-	assert.DeepEqual(t, tks2[0].Token, tk2)
+	assert.DeepEqual(t, tks2[0].Token, storage.PrefixToken+tk2)
 }
 
 func TestUserBusiness(t *testing.T) {

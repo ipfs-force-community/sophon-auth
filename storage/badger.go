@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"fmt"
 	"github.com/dgraph-io/badger/v3"
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/core"
@@ -94,7 +93,6 @@ func (s *badgerStore) List(skip, limit int64) ([]*KeyPair, error) {
 				k := item.Key()
 				val := new([]byte)
 				err := item.Value(func(v []byte) error {
-					fmt.Printf("key=%s, value=%s\n", k, v)
 					val = &v
 					return nil
 				})
@@ -204,10 +202,9 @@ func (s *badgerStore) ListUsers(skip, limit int64, state int, sourceType core.So
 		for it.Rewind(); it.Valid() && idx < skip+limit; it.Next() {
 			if idx >= skip {
 				item := it.Item()
-				k := item.Key()
+				// k := item.Key()
 				val := new([]byte)
 				err := item.Value(func(v []byte) error {
-					fmt.Printf("key=%s, value=%s\n", k, v)
 					val = &v
 					return nil
 				})
@@ -263,10 +260,10 @@ func (s *badgerStore) HasMiner(maddr address.Address) (bool, error) {
 		defer it.Close()
 		for it.Rewind(); it.Valid(); it.Next() {
 			item := it.Item()
-			k := item.Key()
+			// k := item.Key()
 			val := new([]byte)
 			err := item.Value(func(v []byte) error {
-				fmt.Printf("key=%s, value=%s\n", k, v)
+				// fmt.Printf("key=%s, value=%s\n", k, v)
 				val = &v
 				return nil
 			})
@@ -304,10 +301,10 @@ func (s *badgerStore) GetMiner(maddr address.Address) (*User, error) {
 		defer it.Close()
 		for it.Rewind(); it.Valid(); it.Next() {
 			item := it.Item()
-			k := item.Key()
+			// k := item.Key()
 			val := new([]byte)
 			err := item.Value(func(v []byte) error {
-				fmt.Printf("key=%s, value=%s\n", k, v)
+				// fmt.Printf("key=%s, value=%s\n", k, v)
 				val = &v
 				return nil
 			})

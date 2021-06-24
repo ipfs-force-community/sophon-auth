@@ -16,6 +16,8 @@ var Commands = []*cli.Command{
 	addUserCmd,
 	updateUserCmd,
 	listUsersCmd,
+	getUserCmd,
+	hasMinerCmd,
 }
 
 var genTokenCmd = &cli.Command{
@@ -283,6 +285,62 @@ var listUsersCmd = &cli.Command{
 			fmt.Println("updateTime:", time.Unix(v.CreateTime, 0).Format(time.RFC1123))
 			fmt.Println()
 		}
+		return nil
+	},
+}
+
+var getUserCmd = &cli.Command{
+	Name:  "getUser",
+	Usage: "getUser by name",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:     "name",
+			Required: true,
+		},
+	},
+	Action: func(ctx *cli.Context) error {
+		client, err := GetCli(ctx)
+		if err != nil {
+			return err
+		}
+		name := ctx.String("name")
+		user, err := client.GetUser(&auth.GetUserRequest{Name: name})
+		if err != nil {
+			return err
+		}
+
+		fmt.Println("name:", user.Name)
+		fmt.Println("miner:", user.Miner)
+		fmt.Println("sourceType:", user.SourceType, "\t// miner:1")
+		fmt.Println("state", user.State, "\t// 0: disable, 1: enable")
+		fmt.Println("comment:", user.Comment)
+		fmt.Println("createTime:", time.Unix(user.CreateTime, 0).Format(time.RFC1123))
+		fmt.Println("updateTime:", time.Unix(user.CreateTime, 0).Format(time.RFC1123))
+		fmt.Println()
+		return nil
+	},
+}
+
+var hasMinerCmd = &cli.Command{
+	Name:  "hasMiner",
+	Usage: "check miner exit",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:     "miner",
+			Required: true,
+		},
+	},
+	Action: func(ctx *cli.Context) error {
+		client, err := GetCli(ctx)
+		if err != nil {
+			return err
+		}
+		name := ctx.String("miner")
+		has, err := client.HasMiner(&auth.HasMinerRequest{Miner: name})
+		if err != nil {
+			return err
+		}
+		fmt.Println(has)
 		return nil
 	},
 }

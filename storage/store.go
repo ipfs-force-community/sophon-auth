@@ -29,7 +29,7 @@ type Store interface {
 	Has(token Token) (bool, error)
 	List(skip, limit int64) ([]*KeyPair, error)
 
-	//user
+	// user
 	HasUser(name string) (bool, error)
 	GetUser(name string) (*User, error)
 	HasMiner(maddr address.Address) (bool, error)
@@ -84,6 +84,9 @@ type User struct {
 	State      int             `db:"state"` // 0: disable, 1: enable
 	CreateTime time.Time       `db:"createTime"`
 	UpdateTime time.Time       `db:"updateTime"`
+
+	Burst int `db:"burst"`
+	Rate  int `db:"rate"`
 }
 
 func (t *User) Bytes() ([]byte, error) {

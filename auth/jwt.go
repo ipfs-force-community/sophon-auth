@@ -165,6 +165,8 @@ func (o *jwtOAuth) CreateUser(ctx context.Context, req *CreateUserRequest) (*Cre
 		Comment:    req.Comment,
 		SourceType: req.SourceType,
 		State:      req.State,
+		Burst:      req.Burst,
+		Rate:       req.Rate,
 		CreateTime: time.Now().Local(),
 		UpdateTime: time.Now().Local(),
 	}
@@ -192,6 +194,12 @@ func (o *jwtOAuth) UpdateUser(ctx context.Context, req *UpdateUserRequest) error
 	}
 	if req.KeySum&8 == 8 {
 		user.SourceType = req.SourceType
+	}
+	if req.KeySum&16 == 16 {
+		user.Burst = req.Burst
+	}
+	if req.KeySum&32 == 32 {
+		user.Rate = req.Rate
 	}
 	return o.store.UpdateUser(user)
 }

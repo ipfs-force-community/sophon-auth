@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/core"
@@ -13,6 +15,7 @@ import (
 	"github.com/gbrlsnchs/jwt/v3"
 	"github.com/google/uuid"
 	"golang.org/x/xerrors"
+	"strings"
 	"time"
 )
 
@@ -252,4 +255,20 @@ func DecodeToBytes(enc []byte) ([]byte, error) {
 		return nil, err
 	}
 	return dec, nil
+}
+
+func JwtUserFromToken(token string) (string, error) {
+	sks := strings.Split(token, ".")
+	if len(sks) < 1 {
+		return "", fmt.Errorf("can't parse user from input token")
+
+	}
+	dec, err := DecodeToBytes([]byte(sks[1]))
+	if err != nil {
+		return "", err
+	}
+	payload := &JWTPayload{}
+	err = json.Unmarshal(dec, payload)
+
+	return payload.Name, err
 }

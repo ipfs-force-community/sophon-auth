@@ -9,8 +9,10 @@ import (
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/log"
 	"github.com/gin-gonic/gin"
+	"github.com/ipfs-force-community/metrics"
 	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli/v2"
+	"go.opencensus.io/plugin/ochttp"
 	"net/http"
 	"os"
 	"path"
@@ -105,6 +107,20 @@ func run(cliCtx *cli.Context) error {
 		log.Fatalf("Failed to init venus-auth: %s", err)
 	}
 	router := auth.InitRouter(app)
+
+	if cnf.Trace != nil && cnf.Trace.JaegerTracingEnabled {
+		log.Infof("register jaeger-tracing exporter to %s, with node-name:%s",
+			cnf.Trace.JaegerEndpoint, cnf.Trace.ServerName)
+		if exporter, err := metrics.RegisterJaeger("venus-auth", cnf.Trace); err != nil {
+			log.Fatalf("RegisterJaegerExporter failed:%s", err.Error())
+		} else {
+			defer metrics.UnregisterJaeger(exporter)
+		}
+		router = &ochttp.Handler{
+			Handler: router,
+		}
+	}
+
 	server := &http.Server{
 		Addr:         ":" + cnf.Port,
 		Handler:      router,

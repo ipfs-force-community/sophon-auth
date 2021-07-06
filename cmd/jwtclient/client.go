@@ -1,11 +1,14 @@
 package jwtclient
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/errcode"
 	"github.com/go-resty/resty/v2"
+	"go.opencensus.io/plugin/ochttp"
+	"go.opencensus.io/trace"
 	"net/http"
 	"strconv"
 )
@@ -17,7 +20,8 @@ type JWTClient struct {
 func NewJWTClient(url string) *JWTClient {
 	client := resty.New().
 		SetHostURL(url).
-		SetHeader("Accept", "application/json")
+		SetHeader("Accept", "application/json").
+		SetTransport(&ochttp.Transport{})
 
 	return &JWTClient{
 		cli: client,
@@ -30,27 +34,31 @@ func NewJWTClient(url string) *JWTClient {
 // @preHost: the IP of the request server
 // @host: local service IP
 // @token: jwt token gen from this service
-func (c *JWTClient) Verify(spanId, serviceName, preHost, host, token string) (*auth.VerifyResponse, error) {
-	response, err := c.cli.R().SetHeader("X-Forwarded-For", host).
-		SetHeader("X-Real-Ip", host).
-		SetHeader("spanId", spanId).
-		SetHeader("preHost", preHost).
-		SetHeader("svcName", serviceName).
-		SetHeader("Origin", host).
-		SetFormData(map[string]string{
-			"token": token,
-		}).Post("/verify")
+func (c *JWTClient) Verify(ctx context.Context, token string) (*auth.VerifyResponse, error) {
+	ctx, span := trace.StartSpan(ctx, "JWTClient.verify",
+		func(so *trace.StartOptions) { so.Sampler = trace.AlwaysSample() })
+	defer span.End()
+
+	req := c.cli.R().SetContext(ctx).
+		SetFormData(map[string]string{"token": token})
+
+	response, err := req.Post("/verify")
+
 	if err != nil {
 		return nil, err
 	}
 	switch response.StatusCode() {
 	case http.StatusOK:
 		var res = new(auth.VerifyResponse)
-		response.Body()
 		err = json.Unmarshal(response.Body(), res)
+		span.AddAttributes(trace.StringAttribute("Account", res.Name))
 		return res, err
 	default:
 		response.Result()
+		span.SetStatus(trace.Status{
+			Code:    trace.StatusCodeUnauthenticated,
+			Message: string(response.Body()),
+		})
 		return nil, fmt.Errorf("response code is : %d, msg:%s", response.StatusCode(), response.Body())
 	}
 }

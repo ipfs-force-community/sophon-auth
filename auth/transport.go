@@ -59,6 +59,9 @@ type CreateUserRequest struct {
 	Comment    string          `form:"comment"`
 	State      int             `form:"state"` // 0: disable, 1: enable
 	SourceType core.SourceType `form:"sourceType"`
+
+	Burst int `form:"burst"` // rate limit:burst
+	Rate  int `from:"rate"`  // rate limit:rate
 }
 type CreateUserResponse = OutputUser
 
@@ -69,6 +72,8 @@ type UpdateUserRequest struct {
 	Comment    string          `form:"comment"`    // keyCode:2
 	State      int             `form:"state"`      // keyCode:4
 	SourceType core.SourceType `form:"sourceType"` // keyCode:8
+	Burst      int             `form:"burst"`      // keyCode:16
+	Rate       int             `form:"burst"`      // keyCode:32
 }
 
 type OutputUser struct {
@@ -80,6 +85,9 @@ type OutputUser struct {
 	State      int             `json:"state"`
 	CreateTime int64           `json:"createTime"`
 	UpdateTime int64           `json:"updateTime"`
+
+	Burst int `form:"burst"`
+	Rate  int `form:"rate"`
 }
 
 type GetUserRequest struct {

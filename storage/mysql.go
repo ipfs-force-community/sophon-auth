@@ -147,7 +147,9 @@ func (s *mysqlStore) UpdateUser(user *User) error {
 		comment=:comment, 
 		state=:state, 
 		stype=:stype, 
-		updateTime=:updateTime
+		updateTime=:updateTime,
+		burst=:burst,
+		rate=:rate                 
 		where name=:name`,
 		user)
 	if err != nil {
@@ -178,9 +180,9 @@ func (s *mysqlStore) UpdateUser(user *User) error {
 func (s *mysqlStore) PutUser(user *User) error {
 	res, err := s.db.NamedExec(`
 	INSERT INTO users 
-	(id, name, miner, comment, state, createTime, updateTime, stype) 
+	(id, name, miner, comment, state, createTime, updateTime, stype, burst, rate) 
 	VALUES 
-	(:id,:name,:miner,:comment,:state,:createTime,:updateTime,:stype )`,
+	(:id,:name,:miner,:comment,:state,:createTime,:updateTime,:stype,:burst,:rate )`,
 		user)
 	if err != nil {
 		log.WithFields(

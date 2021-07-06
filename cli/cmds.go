@@ -141,22 +141,32 @@ var addUserCmd = &cli.Command{
 			Name:  "sourceType",
 			Value: 0,
 		},
+		&cli.IntFlag{Name: "burst",
+			Usage:    "user request rate limit: capacity of bucket",
+			Required: true},
+		&cli.IntFlag{Name: "rate",
+			Usage:    "user request rate limit: rate of bucket per-second",
+			Required: true},
 	},
 	Action: func(ctx *cli.Context) error {
 		client, err := GetCli(ctx)
 		if err != nil {
 			return err
 		}
+
 		name := ctx.String("name")
 		miner := ctx.String("miner")
 		comment := ctx.String("comment")
 		sourceType := ctx.Int("sourceType")
+
 		user := &auth.CreateUserRequest{
 			Name:       name,
 			Miner:      miner,
 			Comment:    comment,
 			State:      0,
 			SourceType: sourceType,
+			Burst:      ctx.Int("burst"),
+			Rate:       ctx.Int("rate"),
 		}
 		res, err := client.CreateUser(user)
 		if err != nil {
@@ -187,6 +197,8 @@ var updateUserCmd = &cli.Command{
 		&cli.IntFlag{
 			Name: "state",
 		},
+		&cli.IntFlag{Name: "burst"},
+		&cli.IntFlag{Name: "rate"},
 	},
 	Action: func(ctx *cli.Context) error {
 		client, err := GetCli(ctx)
@@ -200,6 +212,8 @@ var updateUserCmd = &cli.Command{
 			Comment    string          `form:"comment"`    // keyCode:2
 			State      int             `form:"state"`      // keyCode:4
 			SourceType core.SourceType `form:"sourceType"` // keyCode:8
+			burst      int             `form:"burst"`      // keyCode:16
+			rate       int             `form:"rate"`       // keyCode:32
 		}*/
 		req := &auth.UpdateUserRequest{
 			Name: ctx.String("name"),
@@ -219,6 +233,14 @@ var updateUserCmd = &cli.Command{
 		if ctx.IsSet("sourceType") {
 			req.SourceType = ctx.Int("sourceType")
 			req.KeySum += 8
+		}
+		if ctx.IsSet("burst") {
+			req.Burst = ctx.Int("burst")
+			req.KeySum += 16
+		}
+		if ctx.IsSet("rate") {
+			req.Rate = ctx.Int("rate")
+			req.KeySum += 32
 		}
 		err = client.UpdateUser(req)
 		if err != nil {
@@ -280,6 +302,7 @@ var listUsersCmd = &cli.Command{
 			fmt.Println("miner:", v.Miner)
 			fmt.Println("sourceType:", v.SourceType, "\t// miner:1")
 			fmt.Println("state", v.State, "\t// 0: disable, 1: enable")
+			fmt.Printf("rate-limit burst:%d, rate:%d\n", v.Burst, v.Rate)
 			fmt.Println("comment:", v.Comment)
 			fmt.Println("createTime:", time.Unix(v.CreateTime, 0).Format(time.RFC1123))
 			fmt.Println("updateTime:", time.Unix(v.CreateTime, 0).Format(time.RFC1123))

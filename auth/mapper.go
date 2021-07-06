@@ -27,7 +27,8 @@ func (o *mapper) ToOutPutUser(m *storage.User) *OutputUser {
 		SourceType: m.SourceType,
 		CreateTime: m.CreateTime.Unix(),
 		UpdateTime: m.UpdateTime.Unix(),
-	}
+		Burst:      m.Burst,
+		Rate:       m.Rate}
 }
 
 func (o *mapper) ToOutPutUsers(arr []*storage.User) []*OutputUser {

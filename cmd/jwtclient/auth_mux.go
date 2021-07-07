@@ -65,13 +65,30 @@ func (authMux *AuthMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var tokenLocation = "local"
 
-	if perms, err = authMux.local.Verify(ctx, token); err != nil {
-		if perms, err = authMux.remote.Verify(ctx, token); err != nil {
-			authMux.Warnf("JWT Verification failed (originating from %s): %s", r.RemoteAddr, err)
-			w.WriteHeader(401)
-			return
+	if authMux.local != nil {
+		if perms, err = authMux.local.Verify(ctx, token); err != nil {
+			if authMux.remote != nil {
+				if perms, err = authMux.remote.Verify(ctx, token); err != nil {
+					authMux.Warnf("JWT Verification failed (originating from %s): %s", r.RemoteAddr, err)
+					w.WriteHeader(401)
+					return
+				}
+				tokenLocation = "remote"
+			} else {
+				authMux.Warnf("JWT Verification failed (originating from %s): %s", r.RemoteAddr, err)
+				w.WriteHeader(401)
+				return
+			}
 		}
-		tokenLocation = "remote"
+	} else {
+		if authMux.remote != nil {
+			if perms, err = authMux.remote.Verify(ctx, token); err != nil {
+				authMux.Warnf("JWT Verification failed (originating from %s): %s", r.RemoteAddr, err)
+				w.WriteHeader(401)
+				return
+			}
+			tokenLocation = "remote"
+		}
 	}
 
 	ctx = auth.WithPerm(ctx, perms)

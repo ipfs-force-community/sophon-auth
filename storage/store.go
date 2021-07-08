@@ -86,8 +86,8 @@ type User struct {
 	Comment    string          `gorm:"column:comment;type:varchar(256);"`
 	SourceType core.SourceType `gorm:"column:stype;type:tinyint(4);default:0;NOT NULL"`
 	State      int             `gorm:"column:state;type:tinyint(4);default:0;NOT NULL"`
-	Burst 	   int 			   `gorm:"column:burst;type:int;default:0;NOT NULL"`
-	Rate  	   int             `gorm:"column:rate;type:int;default:0;NOT NULL"`
+	Burst      int             `gorm:"column:burst;type:int;default:0;NOT NULL"`
+	Rate       int             `gorm:"column:rate;type:int;default:0;NOT NULL"`
 	CreateTime time.Time       `gorm:"column:createTime;type:datetime;index;NOT NULL"`
 	UpdateTime time.Time       `gorm:"column:updateTime;type:datetime;index;NOT NULL"`
 }

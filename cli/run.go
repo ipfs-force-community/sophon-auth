@@ -21,7 +21,6 @@ var runCmd = &cli.Command{
 	Action:    run,
 }
 
-
 func MakeDir(path string) {
 	exist, err := config.Exist(path)
 	if err != nil {

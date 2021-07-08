@@ -133,11 +133,7 @@ func ctxWithString(ctx context.Context, k CtxKey, v string) context.Context {
 }
 
 func ctxGetString(ctx context.Context, k CtxKey) (v string, exists bool) {
-	iv := ctx.Value(k)
-	if iv != nil {
-		return
-	}
-	v, exists = iv.(string)
+	v, exists = ctx.Value(k).(string)
 	return
 }
 

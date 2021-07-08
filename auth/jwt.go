@@ -7,16 +7,20 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
+
+	"github.com/filecoin-project/venus-auth/log"
+
 	"github.com/filecoin-project/go-address"
+	"github.com/gbrlsnchs/jwt/v3"
+	"github.com/google/uuid"
+	"golang.org/x/xerrors"
+
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/storage"
 	"github.com/filecoin-project/venus-auth/util"
-	"github.com/gbrlsnchs/jwt/v3"
-	"github.com/google/uuid"
-	"golang.org/x/xerrors"
-	"strings"
-	"time"
 )
 
 var (
@@ -67,6 +71,30 @@ func NewOAuthService(secret string, dbPath string, cnf *config.DBConfig) (OAuthS
 	if err != nil {
 		return nil, err
 	}
+
+	// TODO: remove it next version
+	skip, limit := int64(0), int64(20)
+	for {
+		kps, err := store.List(skip, limit)
+		if err != nil {
+			return nil, xerrors.Errorf("list token %v", err)
+		}
+		for _, kp := range kps {
+			if len(kp.Secret) == 0 {
+				kp.Secret = secret
+				log.Infof("update token %s secret %s", kp.Token, secret)
+				if err := store.UpdateToken(kp); err != nil {
+					return nil, xerrors.Errorf("update token(%s) %v", kp.Token, err)
+				}
+			}
+		}
+		if len(kps) == 0 {
+			break
+		}
+
+		skip += limit
+	}
+
 	jwtOAuthInstance = &jwtOAuth{
 		secret: jwt.NewHS256(sec),
 		store:  store,
@@ -76,7 +104,12 @@ func NewOAuthService(secret string, dbPath string, cnf *config.DBConfig) (OAuthS
 }
 
 func (o *jwtOAuth) GenerateToken(ctx context.Context, pl *JWTPayload) (string, error) {
-	tk, err := jwt.Sign(pl, o.secret)
+	// one token, one secret
+	secret, err := config.RandSecret()
+	if err != nil {
+		return "", xerrors.Errorf("rand secret %v", err)
+	}
+	tk, err := jwt.Sign(pl, jwt.NewHS256(secret))
 	if err != nil {
 		return core.EmptyString, xerrors.Errorf("gen token failed :%s", err)
 	}
@@ -88,7 +121,8 @@ func (o *jwtOAuth) GenerateToken(ctx context.Context, pl *JWTPayload) (string, e
 	if has {
 		return token.String(), nil
 	}
-	err = o.store.Put(&storage.KeyPair{Token: token, CreateTime: time.Now(), Name: pl.Name, Perm: pl.Perm, Extra: pl.Extra})
+
+	err = o.store.Put(&storage.KeyPair{Token: token, Secret: hex.EncodeToString(secret), CreateTime: time.Now(), Name: pl.Name, Perm: pl.Perm, Extra: pl.Extra})
 	if err != nil {
 		return core.EmptyString, xerrors.Errorf("store token failed :%s", err)
 	}
@@ -98,14 +132,16 @@ func (o *jwtOAuth) GenerateToken(ctx context.Context, pl *JWTPayload) (string, e
 func (o *jwtOAuth) Verify(ctx context.Context, token string) (*JWTPayload, error) {
 	p := new(JWTPayload)
 	tk := []byte(token)
-	has, err := o.store.Has(storage.Token(token))
+
+	kp, err := o.store.Get(storage.Token(token))
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("get token: %v", err)
 	}
-	if !has {
-		return nil, ErrorNonRegisteredToken
+	secret, err := hex.DecodeString(kp.Secret)
+	if err != nil {
+		return nil, xerrors.Errorf("decode secret %v", err)
 	}
-	if _, err := jwt.Verify(tk, o.secret, p); err != nil {
+	if _, err := jwt.Verify(tk, jwt.NewHS256(secret), p); err != nil {
 		return nil, ErrorVerificationFailed
 	}
 	return p, nil

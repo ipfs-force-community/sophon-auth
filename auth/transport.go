@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/core"
 )
 
@@ -66,8 +67,9 @@ type CreateUserRequest struct {
 type CreateUserResponse = OutputUser
 
 type UpdateUserRequest struct {
-	KeySum     core.KeyCode    `form:"keySum"` // keyCode Sum
-	Name       string          `form:"name"`
+	KeySum core.KeyCode `form:"keySum"` // keyCode Sum
+	Name   string       `form:"name"`
+	//todo make miner tobe address
 	Miner      string          `form:"miner"`      // keyCode:1
 	Comment    string          `form:"comment"`    // keyCode:2
 	State      int             `form:"state"`      // keyCode:4
@@ -79,7 +81,7 @@ type UpdateUserRequest struct {
 type OutputUser struct {
 	Id         string          `json:"id"`
 	Name       string          `json:"name"`
-	Miner      string          `json:"miner"` // miner address f01234
+	Miner      address.Address `json:"miner"` // miner address f01234
 	SourceType core.SourceType `json:"sourceType"`
 	Comment    string          `json:"comment"`
 	State      int             `json:"state"`
@@ -95,9 +97,11 @@ type GetUserRequest struct {
 }
 
 type HasMinerRequest struct {
+	//todo make miner tobe address
 	Miner string `form:"miner"`
 }
 
 type GetMinerRequest struct {
+	//todo make miner tobe address
 	Miner string `form:"miner"`
 }

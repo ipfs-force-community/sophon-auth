@@ -20,6 +20,7 @@ type JWTClient struct {
 func NewJWTClient(url string) *JWTClient {
 	client := resty.New().
 		SetHostURL(url).
+		SetRetryCount(2).
 		SetHeader("Accept", "application/json").
 		SetTransport(&ochttp.Transport{})
 

@@ -12,14 +12,12 @@ require (
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-playground/validator/v10 v10.4.1 // indirect
 	github.com/go-resty/resty/v2 v2.4.0
-	github.com/go-sql-driver/mysql v1.5.0
 	github.com/golang/protobuf v1.5.1 // indirect
 	github.com/google/uuid v1.2.0
 	github.com/influxdata/influxdb-client-go/v2 v2.2.2
 	github.com/ipfs-force-community/metrics v0.0.0-20210705093944-918711d7932a
 	github.com/ipfs/go-ipfs-cmds v0.0.0-00010101000000-000000000000
 	github.com/ipfs/go-log v1.0.5 // indirect
-	github.com/jmoiron/sqlx v1.3.3
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/magefile/mage v1.11.0 // indirect
 	github.com/magiconair/properties v1.8.0
@@ -33,6 +31,8 @@ require (
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gorm.io/driver/mysql v1.1.1
+	gorm.io/gorm v1.21.11
 	gotest.tools v2.2.0+incompatible
 )
 

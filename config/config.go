@@ -38,6 +38,7 @@ type DBConfig struct {
 	MaxIdleConns int           `json:"maxIdleConns"`
 	MaxLifeTime  time.Duration `json:"maxLifeTime"`
 	MaxIdleTime  time.Duration `json:"maxIdleTime"`
+	Debug        bool          `json:"debug"`
 }
 
 // RandSecret If the daemon does not have a secret key configured, it is automatically generated

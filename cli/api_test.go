@@ -1,14 +1,15 @@
 package cli
 
 import (
-	"github.com/gin-gonic/gin"
-	"gotest.tools/assert"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"testing"
+
+	"github.com/gin-gonic/gin"
+	"gotest.tools/assert"
 
 	"github.com/filecoin-project/go-address"
 
@@ -137,8 +138,17 @@ func TestUserBusiness(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get tokens err:%s", err)
 	}
-	assert.DeepEqual(t, res1, users[0])
-	assert.DeepEqual(t, res2, users[1])
+	assert.DeepEqual(t, res1.Name, users[0].Name)
+	assert.DeepEqual(t, res1.Miner.String(), users[0].Miner.String())
+	assert.DeepEqual(t, res1.Comment, users[0].Comment)
+	assert.DeepEqual(t, res1.State, users[0].State)
+	assert.DeepEqual(t, res1.SourceType, users[0].SourceType)
+
+	assert.DeepEqual(t, res2.Name, users[1].Name)
+	assert.DeepEqual(t, res2.Miner.String(), users[1].Miner.String())
+	assert.DeepEqual(t, res2.Comment, users[1].Comment)
+	assert.DeepEqual(t, res2.State, users[1].State)
+	assert.DeepEqual(t, res2.SourceType, users[1].SourceType)
 
 	err = cli.UpdateUser(&auth.UpdateUserRequest{
 		Name:       res1.Name,
@@ -157,7 +167,7 @@ func TestUserBusiness(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get miner err:%s", err)
 	}
-	assert.DeepEqual(t, users[1], miner)
+	assert.DeepEqual(t, users[1].Miner.String(), miner.Miner.String())
 
 	has, err := cli.HasMiner(&auth.HasMinerRequest{
 		Miner: "f02345",
@@ -181,5 +191,6 @@ func TestUserBusiness(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get user err:%s", err)
 	}
-	assert.DeepEqual(t, users[1], user)
+	assert.DeepEqual(t, users[1].Name, user.Name)
+	assert.DeepEqual(t, users[1].Miner.String(), user.Miner.String())
 }

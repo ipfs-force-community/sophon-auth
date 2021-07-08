@@ -122,6 +122,7 @@ func (o *oauthApp) CreateUser(c *gin.Context) {
 		BadResponse(c, err)
 		return
 	}
+	//todo check miner exit
 	res, err := o.srv.CreateUser(c, req)
 	if err != nil {
 		BadResponse(c, err)
@@ -136,6 +137,7 @@ func (o *oauthApp) UpdateUser(c *gin.Context) {
 		BadResponse(c, err)
 		return
 	}
+	//todo check miner exit
 	err := o.srv.UpdateUser(c, req)
 	if err != nil {
 		BadResponse(c, err)
@@ -188,7 +190,7 @@ func (o *oauthApp) HasMiner(c *gin.Context) {
 
 func (o *oauthApp) GetUser(c *gin.Context) {
 	req := new(GetUserRequest)
-	if err := c.ShouldBindQuery(req); err != nil {
+	if err := c.ShouldBind(req); err != nil {
 		BadResponse(c, err)
 		return
 	}

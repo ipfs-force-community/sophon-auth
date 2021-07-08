@@ -161,10 +161,14 @@ func (o *jwtOAuth) CreateUser(ctx context.Context, req *CreateUserRequest) (*Cre
 	if err != nil {
 		return nil, err
 	}
+	mAddr, err := address.NewFromString(req.Miner) //convert address type to local
+	if err != nil {
+		return nil, err
+	}
 	userNew := &storage.User{
 		Id:         uid.String(),
 		Name:       req.Name,
-		Miner:      req.Miner,
+		Miner:      mAddr.String(),
 		Comment:    req.Comment,
 		SourceType: req.SourceType,
 		State:      req.State,
@@ -187,7 +191,11 @@ func (o *jwtOAuth) UpdateUser(ctx context.Context, req *UpdateUserRequest) error
 	}
 	user.UpdateTime = time.Now().Local()
 	if req.KeySum&1 == 1 {
-		user.Miner = req.Miner
+		mAddr, err := address.NewFromString(req.Miner)
+		if err != nil {
+			return err
+		}
+		user.Miner = mAddr.String()
 	}
 	if req.KeySum&2 == 2 {
 		user.Comment = req.Comment
@@ -217,11 +225,11 @@ func (o *jwtOAuth) ListUsers(ctx context.Context, req *ListUsersRequest) (ListUs
 }
 
 func (o *jwtOAuth) GetMiner(ctx context.Context, req *GetMinerRequest) (*OutputUser, error) {
-	addr, err := address.NewFromString(req.Miner)
+	mAddr, err := address.NewFromString(req.Miner)
 	if err != nil {
 		return nil, err
 	}
-	user, err := o.store.GetMiner(addr)
+	user, err := o.store.GetMiner(mAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -229,11 +237,11 @@ func (o *jwtOAuth) GetMiner(ctx context.Context, req *GetMinerRequest) (*OutputU
 }
 
 func (o *jwtOAuth) HasMiner(ctx context.Context, req *HasMinerRequest) (bool, error) {
-	addr, err := address.NewFromString(req.Miner)
+	mAddr, err := address.NewFromString(req.Miner)
 	if err != nil {
 		return false, err
 	}
-	has, err := o.store.HasMiner(addr)
+	has, err := o.store.HasMiner(mAddr)
 	if err != nil {
 		return false, err
 	}

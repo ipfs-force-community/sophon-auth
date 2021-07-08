@@ -40,11 +40,15 @@ type Store interface {
 }
 
 type KeyPair struct {
-	Token      Token     `db:"token"`
-	CreateTime time.Time `db:"createTime"`
-	Perm       string    `db:"perm"`
-	Name       string    `db:"name"`
-	Extra      string    `db:"extra"`
+	Name       string    `gorm:"column:name;type:varchar(256);primary_key;NOT NULL"`
+	Perm       string    `gorm:"column:perm;type:varchar(256);primary_key;NOT NULL"`
+	Extra      string    `gorm:"column:extra;type:varchar(256);"`
+	Token      Token     `gorm:"column:token;type:varchar(512);index:token_token_IDX,type:hash;unique;NOT NULL"`
+	CreateTime time.Time `gorm:"column:createTime;type:datetime;index;NOT NULL"`
+}
+
+func (*KeyPair) TableName() string {
+	return "token"
 }
 
 type Token string
@@ -76,17 +80,20 @@ func (t *KeyPair) FromBytes(key []byte, val []byte) error {
 }
 
 type User struct {
-	Id         string          `db:"id"`
-	Name       string          `db:"name"`
-	Miner      string          `db:"miner"` // miner address f01234
-	Comment    string          `db:"comment"`
-	SourceType core.SourceType `db:"stype"`
-	State      int             `db:"state"` // 0: disable, 1: enable
-	CreateTime time.Time       `db:"createTime"`
-	UpdateTime time.Time       `db:"updateTime"`
+	Id         string          `gorm:"column:id;type:varchar(256);primary_key"`
+	Name       string          `gorm:"column:name;type:varchar(256);unique;NOT NULL"`
+	Miner      string          `gorm:"column:miner;type:varchar(256);index:users_miner_IDX;"`
+	Comment    string          `gorm:"column:comment;type:varchar(256);"`
+	SourceType core.SourceType `gorm:"column:stype;type:tinyint(4);default:0;NOT NULL"`
+	State      int             `gorm:"column:state;type:tinyint(4);default:0;NOT NULL"`
+	Burst 	   int 			   `gorm:"column:burst;type:int;default:0;NOT NULL"`
+	Rate  	   int             `gorm:"column:rate;type:int;default:0;NOT NULL"`
+	CreateTime time.Time       `gorm:"column:createTime;type:datetime;index;NOT NULL"`
+	UpdateTime time.Time       `gorm:"column:updateTime;type:datetime;index;NOT NULL"`
+}
 
-	Burst int `db:"burst"`
-	Rate  int `db:"rate"`
+func (*User) TableName() string {
+	return "users"
 }
 
 func (t *User) Bytes() ([]byte, error) {

@@ -275,7 +275,8 @@ func (s *badgerStore) HasMiner(maddr address.Address) (bool, error) {
 			if err != nil {
 				return err
 			}
-			if user.Miner == maddr.String() && user.State == 1 {
+
+			if user.Miner == maddr.String() {
 				has = true
 				return nil
 			}

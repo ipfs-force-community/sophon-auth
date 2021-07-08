@@ -169,6 +169,7 @@ func (lc *localClient) HasMiner(req *auth.HasMinerRequest) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
 	if resp.StatusCode() == http.StatusOK {
 		return *resp.Result().(*bool), nil
 	}

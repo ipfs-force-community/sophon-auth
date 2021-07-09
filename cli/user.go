@@ -93,6 +93,12 @@ var updateUserCmd = &cli.Command{
 		&cli.IntFlag{
 			Name: "state",
 		},
+		&cli.IntFlag{
+			Name: "burst",
+		},
+		&cli.IntFlag{
+			Name: "rate",
+		},
 	},
 	Action: func(ctx *cli.Context) error {
 		client, err := GetCli(ctx)
@@ -108,19 +114,27 @@ var updateUserCmd = &cli.Command{
 				return err
 			}
 			req.Miner = addr.String()
-			req.KeySum += 1
+			req.KeySum |= 1
 		}
 		if ctx.IsSet("comment") {
 			req.Comment = ctx.String("comment")
-			req.KeySum += 2
+			req.KeySum |= 2
 		}
 		if ctx.IsSet("state") {
 			req.State = ctx.Int("state")
-			req.KeySum += 4
+			req.KeySum |= 4
 		}
 		if ctx.IsSet("sourceType") {
 			req.SourceType = ctx.Int("sourceType")
-			req.KeySum += 8
+			req.KeySum |= 8
+		}
+		if ctx.IsSet("burst") {
+			req.Burst = ctx.Int("burst")
+			req.KeySum |= 0x10
+		}
+		if ctx.IsSet("rate") {
+			req.Rate = ctx.Int("rate")
+			req.KeySum |= 0x20
 		}
 		err = client.UpdateUser(req)
 		if err != nil {

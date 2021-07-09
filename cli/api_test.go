@@ -101,9 +101,9 @@ func TestTokenBusiness(t *testing.T) {
 	assert.DeepEqual(t, tks2[0].Token, tk2)
 }
 
-func TestUserBusiness(t *testing.T) {
+func TestAccountBusiness(t *testing.T) {
 	cli := mockClient(t)
-	res1, err := cli.CreateUser(&auth.CreateUserRequest{
+	res1, err := cli.CreateAccount(&auth.CreateAccountRequest{
 		Name:       "name1",
 		Miner:      "f01234",
 		Comment:    "this is a comment",
@@ -111,11 +111,11 @@ func TestUserBusiness(t *testing.T) {
 		SourceType: 1,
 	})
 	if err != nil {
-		t.Fatalf("create user err:%s", err)
+		t.Fatalf("create account err:%s", err)
 	}
-	t.Logf("user name: %s", res1.Name)
+	t.Logf("account name: %s", res1.Name)
 
-	res2, err := cli.CreateUser(&auth.CreateUserRequest{
+	res2, err := cli.CreateAccount(&auth.CreateAccountRequest{
 		Name:       "name2",
 		Miner:      "f02345",
 		Comment:    "this is a comment",
@@ -123,9 +123,9 @@ func TestUserBusiness(t *testing.T) {
 		SourceType: 1,
 	})
 	if err != nil {
-		t.Fatalf("create user err:%s", err)
+		t.Fatalf("create account err:%s", err)
 	}
-	users, err := cli.ListUsers(&auth.ListUsersRequest{
+	accounts, err := cli.ListAccounts(&auth.ListAccountsRequest{
 		Page: &core.Page{
 			Limit: 10,
 			Skip:  0,
@@ -137,19 +137,19 @@ func TestUserBusiness(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get tokens err:%s", err)
 	}
-	assert.DeepEqual(t, res1.Name, users[0].Name)
-	assert.DeepEqual(t, res1.Miner.String(), users[0].Miner.String())
-	assert.DeepEqual(t, res1.Comment, users[0].Comment)
-	assert.DeepEqual(t, res1.State, users[0].State)
-	assert.DeepEqual(t, res1.SourceType, users[0].SourceType)
+	assert.DeepEqual(t, res1.Name, accounts[0].Name)
+	assert.DeepEqual(t, res1.Miner.String(), accounts[0].Miner.String())
+	assert.DeepEqual(t, res1.Comment, accounts[0].Comment)
+	assert.DeepEqual(t, res1.State, accounts[0].State)
+	assert.DeepEqual(t, res1.SourceType, accounts[0].SourceType)
 
-	assert.DeepEqual(t, res2.Name, users[1].Name)
-	assert.DeepEqual(t, res2.Miner.String(), users[1].Miner.String())
-	assert.DeepEqual(t, res2.Comment, users[1].Comment)
-	assert.DeepEqual(t, res2.State, users[1].State)
-	assert.DeepEqual(t, res2.SourceType, users[1].SourceType)
+	assert.DeepEqual(t, res2.Name, accounts[1].Name)
+	assert.DeepEqual(t, res2.Miner.String(), accounts[1].Miner.String())
+	assert.DeepEqual(t, res2.Comment, accounts[1].Comment)
+	assert.DeepEqual(t, res2.State, accounts[1].State)
+	assert.DeepEqual(t, res2.SourceType, accounts[1].SourceType)
 
-	err = cli.UpdateUser(&auth.UpdateUserRequest{
+	err = cli.UpdateAccount(&auth.UpdateAccountRequest{
 		Name:       res1.Name,
 		Miner:      "f01111",
 		Comment:    "this is a comment?",
@@ -166,7 +166,7 @@ func TestUserBusiness(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get miner err:%s", err)
 	}
-	assert.DeepEqual(t, users[1].Miner.String(), miner.Miner.String())
+	assert.DeepEqual(t, accounts[1].Miner.String(), miner.Miner.String())
 
 	has, err := cli.HasMiner(&auth.HasMinerRequest{
 		Miner: "f02345",
@@ -184,12 +184,12 @@ func TestUserBusiness(t *testing.T) {
 	}
 	assert.DeepEqual(t, false, has)
 
-	user, err := cli.GetUser(&auth.GetUserRequest{
+	account, err := cli.GetAccount(&auth.GetAccountRequest{
 		Name: "name2",
 	})
 	if err != nil {
-		t.Fatalf("get user err:%s", err)
+		t.Fatalf("get account err:%s", err)
 	}
-	assert.DeepEqual(t, users[1].Name, user.Name)
-	assert.DeepEqual(t, users[1].Miner.String(), user.Miner.String())
+	assert.DeepEqual(t, accounts[1].Name, account.Name)
+	assert.DeepEqual(t, accounts[1].Miner.String(), account.Miner.String())
 }

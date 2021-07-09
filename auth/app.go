@@ -12,12 +12,12 @@ type OAuthApp interface {
 	RemoveToken(c *gin.Context)
 	Tokens(c *gin.Context)
 
-	UpdateUser(c *gin.Context)
-	CreateUser(c *gin.Context)
-	ListUsers(c *gin.Context)
+	UpdateAccount(c *gin.Context)
+	CreateAccount(c *gin.Context)
+	ListAccounts(c *gin.Context)
 	GetMiner(c *gin.Context)
 	HasMiner(c *gin.Context)
-	GetUser(c *gin.Context)
+	GetAccount(c *gin.Context)
 }
 
 type oauthApp struct {
@@ -116,14 +116,14 @@ func (o *oauthApp) Tokens(c *gin.Context) {
 	SuccessResponse(c, res)
 }
 
-func (o *oauthApp) CreateUser(c *gin.Context) {
-	req := new(CreateUserRequest)
+func (o *oauthApp) CreateAccount(c *gin.Context) {
+	req := new(CreateAccountRequest)
 	if err := c.ShouldBind(req); err != nil {
 		BadResponse(c, err)
 		return
 	}
-	// todo check miner exit
-	res, err := o.srv.CreateUser(c, req)
+	//todo check miner exit
+	res, err := o.srv.CreateAccount(c, req)
 	if err != nil {
 		BadResponse(c, err)
 		return
@@ -131,14 +131,14 @@ func (o *oauthApp) CreateUser(c *gin.Context) {
 	SuccessResponse(c, res)
 }
 
-func (o *oauthApp) UpdateUser(c *gin.Context) {
-	req := new(UpdateUserRequest)
+func (o *oauthApp) UpdateAccount(c *gin.Context) {
+	req := new(UpdateAccountRequest)
 	if err := c.ShouldBind(req); err != nil {
 		BadResponse(c, err)
 		return
 	}
-	// todo check miner exit
-	err := o.srv.UpdateUser(c, req)
+	//todo check miner exit
+	err := o.srv.UpdateAccount(c, req)
 	if err != nil {
 		BadResponse(c, err)
 		return
@@ -146,13 +146,13 @@ func (o *oauthApp) UpdateUser(c *gin.Context) {
 	Response(c, err)
 }
 
-func (o *oauthApp) ListUsers(c *gin.Context) {
-	req := new(ListUsersRequest)
+func (o *oauthApp) ListAccounts(c *gin.Context) {
+	req := new(ListAccountsRequest)
 	if err := c.ShouldBindQuery(req); err != nil {
 		BadResponse(c, err)
 		return
 	}
-	res, err := o.srv.ListUsers(c, req)
+	res, err := o.srv.ListAccounts(c, req)
 	if err != nil {
 		BadResponse(c, err)
 		return
@@ -188,13 +188,13 @@ func (o *oauthApp) HasMiner(c *gin.Context) {
 	SuccessResponse(c, res)
 }
 
-func (o *oauthApp) GetUser(c *gin.Context) {
-	req := new(GetUserRequest)
+func (o *oauthApp) GetAccount(c *gin.Context) {
+	req := new(GetAccountRequest)
 	if err := c.ShouldBind(req); err != nil {
 		BadResponse(c, err)
 		return
 	}
-	res, err := o.srv.GetUser(c, req)
+	res, err := o.srv.GetAccount(c, req)
 	if err != nil {
 		BadResponse(c, err)
 		return

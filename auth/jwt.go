@@ -42,12 +42,12 @@ type OAuthService interface {
 	RemoveToken(ctx context.Context, token string) error
 	Tokens(ctx context.Context, skip, limit int64) ([]*TokenInfo, error)
 
-	CreateUser(ctx context.Context, req *CreateUserRequest) (*CreateUserResponse, error)
-	UpdateUser(ctx context.Context, req *UpdateUserRequest) error
-	ListUsers(ctx context.Context, req *ListUsersRequest) (ListUsersResponse, error)
-	GetMiner(ctx context.Context, req *GetMinerRequest) (*OutputUser, error)
+	CreateAccount(ctx context.Context, req *CreateAccountRequest) (*CreateAccountResponse, error)
+	UpdateAccount(ctx context.Context, req *UpdateAccountRequest) error
+	ListAccounts(ctx context.Context, req *ListAccountsRequest) (ListAccountsResponse, error)
+	GetMiner(ctx context.Context, req *GetMinerRequest) (*OutputAccount, error)
 	HasMiner(ctx context.Context, req *HasMinerRequest) (bool, error)
-	GetUser(ctx context.Context, req *GetUserRequest) (*OutputUser, error)
+	GetAccount(ctx context.Context, req *GetAccountRequest) (*OutputAccount, error)
 }
 
 type jwtOAuth struct {
@@ -185,13 +185,13 @@ func (o *jwtOAuth) RemoveToken(ctx context.Context, token string) error {
 	return nil
 }
 
-func (o *jwtOAuth) CreateUser(ctx context.Context, req *CreateUserRequest) (*CreateUserResponse, error) {
-	exist, err := o.store.HasUser(req.Name)
+func (o *jwtOAuth) CreateAccount(ctx context.Context, req *CreateAccountRequest) (*CreateAccountResponse, error) {
+	exist, err := o.store.HasAccount(req.Name)
 	if err != nil {
 		return nil, err
 	}
 	if exist {
-		return nil, errors.New("user already exists")
+		return nil, errors.New("account already exists")
 	}
 	uid, err := uuid.NewRandom()
 	if err != nil {
@@ -201,7 +201,7 @@ func (o *jwtOAuth) CreateUser(ctx context.Context, req *CreateUserRequest) (*Cre
 	if err != nil {
 		return nil, err
 	}
-	userNew := &storage.User{
+	newAccount := &storage.Account{
 		Id:         uid.String(),
 		Name:       req.Name,
 		Miner:      mAddr.String(),
@@ -212,60 +212,60 @@ func (o *jwtOAuth) CreateUser(ctx context.Context, req *CreateUserRequest) (*Cre
 		CreateTime: time.Now().Local(),
 		UpdateTime: time.Now().Local(),
 	}
-	err = o.store.PutUser(userNew)
+	err = o.store.PutAccount(newAccount)
 	if err != nil {
 		return nil, err
 	}
-	return o.mp.ToOutPutUser(userNew), nil
+	return o.mp.ToOutPutAccount(newAccount), nil
 }
 
-func (o *jwtOAuth) UpdateUser(ctx context.Context, req *UpdateUserRequest) error {
-	user, err := o.store.GetUser(req.Name)
+func (o *jwtOAuth) UpdateAccount(ctx context.Context, req *UpdateAccountRequest) error {
+	account, err := o.store.GetAccount(req.Name)
 	if err != nil {
 		return err
 	}
-	user.UpdateTime = time.Now().Local()
+	account.UpdateTime = time.Now().Local()
 	if req.KeySum&1 == 1 {
 		mAddr, err := address.NewFromString(req.Miner)
 		if err != nil {
 			return err
 		}
-		user.Miner = mAddr.String()
+		account.Miner = mAddr.String()
 	}
 	if req.KeySum&2 == 2 {
-		user.Comment = req.Comment
+		account.Comment = req.Comment
 	}
 	if req.KeySum&4 == 4 {
-		user.State = req.State
+		account.State = req.State
 	}
 	if req.KeySum&8 == 8 {
-		user.SourceType = req.SourceType
+		account.SourceType = req.SourceType
 	}
 	if req.KeySum&16 == 16 {
 		user.ReqLimit = req.ReqLimit
 	}
-	return o.store.UpdateUser(user)
+	return o.store.UpdateAccount(account)
 }
 
-func (o *jwtOAuth) ListUsers(ctx context.Context, req *ListUsersRequest) (ListUsersResponse, error) {
-	users, err := o.store.ListUsers(req.GetSkip(), req.GetLimit(), req.State, req.SourceType, req.KeySum)
+func (o *jwtOAuth) ListAccounts(ctx context.Context, req *ListAccountsRequest) (ListAccountsResponse, error) {
+	accounts, err := o.store.ListAccounts(req.GetSkip(), req.GetLimit(), req.State, req.SourceType, req.KeySum)
 	if err != nil {
 		return nil, err
 	}
-	return o.mp.ToOutPutUsers(users), nil
+	return o.mp.ToOutPutAccounts(accounts), nil
 
 }
 
-func (o *jwtOAuth) GetMiner(ctx context.Context, req *GetMinerRequest) (*OutputUser, error) {
+func (o *jwtOAuth) GetMiner(ctx context.Context, req *GetMinerRequest) (*OutputAccount, error) {
 	mAddr, err := address.NewFromString(req.Miner)
 	if err != nil {
 		return nil, err
 	}
-	user, err := o.store.GetMiner(mAddr)
+	account, err := o.store.GetMiner(mAddr)
 	if err != nil {
 		return nil, err
 	}
-	return o.mp.ToOutPutUser(user), nil
+	return o.mp.ToOutPutAccount(account), nil
 }
 
 func (o *jwtOAuth) HasMiner(ctx context.Context, req *HasMinerRequest) (bool, error) {
@@ -280,12 +280,12 @@ func (o *jwtOAuth) HasMiner(ctx context.Context, req *HasMinerRequest) (bool, er
 	return has, nil
 }
 
-func (o *jwtOAuth) GetUser(ctx context.Context, req *GetUserRequest) (*OutputUser, error) {
-	user, err := o.store.GetUser(req.Name)
+func (o *jwtOAuth) GetAccount(ctx context.Context, req *GetAccountRequest) (*OutputAccount, error) {
+	account, err := o.store.GetAccount(req.Name)
 	if err != nil {
 		return nil, err
 	}
-	return o.mp.ToOutPutUser(user), nil
+	return o.mp.ToOutPutAccount(account), nil
 }
 
 func DecodeToBytes(enc []byte) ([]byte, error) {
@@ -297,10 +297,10 @@ func DecodeToBytes(enc []byte) ([]byte, error) {
 	return dec, nil
 }
 
-func JwtUserFromToken(token string) (string, error) {
+func JwtAccountFromToken(token string) (string, error) {
 	sks := strings.Split(token, ".")
 	if len(sks) < 1 {
-		return "", fmt.Errorf("can't parse user from input token")
+		return "", fmt.Errorf("can't parse account from input token")
 
 	}
 	dec, err := DecodeToBytes([]byte(sks[1]))

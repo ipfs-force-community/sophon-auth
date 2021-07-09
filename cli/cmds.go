@@ -7,5 +7,5 @@ import (
 var Commands = []*cli.Command{
 	runCmd,
 	tokenSubCommand,
-	userSubCommand,
+	accountSubCommand,
 }

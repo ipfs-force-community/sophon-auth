@@ -6,8 +6,8 @@ import (
 )
 
 type Mapper interface {
-	ToOutPutUser(user *storage.User) *OutputUser
-	ToOutPutUsers(arr []*storage.User) []*OutputUser
+	ToOutPutAccount(account *storage.Account) *OutputAccount
+	ToOutPutAccounts(arr []*storage.Account) []*OutputAccount
 }
 
 type mapper struct {
@@ -17,12 +17,12 @@ func newMapper() Mapper {
 
 	return &mapper{}
 }
-func (o *mapper) ToOutPutUser(m *storage.User) *OutputUser {
+func (o *mapper) ToOutPutAccount(m *storage.Account) *OutputAccount {
 	if m == nil {
 		return nil
 	}
 	addr, _ := address.NewFromString(m.Miner)
-	return &OutputUser{
+	return &OutputAccount{
 		Id:         m.Id,
 		Name:       m.Name,
 		Miner:      addr,
@@ -34,10 +34,10 @@ func (o *mapper) ToOutPutUser(m *storage.User) *OutputUser {
 		ReqLimit:   m.ReqLimit}
 }
 
-func (o *mapper) ToOutPutUsers(arr []*storage.User) []*OutputUser {
-	list := make([]*OutputUser, 0, len(arr))
+func (o *mapper) ToOutPutAccounts(arr []*storage.Account) []*OutputAccount {
+	list := make([]*OutputAccount, 0, len(arr))
 	for _, v := range arr {
-		list = append(list, o.ToOutPutUser(v))
+		list = append(list, o.ToOutPutAccount(v))
 	}
 	return list
 }

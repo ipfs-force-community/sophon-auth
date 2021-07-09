@@ -17,11 +17,19 @@ func InitRouter(app OAuthApp) http.Handler {
 	router.DELETE("/token", app.RemoveToken)
 	router.GET("/tokens", app.Tokens)
 
+	//deprecated api
 	userGroup := router.Group("/user")
-	userGroup.PUT("/new", app.CreateUser)
-	userGroup.POST("/update", app.UpdateUser)
-	userGroup.GET("/list", app.ListUsers)
-	userGroup.GET("", app.GetUser)
+	userGroup.PUT("/new", app.CreateAccount)
+	userGroup.POST("/update", app.UpdateAccount)
+	userGroup.GET("/list", app.ListAccounts)
+	userGroup.GET("", app.GetAccount)
+
+	//recommend api
+	accountGroup := router.Group("/account")
+	accountGroup.PUT("/new", app.CreateAccount)
+	accountGroup.POST("/update", app.UpdateAccount)
+	accountGroup.GET("/list", app.ListAccounts)
+	accountGroup.GET("", app.GetAccount)
 
 	minerGroup := router.Group("/miner")
 	minerGroup.GET("/has-miner", app.HasMiner)

@@ -3,12 +3,12 @@ package storage
 type Prefix = string
 
 const (
-	PrefixToken Prefix = "TOKEN:"
-	PrefixUser  Prefix = "USER:"
+	PrefixToken   Prefix = "TOKEN:"
+	PrefixAccount Prefix = "USER:"
 )
 
-func (s *badgerStore) userKey(name string) []byte {
-	return []byte(PrefixUser + name)
+func (s *badgerStore) accountKey(name string) []byte {
+	return []byte(PrefixAccount + name)
 }
 
 func (s *badgerStore) tokenKey(name string) []byte {

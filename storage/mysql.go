@@ -56,7 +56,7 @@ func newMySQLStore(cnf *config.DBConfig) (Store, error) {
 		}
 	}
 
-	if err = session.AutoMigrate(&KeyPair{}, &User{}); err != nil {
+	if err = session.AutoMigrate(&KeyPair{}, &Account{}); err != nil {
 		return nil, err
 	}
 
@@ -109,36 +109,35 @@ func (s *mysqlStore) UpdateToken(kp *KeyPair) error {
 
 }
 
-func (s mysqlStore) HasUser(name string) (bool, error) {
+func (s mysqlStore) HasAccount(name string) (bool, error) {
 	var count int64
-	err := s.db.Table("users").Where("name=?", name).Count(&count).Error
+	err := s.db.Model(Account{}).Where("name=?", name).Count(&count).Error
 	if err != nil {
 		return false, err
 	}
 	return count > 0, nil
 }
 
-func (s *mysqlStore) UpdateUser(user *User) error {
-	return s.db.Table("users").Save(user).Error
+func (s *mysqlStore) UpdateUser(account *User) error {
+	account.UpdateTime = time.Now()
+	return s.db.Save(account).Error
 }
 
-func (s *mysqlStore) PutUser(user *User) error {
-	err := s.db.Table("users").Save(user).Error
-	if err != nil {
-		return err
-	}
-	return nil
+func (s *mysqlStore) PutUser(account *User) error {
+	account.UpdateTime = time.Now()
+	account.CreateTime = time.Now()
+	return s.db.Model(Account{}).Create(account).Error
 }
 
-func (s *mysqlStore) ListUsers(skip, limit int64, state int, sourceType core.SourceType, code core.KeyCode) ([]*User, error) {
-	exec := s.db.Table("users")
+func (s *mysqlStore) ListAccounts(skip, limit int64, state int, sourceType core.SourceType, code core.KeyCode) ([]*Account, error) {
+	exec := s.db.Model(Account{})
 	if code&1 == 1 {
 		exec = exec.Where("stype=?", sourceType)
 	}
 	if code&2 == 2 {
 		exec = exec.Where("state=?", state)
 	}
-	arr := make([]*User, 0)
+	arr := make([]*Account, 0)
 	err := exec.Order("createTime").Offset(int(skip)).Limit(int(limit)).Scan(&arr).Error
 	if err != nil {
 		return nil, err
@@ -146,27 +145,29 @@ func (s *mysqlStore) ListUsers(skip, limit int64, state int, sourceType core.Sou
 	return arr, nil
 }
 
-func (s *mysqlStore) GetUser(name string) (*User, error) {
-	var user User
-	err := s.db.Table("users").Take(&user, "name=?", name).Error
-
-	return &user, err
+func (s *mysqlStore) GetAccount(name string) (*Account, error) {
+	var account Account
+	err := s.db.Model(Account{}).Take(&account, "name=?", name).Error
+	if err != nil {
+		return nil, err
+	}
+	return &account, nil
 }
 
 func (s mysqlStore) HasMiner(maddr address.Address) (bool, error) {
 	var count int64
-	err := s.db.Table("users").Where("miner=?", maddr.String()).Count(&count).Error
+	err := s.db.Model(Account{}).Where("miner=?", maddr.String()).Count(&count).Error
 	if err != nil {
 		return false, err
 	}
 	return count > 0, nil
 }
 
-func (s *mysqlStore) GetMiner(maddr address.Address) (*User, error) {
-	var user User
-	err := s.db.Table("users").Take(&user, "miner=?", maddr.String()).Error
+func (s *mysqlStore) GetMiner(maddr address.Address) (*Account, error) {
+	var account Account
+	err := s.db.Model(Account{}).Take(&account, "miner=?", maddr.String()).Error
 	if err != nil {
 		return nil, err
 	}
-	return &user, nil
+	return &account, nil
 }

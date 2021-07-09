@@ -37,14 +37,14 @@ type Store interface {
 	List(skip, limit int64) ([]*KeyPair, error)
 	UpdateToken(kp *KeyPair) error
 
-	// user
-	HasUser(name string) (bool, error)
-	GetUser(name string) (*User, error)
+	// account
+	HasAccount(name string) (bool, error)
+	GetAccount(name string) (*Account, error)
 	HasMiner(maddr address.Address) (bool, error)
-	GetMiner(maddr address.Address) (*User, error)
-	PutUser(*User) error
-	UpdateUser(*User) error
-	ListUsers(skip, limit int64, state int, sourceType core.SourceType, code core.KeyCode) ([]*User, error)
+	GetMiner(maddr address.Address) (*Account, error)
+	PutAccount(*Account) error
+	UpdateAccount(*Account) error
+	ListAccounts(skip, limit int64, state int, sourceType core.SourceType, code core.KeyCode) ([]*Account, error)
 }
 
 type KeyPair struct {
@@ -89,7 +89,7 @@ func (t *KeyPair) FromBytes(val []byte) error {
 	return json.Unmarshal(val, t)
 }
 
-type User struct {
+type Account struct {
 	Id         string          `gorm:"column:id;type:varchar(255);primary_key"`
 	Name       string          `gorm:"column:name;type:varchar(50);uniqueIndex:users_name_IDX,type:btree;not null"`
 	Miner      string          `gorm:"column:miner;type:varchar(255);index:users_miner_IDX,type:btree"`
@@ -122,11 +122,11 @@ func (rl ReqLimit) Value() (driver.Value, error) {
 	return json.Marshal(rl)
 }
 
-func (*User) TableName() string {
+func (*Account) TableName() string {
 	return "users"
 }
 
-func (t *User) Bytes() ([]byte, error) {
+func (t *Account) Bytes() ([]byte, error) {
 	buff, err := json.Marshal(t)
 	if err != nil {
 		return nil, err
@@ -134,12 +134,12 @@ func (t *User) Bytes() ([]byte, error) {
 	return buff, nil
 }
 
-func (t *User) FromBytes(buff []byte) error {
+func (t *Account) FromBytes(buff []byte) error {
 	err := json.Unmarshal(buff, t)
 	return err
 }
 
-func (t *User) CreateTimeBytes() ([]byte, error) {
+func (t *Account) CreateTimeBytes() ([]byte, error) {
 	val, err := t.CreateTime.MarshalBinary()
 	if err != nil {
 		return nil, err

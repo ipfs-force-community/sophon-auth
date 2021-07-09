@@ -93,7 +93,7 @@ func (authMux *AuthMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx = ipfsHttp.WithPerm(ctx, perms)
 	ctx = CtxWithTokenLocation(ctx, host)
 
-	if name, _ := auth2.JwtUserFromToken(token); len(name) != 0 {
+	if name, _ := auth2.JwtAccountFromToken(token); len(name) != 0 {
 		ctx = CtxWithName(ctx, name)
 	}
 

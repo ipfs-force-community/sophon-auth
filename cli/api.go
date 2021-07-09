@@ -93,26 +93,28 @@ func (lc *localClient) RemoveToken(token string) error {
 	return resp.Error().(*errcode.ErrMsg).Err()
 }
 
-func (lc *localClient) CreateUser(req *auth.CreateUserRequest) (*auth.CreateUserResponse, error) {
+func (lc *localClient) CreateAccount(req *auth.CreateAccountRequest) (*auth.CreateAccountResponse, error) {
 	resp, err := lc.cli.R().
 		SetHeader("Content-Type", "application/json").
 		SetBody(req).
-		SetResult(&auth.CreateUserResponse{}).
+		SetResult(&auth.CreateAccountResponse{}).
 		SetError(&errcode.ErrMsg{}).
-		Put("/user/new")
+		Put("/account/new")
 	if err != nil {
 		return nil, err
 	}
 	if resp.StatusCode() == http.StatusOK {
-		return resp.Result().(*auth.CreateUserResponse), nil
+		return resp.Result().(*auth.CreateAccountResponse), nil
 	}
 	return nil, resp.Error().(*errcode.ErrMsg).Err()
 }
 
-func (lc *localClient) UpdateUser(req *auth.UpdateUserRequest) error {
+func (lc *localClient) UpdateAccount(req *auth.UpdateAccountRequest) error {
 	resp, err := lc.cli.R().
 		SetHeader("Content-Type", "application/json").
-		SetBody(req).SetError(&errcode.ErrMsg{}).Post("/user/update")
+		SetBody(req).
+		SetError(&errcode.ErrMsg{}).
+		Post("/account/update")
 	if err != nil {
 		return err
 	}
@@ -122,45 +124,45 @@ func (lc *localClient) UpdateUser(req *auth.UpdateUserRequest) error {
 	return resp.Error().(*errcode.ErrMsg).Err()
 }
 
-func (lc *localClient) ListUsers(req *auth.ListUsersRequest) (auth.ListUsersResponse, error) {
+func (lc *localClient) ListAccounts(req *auth.ListAccountsRequest) (auth.ListAccountsResponse, error) {
 	resp, err := lc.cli.R().SetQueryParams(map[string]string{
 		"skip":       strconv.FormatInt(req.Skip, 10),
 		"limit":      strconv.FormatInt(req.Limit, 10),
 		"sourceType": strconv.Itoa(req.SourceType),
 		"state":      strconv.Itoa(req.State),
 		"keySum":     strconv.Itoa(req.KeySum),
-	}).SetResult(&auth.ListUsersResponse{}).SetError(&errcode.ErrMsg{}).Get("/user/list")
+	}).SetResult(&auth.ListAccountsResponse{}).SetError(&errcode.ErrMsg{}).Get("/account/list")
 	if err != nil {
 		return nil, err
 	}
 	if resp.StatusCode() == http.StatusOK {
-		return *(resp.Result().(*auth.ListUsersResponse)), nil
+		return *(resp.Result().(*auth.ListAccountsResponse)), nil
 	}
 	return nil, resp.Error().(*errcode.ErrMsg).Err()
 }
 
-func (lc *localClient) GetUser(req *auth.GetUserRequest) (*auth.OutputUser, error) {
+func (lc *localClient) GetAccount(req *auth.GetAccountRequest) (*auth.OutputAccount, error) {
 	resp, err := lc.cli.R().SetQueryParams(map[string]string{
 		"name": req.Name,
-	}).SetResult(&auth.OutputUser{}).SetError(&errcode.ErrMsg{}).Get("/user")
+	}).SetResult(&auth.OutputAccount{}).SetError(&errcode.ErrMsg{}).Get("/account")
 	if err != nil {
 		return nil, err
 	}
 	if resp.StatusCode() == http.StatusOK {
-		return resp.Result().(*auth.OutputUser), nil
+		return resp.Result().(*auth.OutputAccount), nil
 	}
 	return nil, resp.Error().(*errcode.ErrMsg).Err()
 }
 
-func (lc *localClient) GetMiner(req *auth.GetMinerRequest) (*auth.OutputUser, error) {
+func (lc *localClient) GetMiner(req *auth.GetMinerRequest) (*auth.OutputAccount, error) {
 	resp, err := lc.cli.R().SetQueryParams(map[string]string{
 		"miner": req.Miner,
-	}).SetResult(&auth.OutputUser{}).SetError(&errcode.ErrMsg{}).Get("/miner")
+	}).SetResult(&auth.OutputAccount{}).SetError(&errcode.ErrMsg{}).Get("/miner")
 	if err != nil {
 		return nil, err
 	}
 	if resp.StatusCode() == http.StatusOK {
-		return resp.Result().(*auth.OutputUser), nil
+		return resp.Result().(*auth.OutputAccount), nil
 	}
 	return nil, resp.Error().(*errcode.ErrMsg).Err()
 }

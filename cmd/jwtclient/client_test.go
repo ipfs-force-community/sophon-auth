@@ -29,11 +29,11 @@ func TestClient_Verify(t *testing.T) {
 	t.Log(res)
 }
 
-func TestJWTClient_ListUsers(t *testing.T) {
+func TestJWTClient_ListAccounts(t *testing.T) {
 	if os.Getenv("CI") == "test" {
 		t.Skip()
 	}
-	res, err := MockCli.ListUsers(auth.NewListUsersRequest(0, 20, 0, 0, 1+2))
+	res, err := MockCli.ListAccounts(auth.NewListAccountsRequest(0, 20, 0, 0, 1+2))
 	if err != nil {
 		t.Fatal(err)
 	}

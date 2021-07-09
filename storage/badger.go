@@ -152,43 +152,43 @@ func (s *badgerStore) List(skip, limit int64) ([]*KeyPair, error) {
 	return res, nil
 }
 
-func (s *badgerStore) GetUser(name string) (*User, error) {
-	user := new(User)
+func (s *badgerStore) GetAccount(name string) (*Account, error) {
+	account := new(Account)
 	err := s.db.View(func(txn *badger.Txn) error {
-		val, err := txn.Get(s.userKey(name))
+		val, err := txn.Get(s.accountKey(name))
 		if err != nil || err == badger.ErrKeyNotFound {
-			return xerrors.Errorf("users %s not exit", name)
+			return xerrors.Errorf("accounts %s not exit", name)
 		}
 
 		return val.Value(func(val []byte) error {
-			return user.FromBytes(val)
+			return account.FromBytes(val)
 		})
 	})
 	if err != nil {
 		return nil, err
 	}
-	return user, nil
+	return account, nil
 }
 
-func (s *badgerStore) UpdateUser(user *User) error {
-	old, err := s.GetUser(user.Name)
+func (s *badgerStore) UpdateAccount(account *Account) error {
+	old, err := s.GetAccount(account.Name)
 	if err != nil {
 		return err
 	}
-	user.Id = old.Id
-	val, err := user.Bytes()
+	account.Id = old.Id
+	val, err := account.Bytes()
 	if err != nil {
 		return err
 	}
 	return s.db.Update(func(txn *badger.Txn) error {
-		return txn.Set(s.userKey(user.Name), val)
+		return txn.Set(s.accountKey(account.Name), val)
 	})
 }
 
-func (s *badgerStore) HasUser(name string) (bool, error) {
+func (s *badgerStore) HasAccount(name string) (bool, error) {
 	var value []byte
 	err := s.db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get(s.userKey(name))
+		item, err := txn.Get(s.accountKey(name))
 		if err != nil {
 			return err
 		}
@@ -205,24 +205,24 @@ func (s *badgerStore) HasUser(name string) (bool, error) {
 	return true, nil
 }
 
-func (s *badgerStore) PutUser(user *User) error {
-	val, err := user.Bytes()
+func (s *badgerStore) PutAccount(account *Account) error {
+	val, err := account.Bytes()
 	if err != nil {
 		return err
 	}
 	return s.db.Update(func(txn *badger.Txn) error {
-		return txn.Set(s.userKey(user.Name), val)
+		return txn.Set(s.accountKey(account.Name), val)
 	})
 }
 
-func (s *badgerStore) ListUsers(skip, limit int64, state int, sourceType core.SourceType, code core.KeyCode) ([]*User, error) {
-	var data []*User
+func (s *badgerStore) ListAccounts(skip, limit int64, state int, sourceType core.SourceType, code core.KeyCode) ([]*Account, error) {
+	var data []*Account
 	err := s.db.View(func(txn *badger.Txn) error {
 		opts := badger.IteratorOptions{
 			PrefetchValues: true,
 			Reverse:        false,
 			AllVersions:    false,
-			Prefix:         []byte(PrefixUser),
+			Prefix:         []byte(PrefixAccount),
 		}
 		it := txn.NewIterator(opts)
 		defer it.Close()
@@ -239,15 +239,15 @@ func (s *badgerStore) ListUsers(skip, limit int64, state int, sourceType core.So
 				if err != nil {
 					return err
 				}
-				user := new(User)
-				err = user.FromBytes(*val)
+				account := new(Account)
+				err = account.FromBytes(*val)
 				if err != nil {
 					return err
 				}
 				// aggregation multi-select
 				need := false
 				if code&1 == 1 {
-					need = user.SourceType == sourceType
+					need = account.SourceType == sourceType
 				} else {
 					need = true
 				}
@@ -256,13 +256,13 @@ func (s *badgerStore) ListUsers(skip, limit int64, state int, sourceType core.So
 					continue
 				}
 				if code&2 == 2 {
-					need = need && user.State == state
+					need = need && account.State == state
 				} else {
 					need = need && true
 				}
 				if need {
 
-					data = append(data, user)
+					data = append(data, account)
 					idx++
 				}
 			}
@@ -282,7 +282,7 @@ func (s *badgerStore) HasMiner(maddr address.Address) (bool, error) {
 			PrefetchValues: true,
 			Reverse:        false,
 			AllVersions:    false,
-			Prefix:         []byte(PrefixUser),
+			Prefix:         []byte(PrefixAccount),
 		}
 		it := txn.NewIterator(opts)
 		defer it.Close()
@@ -298,13 +298,13 @@ func (s *badgerStore) HasMiner(maddr address.Address) (bool, error) {
 			if err != nil {
 				return err
 			}
-			user := new(User)
-			err = user.FromBytes(*val)
+			account := new(Account)
+			err = account.FromBytes(*val)
 			if err != nil {
 				return err
 			}
 
-			if user.Miner == maddr.String() {
+			if account.Miner == maddr.String() {
 				has = true
 				return nil
 			}
@@ -317,14 +317,14 @@ func (s *badgerStore) HasMiner(maddr address.Address) (bool, error) {
 	return has, nil
 }
 
-func (s *badgerStore) GetMiner(maddr address.Address) (*User, error) {
-	var data *User
+func (s *badgerStore) GetMiner(maddr address.Address) (*Account, error) {
+	var data *Account
 	err := s.db.View(func(txn *badger.Txn) error {
 		opts := badger.IteratorOptions{
 			PrefetchValues: true,
 			Reverse:        false,
 			AllVersions:    false,
-			Prefix:         []byte(PrefixUser),
+			Prefix:         []byte(PrefixAccount),
 		}
 		it := txn.NewIterator(opts)
 		defer it.Close()
@@ -340,13 +340,13 @@ func (s *badgerStore) GetMiner(maddr address.Address) (*User, error) {
 			if err != nil {
 				return err
 			}
-			user := new(User)
-			err = user.FromBytes(*val)
+			account := new(Account)
+			err = account.FromBytes(*val)
 			if err != nil {
 				return err
 			}
-			if user.Miner == maddr.String() {
-				data = user
+			if account.Miner == maddr.String() {
+				data = account
 				return nil
 			}
 		}

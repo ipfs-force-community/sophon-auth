@@ -64,45 +64,45 @@ func (c *JWTClient) Verify(ctx context.Context, token string) (*auth.VerifyRespo
 	}
 }
 
-func (c *JWTClient) ListUsers(req *auth.ListUsersRequest) (auth.ListUsersResponse, error) {
+func (c *JWTClient) ListAccounts(req *auth.ListAccountsRequest) (auth.ListAccountsResponse, error) {
 	resp, err := c.cli.R().SetQueryParams(map[string]string{
 		"skip":       strconv.FormatInt(req.Skip, 10),
 		"limit":      strconv.FormatInt(req.Limit, 10),
 		"sourceType": strconv.Itoa(req.SourceType),
 		"state":      strconv.Itoa(req.State),
 		"keySum":     strconv.Itoa(req.KeySum),
-	}).SetResult(&auth.ListUsersResponse{}).SetError(&errcode.ErrMsg{}).Get("/user/list")
+	}).SetResult(&auth.ListAccountsResponse{}).SetError(&errcode.ErrMsg{}).Get("/account/list")
 	if err != nil {
 		return nil, err
 	}
 	if resp.StatusCode() == http.StatusOK {
-		return *(resp.Result().(*auth.ListUsersResponse)), nil
+		return *(resp.Result().(*auth.ListAccountsResponse)), nil
 	}
 	return nil, resp.Error().(*errcode.ErrMsg).Err()
 }
 
-func (c *JWTClient) GetUser(req *auth.GetUserRequest) (*auth.OutputUser, error) {
+func (c *JWTClient) GetAccount(req *auth.GetAccountRequest) (*auth.OutputAccount, error) {
 	resp, err := c.cli.R().SetQueryParams(map[string]string{
 		"name": req.Name,
-	}).SetResult(&auth.OutputUser{}).SetError(&errcode.ErrMsg{}).Get("/user")
+	}).SetResult(&auth.OutputAccount{}).SetError(&errcode.ErrMsg{}).Get("/account")
 	if err != nil {
 		return nil, err
 	}
 	if resp.StatusCode() == http.StatusOK {
-		return resp.Result().(*auth.OutputUser), nil
+		return resp.Result().(*auth.OutputAccount), nil
 	}
 	return nil, resp.Error().(*errcode.ErrMsg).Err()
 }
 
-func (c *JWTClient) GetMiner(req *auth.GetMinerRequest) (*auth.OutputUser, error) {
+func (c *JWTClient) GetMiner(req *auth.GetMinerRequest) (*auth.OutputAccount, error) {
 	resp, err := c.cli.R().SetQueryParams(map[string]string{
 		"miner": req.Miner,
-	}).SetResult(&auth.OutputUser{}).SetError(&errcode.ErrMsg{}).Get("/miner")
+	}).SetResult(&auth.OutputAccount{}).SetError(&errcode.ErrMsg{}).Get("/miner")
 	if err != nil {
 		return nil, err
 	}
 	if resp.StatusCode() == http.StatusOK {
-		return resp.Result().(*auth.OutputUser), nil
+		return resp.Result().(*auth.OutputAccount), nil
 	}
 	return nil, resp.Error().(*errcode.ErrMsg).Err()
 }

@@ -32,8 +32,8 @@ type GetTokensRequest struct {
 // @sourceType: keyCode 1
 // @state: keyCode 2
 // @keySum: request params code sum, enum 1 2 4 8, to multi-select
-func NewListUsersRequest(skip, limit int64, sourceType core.SourceType, state int, keySum core.KeyCode) *ListUsersRequest {
-	return &ListUsersRequest{
+func NewListAccountsRequest(skip, limit int64, sourceType core.SourceType, state int, keySum core.KeyCode) *ListAccountsRequest {
+	return &ListAccountsRequest{
 		Page: &core.Page{
 			Skip:  skip,
 			Limit: limit,
@@ -44,18 +44,18 @@ func NewListUsersRequest(skip, limit int64, sourceType core.SourceType, state in
 	}
 }
 
-type ListUsersRequest struct {
+type ListAccountsRequest struct {
 	*core.Page
 	SourceType core.SourceType `form:"sourceType" json:"sourceType"` // keyCode:1
 	State      int             `form:"state" json:"state"`           // keyCode: 2
 	KeySum     core.KeyCode    `form:"keySum"`                       // keyCode sum
 }
 
-type ListUsersResponse = []*OutputUser
+type ListAccountsResponse = []*OutputAccount
 
 type GetTokensResponse = []*TokenInfo
 
-type CreateUserRequest struct {
+type CreateAccountRequest struct {
 	Name       string           `form:"name" binding:"required"`
 	Miner      string           `form:"miner"` // miner address f01234
 	Comment    string           `form:"comment"`
@@ -63,9 +63,9 @@ type CreateUserRequest struct {
 	SourceType core.SourceType  `form:"sourceType"`
 	ReqLimit   storage.ReqLimit `form:"reqLimitAmount"`
 }
-type CreateUserResponse = OutputUser
+type CreateAccountResponse = OutputAccount
 
-type UpdateUserRequest struct {
+type UpdateAccountRequest struct {
 	KeySum core.KeyCode `form:"keySum"` // keyCode Sum
 	Name   string       `form:"name"`
 	// todo make miner tobe address
@@ -76,7 +76,7 @@ type UpdateUserRequest struct {
 	ReqLimit   storage.ReqLimit `form:"reqLimit"`   // keyCode:16
 }
 
-type OutputUser struct {
+type OutputAccount struct {
 	Id         string           `json:"id"`
 	Name       string           `json:"name"`
 	Miner      address.Address  `json:"miner"` // miner address f01234
@@ -88,7 +88,7 @@ type OutputUser struct {
 	UpdateTime int64            `json:"updateTime"`
 }
 
-type GetUserRequest struct {
+type GetAccountRequest struct {
 	Name string `form:"name"`
 }
 

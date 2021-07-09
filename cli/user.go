@@ -10,22 +10,22 @@ import (
 	"time"
 )
 
-var userSubCommand = &cli.Command{
-	Name:  "user",
-	Usage: "user command",
+var accountSubCommand = &cli.Command{
+	Name:  "account",
+	Usage: "account command",
 	Subcommands: []*cli.Command{
-		addUserCmd,
-		updateUserCmd,
-		listUsersCmd,
-		activeUserCmd,
-		getUserCmd,
+		addAccountCmd,
+		updateAccountCmd,
+		listAccountsCmd,
+		activeAccountCmd,
+		getAccountCmd,
 		hasMinerCmd,
 	},
 }
 
-var addUserCmd = &cli.Command{
+var addAccountCmd = &cli.Command{
 	Name:  "add",
-	Usage: "add user",
+	Usage: "add account",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:     "name",
@@ -53,7 +53,7 @@ var addUserCmd = &cli.Command{
 		name := ctx.String("name")
 		comment := ctx.String("comment")
 		sourceType := ctx.Int("sourceType")
-		user := &auth.CreateUserRequest{
+		account := &auth.CreateAccountRequest{
 			Name:       name,
 			Comment:    comment,
 			State:      0,
@@ -64,30 +64,31 @@ var addUserCmd = &cli.Command{
 			if err != nil {
 				return err
 			}
-			user.Miner = mAddr.String()
+			account.Miner = mAddr.String()
 		}
 
 		if ctx.IsSet("reqLimitAmount") {
-			user.ReqLimit.Cap = ctx.Int64("reqLimitAmount")
-			if user.ReqLimit.ResetDur, err = time.ParseDuration(ctx.String("reqLimitResetDuration")); err != nil {
+			account.ReqLimit.Cap = ctx.Int64("reqLimitAmount")
+			if account.ReqLimit.ResetDur, err = time.ParseDuration(ctx.String("reqLimitResetDuration")); err != nil {
 				return err
 			}
-			if user.ReqLimit.ResetDur <= time.Second {
+			if account.ReqLimit.ResetDur <= time.Second {
 				return fmt.Errorf("request limit reset duration must larger than 1(second)")
 			}
 		}
-		res, err := client.CreateUser(user)
+
+		res, err := client.CreateAccount(account)
 		if err != nil {
 			return err
 		}
-		fmt.Printf("add user success: %s\n", res.Id)
+		fmt.Printf("add account success: %s\n", res.Id)
 		return nil
 	},
 }
 
-var updateUserCmd = &cli.Command{
+var updateAccountCmd = &cli.Command{
 	Name:  "update",
-	Usage: "update user",
+	Usage: "update account",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:     "name",
@@ -113,7 +114,7 @@ var updateUserCmd = &cli.Command{
 		if err != nil {
 			return err
 		}
-		req := &auth.UpdateUserRequest{
+		req := &auth.UpdateAccountRequest{
 			Name: ctx.String("name"),
 		}
 		if ctx.IsSet("miner") {
@@ -146,18 +147,18 @@ var updateUserCmd = &cli.Command{
 			}
 			req.KeySum |= 0x10
 		}
-		err = client.UpdateUser(req)
+		err = client.UpdateAccount(req)
 		if err != nil {
 			return err
 		}
-		fmt.Println("update user success")
+		fmt.Println("update account success")
 		return nil
 	},
 }
 
-var activeUserCmd = &cli.Command{
+var activeAccountCmd = &cli.Command{
 	Name:      "active",
-	Usage:     "update user",
+	Usage:     "update account",
 	Flags:     []cli.Flag{},
 	ArgsUsage: "name",
 	Action: func(ctx *cli.Context) error {
@@ -170,25 +171,25 @@ var activeUserCmd = &cli.Command{
 			return xerrors.New("expect name")
 		}
 
-		req := &auth.UpdateUserRequest{
+		req := &auth.UpdateAccountRequest{
 			Name: ctx.Args().Get(0),
 		}
 
 		req.State = 1
 		req.KeySum += 4
 
-		err = client.UpdateUser(req)
+		err = client.UpdateAccount(req)
 		if err != nil {
 			return err
 		}
-		fmt.Println("active user success")
+		fmt.Println("active account success")
 		return nil
 	},
 }
 
-var listUsersCmd = &cli.Command{
+var listAccountsCmd = &cli.Command{
 	Name:  "list",
-	Usage: "list users",
+	Usage: "list accounts",
 	Flags: []cli.Flag{
 		&cli.UintFlag{
 			Name:  "skip",
@@ -212,7 +213,7 @@ var listUsersCmd = &cli.Command{
 		if err != nil {
 			return err
 		}
-		req := &auth.ListUsersRequest{
+		req := &auth.ListAccountsRequest{
 			Page: &core.Page{
 				Limit: ctx.Int64("limit"),
 				Skip:  ctx.Int64("skip"),
@@ -226,12 +227,12 @@ var listUsersCmd = &cli.Command{
 		if ctx.IsSet("state") {
 			req.KeySum += 2
 		}
-		users, err := client.ListUsers(req)
+		accounts, err := client.ListAccounts(req)
 		if err != nil {
 			return err
 		}
 
-		for k, v := range users {
+		for k, v := range accounts {
 			fmt.Println("number:", k+1)
 			fmt.Println("name:", v.Name)
 			fmt.Println("miner:", v.Miner)
@@ -247,9 +248,9 @@ var listUsersCmd = &cli.Command{
 	},
 }
 
-var getUserCmd = &cli.Command{
+var getAccountCmd = &cli.Command{
 	Name:      "get",
-	Usage:     "get user by name",
+	Usage:     "get account by name",
 	ArgsUsage: "<name>",
 	Action: func(ctx *cli.Context) error {
 		client, err := GetCli(ctx)
@@ -257,22 +258,22 @@ var getUserCmd = &cli.Command{
 			return err
 		}
 		if ctx.NArg() != 1 {
-			return xerrors.Errorf("specify user name")
+			return xerrors.Errorf("specify account name")
 		}
 		name := ctx.Args().Get(0)
-		user, err := client.GetUser(&auth.GetUserRequest{Name: name})
+		account, err := client.GetAccount(&auth.GetAccountRequest{Name: name})
 		if err != nil {
 			return err
 		}
 
-		fmt.Println("name:", user.Name)
-		fmt.Println("miner:", user.Miner)
-		fmt.Println("sourceType:", user.SourceType, "\t// miner:1")
-		fmt.Println("state", user.State, "\t// 0: disable, 1: enable")
-		fmt.Printf("reqLimit:\tamount:%d, resetDuration:%s\n", user.ReqLimit.Cap, user.ReqLimit.ResetDur.String())
-		fmt.Println("comment:", user.Comment)
-		fmt.Println("createTime:", time.Unix(user.CreateTime, 0).Format(time.RFC1123))
-		fmt.Println("updateTime:", time.Unix(user.CreateTime, 0).Format(time.RFC1123))
+		fmt.Println("name:", account.Name)
+		fmt.Println("miner:", account.Miner)
+		fmt.Println("sourceType:", account.SourceType, "\t// miner:1")
+		fmt.Println("state", account.State, "\t// 0: disable, 1: enable")
+		fmt.Printf("reqLimit:\tamount:%d, resetDuration:%s\n", account.ReqLimit.Cap, account.ReqLimit.ResetDur.String())
+		fmt.Println("comment:", account.Comment)
+		fmt.Println("createTime:", time.Unix(account.CreateTime, 0).Format(time.RFC1123))
+		fmt.Println("updateTime:", time.Unix(account.CreateTime, 0).Format(time.RFC1123))
 		fmt.Println()
 		return nil
 	},

@@ -1,7 +1,9 @@
 package storage
 
 import (
+	"database/sql/driver"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/config"
@@ -40,11 +42,11 @@ type Store interface {
 }
 
 type KeyPair struct {
-	Name       string    `gorm:"column:name;type:varchar(256);primary_key;NOT NULL"`
-	Perm       string    `gorm:"column:perm;type:varchar(256);primary_key;NOT NULL"`
-	Extra      string    `gorm:"column:extra;type:varchar(256);"`
-	Token      Token     `gorm:"column:token;type:varchar(512);index:token_token_IDX,type:hash;unique;NOT NULL"`
-	CreateTime time.Time `gorm:"column:createTime;type:datetime;index;NOT NULL"`
+	Name       string    `gorm:"column:name;type:varchar(50);NOT NULL"`
+	Perm       string    `gorm:"column:perm;type:varchar(50);NOT NULL"`
+	Extra      string    `gorm:"column:extra;type:varchar(255);"`
+	Token      Token     `gorm:"column:token;type:varchar(512);uniqueIndex:token_token_IDX,type:hash;not null"`
+	CreateTime time.Time `gorm:"column:createTime;type:datetime;NOT NULL"`
 }
 
 func (*KeyPair) TableName() string {
@@ -80,16 +82,36 @@ func (t *KeyPair) FromBytes(key []byte, val []byte) error {
 }
 
 type User struct {
-	Id         string          `gorm:"column:id;type:varchar(256);primary_key"`
-	Name       string          `gorm:"column:name;type:varchar(256);unique;NOT NULL"`
-	Miner      string          `gorm:"column:miner;type:varchar(256);index:users_miner_IDX;"`
-	Comment    string          `gorm:"column:comment;type:varchar(256);"`
+	Id         string          `gorm:"column:id;type:varchar(255);primary_key"`
+	Name       string          `gorm:"column:name;type:varchar(50);uniqueIndex:users_name_IDX,type:btree;not null"`
+	Miner      string          `gorm:"column:miner;type:varchar(255);index:users_miner_IDX,type:btree"`
+	Comment    string          `gorm:"column:comment;type:varchar(255);"`
 	SourceType core.SourceType `gorm:"column:stype;type:tinyint(4);default:0;NOT NULL"`
 	State      int             `gorm:"column:state;type:tinyint(4);default:0;NOT NULL"`
-	Burst      int             `gorm:"column:burst;type:int;default:0;NOT NULL"`
-	Rate       int             `gorm:"column:rate;type:int;default:0;NOT NULL"`
-	CreateTime time.Time       `gorm:"column:createTime;type:datetime;index;NOT NULL"`
-	UpdateTime time.Time       `gorm:"column:updateTime;type:datetime;index;NOT NULL"`
+	ReqLimit   ReqLimit        `gorm:"column:reqLimit;type:varchar(512)"`
+	CreateTime time.Time       `gorm:"column:createTime;type:datetime;NOT NULL"`
+	UpdateTime time.Time       `gorm:"column:updateTime;type:datetime;NOT NULL"`
+}
+
+type ReqLimit struct {
+	Cap      int64
+	ResetDur time.Duration
+}
+
+func (rl *ReqLimit) Scan(value interface{}) error {
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New(fmt.Sprint("Failed to unmarshal JSONB value:", value))
+	}
+	if len(bytes) == 0 {
+		*rl = ReqLimit{}
+		return nil
+	}
+	return json.Unmarshal(bytes, rl)
+}
+
+func (rl ReqLimit) Value() (driver.Value, error) {
+	return json.Marshal(rl)
 }
 
 func (*User) TableName() string {

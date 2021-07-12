@@ -8,7 +8,6 @@ import (
 	"golang.org/x/xerrors"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"time"
 )
 
 type mysqlStore struct {
@@ -34,24 +33,37 @@ func newMySQLStore(cnf *config.DBConfig) (Store, error) {
 	sqlDB.SetConnMaxLifetime(cnf.MaxLifeTime)
 	sqlDB.SetConnMaxIdleTime(cnf.MaxIdleTime)
 
-	store := &mysqlStore{
-		db:  db,
-		pkg: util.PackagePath(mysqlStore{}),
+	var verMajer int
+	var version string
+
+	session := db.Session(&gorm.Session{})
+
+	// detect mysql version
+	if err = session.Raw("select version();").Scan(&version).Error; err == nil {
+		for _, s := range version {
+			if s >= '0' && s <= '9' {
+				verMajer = int(s) - 48
+				break
+			}
+		}
 	}
 
-	err = db.AutoMigrate(&KeyPair{})
-	if err != nil {
+	// enable following code on mysql with version < 8
+	if verMajer > 0 && verMajer < 8 {
+		if err = session.Raw("set innodb_large_prefix = 1; set global innodb_file_format = BARRACUDA;").Error; err == nil {
+			session = session.Set("gorm:table_options", "ROW_FORMAT=DYNAMIC")
+		}
+	}
+
+	if err = session.AutoMigrate(&KeyPair{}, &User{}); err != nil {
 		return nil, err
 	}
-	err = db.AutoMigrate(&User{})
-	if err != nil {
-		return nil, err
-	}
-	return store, nil
+
+	return &mysqlStore{db: db, pkg: util.PackagePath(mysqlStore{})}, nil
 }
 
 func (s *mysqlStore) Put(kp *KeyPair) error {
-	return s.db.Save(kp).Error
+	return s.db.Create(kp).Error
 }
 
 func (s mysqlStore) Delete(token Token) error {
@@ -87,7 +99,6 @@ func (s mysqlStore) HasUser(name string) (bool, error) {
 }
 
 func (s *mysqlStore) UpdateUser(user *User) error {
-	user.UpdateTime = time.Now()
 	err := s.db.Table("users").Save(user).Error
 	if err != nil {
 		return err
@@ -96,8 +107,6 @@ func (s *mysqlStore) UpdateUser(user *User) error {
 }
 
 func (s *mysqlStore) PutUser(user *User) error {
-	user.UpdateTime = time.Now()
-	user.CreateTime = time.Now()
 	err := s.db.Table("users").Save(user).Error
 	if err != nil {
 		return err

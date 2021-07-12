@@ -146,7 +146,6 @@ func (s *badgerStore) UpdateUser(user *User) error {
 	if err != nil {
 		return err
 	}
-	user.CreateTime = old.CreateTime
 	user.Id = old.Id
 	val, err := user.Bytes()
 	if err != nil {

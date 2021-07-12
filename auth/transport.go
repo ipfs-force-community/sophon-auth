@@ -3,6 +3,7 @@ package auth
 import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/core"
+	"github.com/filecoin-project/venus-auth/storage"
 )
 
 type VerifyRequest struct {
@@ -55,41 +56,36 @@ type ListUsersResponse = []*OutputUser
 type GetTokensResponse = []*TokenInfo
 
 type CreateUserRequest struct {
-	Name       string          `form:"name" binding:"required"`
-	Miner      string          `form:"miner"` // miner address f01234
-	Comment    string          `form:"comment"`
-	State      int             `form:"state"` // 0: disable, 1: enable
-	SourceType core.SourceType `form:"sourceType"`
-
-	Burst int `form:"burst"` // rate limit:burst
-	Rate  int `from:"rate"`  // rate limit:rate
+	Name       string           `form:"name" binding:"required"`
+	Miner      string           `form:"miner"` // miner address f01234
+	Comment    string           `form:"comment"`
+	State      int              `form:"state"` // 0: disable, 1: enable
+	SourceType core.SourceType  `form:"sourceType"`
+	ReqLimit   storage.ReqLimit `form:"reqLimitAmount"`
 }
 type CreateUserResponse = OutputUser
 
 type UpdateUserRequest struct {
 	KeySum core.KeyCode `form:"keySum"` // keyCode Sum
 	Name   string       `form:"name"`
-	//todo make miner tobe address
-	Miner      string          `form:"miner"`      // keyCode:1
-	Comment    string          `form:"comment"`    // keyCode:2
-	State      int             `form:"state"`      // keyCode:4
-	SourceType core.SourceType `form:"sourceType"` // keyCode:8
-	Burst      int             `form:"burst"`      // keyCode:16
-	Rate       int             `form:"burst"`      // keyCode:32
+	// todo make miner tobe address
+	Miner      string           `form:"miner"`      // keyCode:1
+	Comment    string           `form:"comment"`    // keyCode:2
+	State      int              `form:"state"`      // keyCode:4
+	SourceType core.SourceType  `form:"sourceType"` // keyCode:8
+	ReqLimit   storage.ReqLimit `form:"reqLimit"`   // keyCode:16
 }
 
 type OutputUser struct {
-	Id         string          `json:"id"`
-	Name       string          `json:"name"`
-	Miner      address.Address `json:"miner"` // miner address f01234
-	SourceType core.SourceType `json:"sourceType"`
-	Comment    string          `json:"comment"`
-	State      int             `json:"state"`
-	CreateTime int64           `json:"createTime"`
-	UpdateTime int64           `json:"updateTime"`
-
-	Burst int `form:"burst"`
-	Rate  int `form:"rate"`
+	Id         string           `json:"id"`
+	Name       string           `json:"name"`
+	Miner      address.Address  `json:"miner"` // miner address f01234
+	SourceType core.SourceType  `json:"sourceType"`
+	ReqLimit   storage.ReqLimit `form:"reqLimit"`
+	Comment    string           `json:"comment"`
+	State      int              `json:"state"`
+	CreateTime int64            `json:"createTime"`
+	UpdateTime int64            `json:"updateTime"`
 }
 
 type GetUserRequest struct {
@@ -97,11 +93,11 @@ type GetUserRequest struct {
 }
 
 type HasMinerRequest struct {
-	//todo make miner tobe address
+	// todo make miner tobe address
 	Miner string `form:"miner"`
 }
 
 type GetMinerRequest struct {
-	//todo make miner tobe address
+	// todo make miner tobe address
 	Miner string `form:"miner"`
 }

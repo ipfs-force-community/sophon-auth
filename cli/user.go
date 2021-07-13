@@ -42,6 +42,8 @@ var addUserCmd = &cli.Command{
 			Name:  "sourceType",
 			Value: 0,
 		},
+		&cli.IntFlag{Name: "reqLimitAmount"},
+		&cli.StringFlag{Name: "reqLimitResetDuration", Value: "24h", Usage: "10h, 5m, 10h5m, 2h5m20s"},
 	},
 	Action: func(ctx *cli.Context) error {
 		client, err := GetCli(ctx)
@@ -63,6 +65,16 @@ var addUserCmd = &cli.Command{
 				return err
 			}
 			user.Miner = mAddr.String()
+		}
+
+		if ctx.IsSet("reqLimitAmount") {
+			user.ReqLimit.Cap = ctx.Int64("reqLimitAmount")
+			if user.ReqLimit.ResetDur, err = time.ParseDuration(ctx.String("reqLimitResetDuration")); err != nil {
+				return err
+			}
+			if user.ReqLimit.ResetDur <= time.Second {
+				return fmt.Errorf("request limit reset duration must larger than 1(second)")
+			}
 		}
 		res, err := client.CreateUser(user)
 		if err != nil {
@@ -93,12 +105,8 @@ var updateUserCmd = &cli.Command{
 		&cli.IntFlag{
 			Name: "state",
 		},
-		&cli.IntFlag{
-			Name: "burst",
-		},
-		&cli.IntFlag{
-			Name: "rate",
-		},
+		&cli.IntFlag{Name: "reqLimitAmount"},
+		&cli.StringFlag{Name: "reqLimitResetDuration"},
 	},
 	Action: func(ctx *cli.Context) error {
 		client, err := GetCli(ctx)
@@ -128,13 +136,15 @@ var updateUserCmd = &cli.Command{
 			req.SourceType = ctx.Int("sourceType")
 			req.KeySum |= 8
 		}
-		if ctx.IsSet("burst") {
-			req.Burst = ctx.Int("burst")
+		if ctx.IsSet("reqLimitAmount") {
+			req.ReqLimit.Cap = ctx.Int64("reqLimitAmount")
+			if req.ReqLimit.ResetDur, err = time.ParseDuration(ctx.String("reqLimitResetDuration")); err != nil {
+				return err
+			}
+			if req.ReqLimit.ResetDur <= time.Second {
+				return fmt.Errorf("request limit reset duration must larger than 1(second)")
+			}
 			req.KeySum |= 0x10
-		}
-		if ctx.IsSet("rate") {
-			req.Rate = ctx.Int("rate")
-			req.KeySum |= 0x20
 		}
 		err = client.UpdateUser(req)
 		if err != nil {
@@ -227,7 +237,7 @@ var listUsersCmd = &cli.Command{
 			fmt.Println("miner:", v.Miner)
 			fmt.Println("sourceType:", v.SourceType, "\t// miner:1")
 			fmt.Println("state", v.State, "\t// 0: disable, 1: enable")
-			fmt.Printf("rate-limit burst:%d, rate:%d\n", v.Burst, v.Rate)
+			fmt.Printf("reqLimit:\tamount:%d, resetDuration:%s\n", v.ReqLimit.Cap, v.ReqLimit.ResetDur.String())
 			fmt.Println("comment:", v.Comment)
 			fmt.Println("createTime:", time.Unix(v.CreateTime, 0).Format(time.RFC1123))
 			fmt.Println("updateTime:", time.Unix(v.CreateTime, 0).Format(time.RFC1123))
@@ -259,7 +269,7 @@ var getUserCmd = &cli.Command{
 		fmt.Println("miner:", user.Miner)
 		fmt.Println("sourceType:", user.SourceType, "\t// miner:1")
 		fmt.Println("state", user.State, "\t// 0: disable, 1: enable")
-		fmt.Printf("rate-limit burst:%d, rate:%d\n", user.Burst, user.Rate)
+		fmt.Printf("reqLimit:\tamount:%d, resetDuration:%s\n", user.ReqLimit.Cap, user.ReqLimit.ResetDur.String())
 		fmt.Println("comment:", user.Comment)
 		fmt.Println("createTime:", time.Unix(user.CreateTime, 0).Format(time.RFC1123))
 		fmt.Println("updateTime:", time.Unix(user.CreateTime, 0).Format(time.RFC1123))

@@ -35,7 +35,7 @@ func NewOAuthApp(secret, dbPath string, cnf *config.DBConfig) (OAuthApp, error) 
 }
 
 func BadResponse(c *gin.Context, err error) {
-	c.Error(err) //nolint
+	c.Error(err) // nolint
 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 }
 
@@ -45,7 +45,7 @@ func SuccessResponse(c *gin.Context, obj interface{}) {
 
 func Response(c *gin.Context, err error) {
 	if err != nil {
-		c.Error(err) //nolint
+		c.Error(err) // nolint
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -61,7 +61,7 @@ func (o *oauthApp) Verify(c *gin.Context) {
 	res, err := o.srv.Verify(c, req.Token)
 	if err != nil {
 		if err == ErrorNonRegisteredToken || err == ErrorVerificationFailed {
-			c.Error(err) //nolint
+			c.Error(err) // nolint
 			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			return
 		}
@@ -122,7 +122,7 @@ func (o *oauthApp) CreateUser(c *gin.Context) {
 		BadResponse(c, err)
 		return
 	}
-	//todo check miner exit
+	// todo check miner exit
 	res, err := o.srv.CreateUser(c, req)
 	if err != nil {
 		BadResponse(c, err)
@@ -137,7 +137,7 @@ func (o *oauthApp) UpdateUser(c *gin.Context) {
 		BadResponse(c, err)
 		return
 	}
-	//todo check miner exit
+	// todo check miner exit
 	err := o.srv.UpdateUser(c, req)
 	if err != nil {
 		BadResponse(c, err)

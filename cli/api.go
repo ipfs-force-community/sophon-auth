@@ -94,7 +94,9 @@ func (lc *localClient) RemoveToken(token string) error {
 }
 
 func (lc *localClient) CreateUser(req *auth.CreateUserRequest) (*auth.CreateUserResponse, error) {
-	resp, err := lc.cli.R().SetBody(req).
+	resp, err := lc.cli.R().
+		SetHeader("Content-Type", "application/json").
+		SetBody(req).
 		SetResult(&auth.CreateUserResponse{}).
 		SetError(&errcode.ErrMsg{}).
 		Put("/user/new")
@@ -108,7 +110,9 @@ func (lc *localClient) CreateUser(req *auth.CreateUserRequest) (*auth.CreateUser
 }
 
 func (lc *localClient) UpdateUser(req *auth.UpdateUserRequest) error {
-	resp, err := lc.cli.R().SetBody(req).SetError(&errcode.ErrMsg{}).Post("/user/update")
+	resp, err := lc.cli.R().
+		SetHeader("Content-Type", "application/json").
+		SetBody(req).SetError(&errcode.ErrMsg{}).Post("/user/update")
 	if err != nil {
 		return err
 	}

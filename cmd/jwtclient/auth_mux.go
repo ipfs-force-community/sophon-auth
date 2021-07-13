@@ -63,7 +63,7 @@ func (authMux *AuthMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var perms []auth.Permission
 	var err error
-	var tokenLocation = "local"
+	var host = r.Host
 
 	if authMux.local != nil {
 		if perms, err = authMux.local.Verify(ctx, token); err != nil {
@@ -73,7 +73,6 @@ func (authMux *AuthMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					w.WriteHeader(401)
 					return
 				}
-				tokenLocation = "remote"
 			} else {
 				authMux.Warnf("JWT Verification failed (originating from %s): %s", r.RemoteAddr, err)
 				w.WriteHeader(401)
@@ -87,13 +86,12 @@ func (authMux *AuthMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(401)
 				return
 			}
-			tokenLocation = "remote"
 		}
 	}
 
 	ctx = auth.WithPerm(ctx, perms)
 	ctx = ipfsHttp.WithPerm(ctx, perms)
-	ctx = CtxWithTokenLocation(ctx, tokenLocation)
+	ctx = CtxWithTokenLocation(ctx, host)
 
 	if name, _ := auth2.JwtUserFromToken(token); len(name) != 0 {
 		ctx = CtxWithName(ctx, name)

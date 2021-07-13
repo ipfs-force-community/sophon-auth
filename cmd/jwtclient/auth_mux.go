@@ -3,33 +3,38 @@ package jwtclient
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/filecoin-project/go-jsonrpc/auth"
 	auth2 "github.com/filecoin-project/venus-auth/auth"
 	ipfsHttp "github.com/ipfs/go-ipfs-cmds/http"
-	"net/http"
-	"strings"
 )
 
 type CtxKey int
 
 const (
 	accountKey CtxKey = iota
-	tokenLocationkey
+	tokenLocationKey
 )
 
 // AuthMux used with jsonrpc library to verify whether the request is legal
 type AuthMux struct {
-	ILoger
+	Logger
 	handler       http.Handler
 	local, remote IJwtAuthClient
 
 	trustHandle map[string]http.Handler
 }
 
-func NewAuthMux(local, remote IJwtAuthClient, handler http.Handler, loger ILoger) *AuthMux {
-	return &AuthMux{handler: handler,
-		local: local, remote: remote,
-		trustHandle: make(map[string]http.Handler), ILoger: loger}
+func NewAuthMux(local, remote IJwtAuthClient, handler http.Handler, logger Logger) *AuthMux {
+	return &AuthMux{
+		handler:     handler,
+		local:       local,
+		remote:      remote,
+		trustHandle: make(map[string]http.Handler),
+		Logger:      logger,
+	}
 }
 
 // TrustHandle for requests that can be accessed directly
@@ -103,27 +108,27 @@ func (authMux *AuthMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (authMux *AuthMux) Warnf(template string, args ...interface{}) {
-	if authMux.ILoger == nil {
+	if authMux.Logger == nil {
 		fmt.Printf("auth-middware warning:%s\n", fmt.Sprintf(template, args...))
 		return
 	}
-	authMux.ILoger.Warnf(template, args...)
+	authMux.Logger.Warnf(template, args...)
 }
 
 func (authMux *AuthMux) Infof(template string, args ...interface{}) {
-	if authMux.ILoger == nil {
+	if authMux.Logger == nil {
 		fmt.Printf("auth-midware info:%s\n", fmt.Sprintf(template, args...))
 		return
 	}
-	authMux.ILoger.Infof(template, args...)
+	authMux.Logger.Infof(template, args...)
 }
 
 func (authMux *AuthMux) Errorf(template string, args ...interface{}) {
-	if authMux.ILoger == nil {
+	if authMux.Logger == nil {
 		fmt.Printf("auth-midware error:%s\n", fmt.Sprintf(template, args...))
 		return
 	}
-	authMux.ILoger.Errorf(template, args...)
+	authMux.Logger.Errorf(template, args...)
 }
 
 func ctxWithString(ctx context.Context, k CtxKey, v string) context.Context {
@@ -144,9 +149,9 @@ func CtxGetName(ctx context.Context) (name string, exists bool) {
 }
 
 func CtxWithTokenLocation(ctx context.Context, v string) context.Context {
-	return ctxWithString(ctx, tokenLocationkey, v)
+	return ctxWithString(ctx, tokenLocationKey, v)
 }
 
 func CtxGetTokenLocation(ctx context.Context) (location string, exists bool) {
-	return ctxGetString(ctx, tokenLocationkey)
+	return ctxGetString(ctx, tokenLocationKey)
 }

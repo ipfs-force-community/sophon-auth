@@ -242,7 +242,7 @@ func (o *jwtOAuth) UpdateAccount(ctx context.Context, req *UpdateAccountRequest)
 		account.SourceType = req.SourceType
 	}
 	if req.KeySum&16 == 16 {
-		user.ReqLimit = req.ReqLimit
+		account.ReqLimit = req.ReqLimit
 	}
 	return o.store.UpdateAccount(account)
 }

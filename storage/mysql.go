@@ -5,6 +5,7 @@ import (
 	"golang.org/x/xerrors"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"time"
 
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/core"
@@ -118,12 +119,12 @@ func (s mysqlStore) HasAccount(name string) (bool, error) {
 	return count > 0, nil
 }
 
-func (s *mysqlStore) UpdateUser(account *User) error {
+func (s *mysqlStore) UpdateAccount(account *Account) error {
 	account.UpdateTime = time.Now()
 	return s.db.Save(account).Error
 }
 
-func (s *mysqlStore) PutUser(account *User) error {
+func (s *mysqlStore) PutAccount(account *Account) error {
 	account.UpdateTime = time.Now()
 	account.CreateTime = time.Now()
 	return s.db.Model(Account{}).Create(account).Error

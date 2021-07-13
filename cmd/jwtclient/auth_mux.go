@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 
 	"github.com/filecoin-project/go-jsonrpc/auth"
@@ -70,9 +71,9 @@ func (authMux *AuthMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var host = r.Host
 
-	if authMux.local != nil {
+	if !reflect.ValueOf(authMux.local).IsNil() {
 		if perms, err = authMux.local.Verify(ctx, token); err != nil {
-			if authMux.remote != nil {
+			if !reflect.ValueOf(authMux.remote).IsNil() {
 				if perms, err = authMux.remote.Verify(ctx, token); err != nil {
 					authMux.Warnf("JWT Verification failed (originating from %s): %s", r.RemoteAddr, err)
 					w.WriteHeader(401)
@@ -85,7 +86,7 @@ func (authMux *AuthMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	} else {
-		if authMux.remote != nil {
+		if !reflect.ValueOf(authMux.remote).IsNil() {
 			if perms, err = authMux.remote.Verify(ctx, token); err != nil {
 				authMux.Warnf("JWT Verification failed (originating from %s): %s", r.RemoteAddr, err)
 				w.WriteHeader(401)

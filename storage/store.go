@@ -3,14 +3,17 @@ package storage
 import (
 	"database/sql/driver"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"strings"
+	"time"
+
+	"golang.org/x/xerrors"
+
 	"github.com/filecoin-project/go-address"
+
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/log"
-	"strings"
-	"time"
 )
 
 func NewStore(cnf *config.DBConfig, dataPath string) (Store, error) {
@@ -26,10 +29,13 @@ func NewStore(cnf *config.DBConfig, dataPath string) (Store, error) {
 }
 
 type Store interface {
+	// token
+	Get(token Token) (*KeyPair, error)
 	Put(kp *KeyPair) error
 	Delete(token Token) error
 	Has(token Token) (bool, error)
 	List(skip, limit int64) ([]*KeyPair, error)
+	UpdateToken(kp *KeyPair) error
 
 	// user
 	HasUser(name string) (bool, error)
@@ -44,6 +50,7 @@ type Store interface {
 type KeyPair struct {
 	Name       string    `gorm:"column:name;type:varchar(50);NOT NULL"`
 	Perm       string    `gorm:"column:perm;type:varchar(50);NOT NULL"`
+	Secret     string    `gorm:"column:secret;type:varchar(255);NOT NULL"`
 	Extra      string    `gorm:"column:extra;type:varchar(255);"`
 	Token      Token     `gorm:"column:token;type:varchar(512);uniqueIndex:token_token_IDX,type:hash;not null"`
 	CreateTime time.Time `gorm:"column:createTime;type:datetime;NOT NULL"`
@@ -62,6 +69,14 @@ func (t Token) String() string {
 	return string(t)
 }
 
+func (t *KeyPair) Bytes() ([]byte, error) {
+	buff, err := json.Marshal(t)
+	if err != nil {
+		return nil, err
+	}
+	return buff, nil
+}
+
 func (t *KeyPair) CreateTimeBytes() ([]byte, error) {
 	val, err := t.CreateTime.MarshalBinary()
 	if err != nil {
@@ -70,15 +85,8 @@ func (t *KeyPair) CreateTimeBytes() ([]byte, error) {
 	return val, nil
 }
 
-func (t *KeyPair) FromBytes(key []byte, val []byte) error {
-	t.Token = Token(key)
-	tm := time.Time{}
-	err := tm.UnmarshalBinary(val)
-	if err != nil {
-		return err
-	}
-	t.CreateTime = tm
-	return nil
+func (t *KeyPair) FromBytes(val []byte) error {
+	return json.Unmarshal(val, t)
 }
 
 type User struct {
@@ -101,7 +109,7 @@ type ReqLimit struct {
 func (rl *ReqLimit) Scan(value interface{}) error {
 	bytes, ok := value.([]byte)
 	if !ok {
-		return errors.New(fmt.Sprint("Failed to unmarshal JSONB value:", value))
+		return xerrors.Errorf("failed to unmarshal JSONB value: %v", value)
 	}
 	if len(bytes) == 0 {
 		*rl = ReqLimit{}

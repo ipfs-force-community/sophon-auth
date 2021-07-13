@@ -2,12 +2,13 @@ package storage
 
 import (
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/venus-auth/config"
-	"github.com/filecoin-project/venus-auth/core"
-	"github.com/filecoin-project/venus-auth/util"
 	"golang.org/x/xerrors"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+
+	"github.com/filecoin-project/venus-auth/config"
+	"github.com/filecoin-project/venus-auth/core"
+	"github.com/filecoin-project/venus-auth/util"
 )
 
 type mysqlStore struct {
@@ -67,8 +68,7 @@ func (s *mysqlStore) Put(kp *KeyPair) error {
 }
 
 func (s mysqlStore) Delete(token Token) error {
-	s.db.Delete(&KeyPair{}, "token=?", token)
-	return nil
+	return s.db.Table("token").Delete(&KeyPair{}, "token=?", token).Error
 }
 
 func (s mysqlStore) Has(token Token) (bool, error) {
@@ -80,6 +80,13 @@ func (s mysqlStore) Has(token Token) (bool, error) {
 	return count > 0, nil
 }
 
+func (s mysqlStore) Get(token Token) (*KeyPair, error) {
+	var kp KeyPair
+	err := s.db.Table("token").Take(&kp, "token = ?", token.String()).Error
+
+	return &kp, err
+}
+
 func (s mysqlStore) List(skip, limit int64) ([]*KeyPair, error) {
 	var tokens []*KeyPair
 	err := s.db.Offset(int(skip)).Limit(int(limit)).Order("name").Find(&tokens).Error
@@ -87,6 +94,19 @@ func (s mysqlStore) List(skip, limit int64) ([]*KeyPair, error) {
 		return nil, err
 	}
 	return tokens, nil
+}
+
+func (s *mysqlStore) UpdateToken(kp *KeyPair) error {
+	columns := map[string]interface{}{
+		"name":       kp.Name,
+		"perm":       kp.Perm,
+		"secret":     kp.Secret,
+		"extra":      kp.Extra,
+		"token":      kp.Token,
+		"createTime": kp.CreateTime,
+	}
+	return s.db.Table("token").Where("token = ?", kp.Token.String()).UpdateColumns(columns).Error
+
 }
 
 func (s mysqlStore) HasUser(name string) (bool, error) {
@@ -99,11 +119,7 @@ func (s mysqlStore) HasUser(name string) (bool, error) {
 }
 
 func (s *mysqlStore) UpdateUser(user *User) error {
-	err := s.db.Table("users").Save(user).Error
-	if err != nil {
-		return err
-	}
-	return nil
+	return s.db.Table("users").Save(user).Error
 }
 
 func (s *mysqlStore) PutUser(user *User) error {
@@ -133,10 +149,8 @@ func (s *mysqlStore) ListUsers(skip, limit int64, state int, sourceType core.Sou
 func (s *mysqlStore) GetUser(name string) (*User, error) {
 	var user User
 	err := s.db.Table("users").Take(&user, "name=?", name).Error
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
+
+	return &user, err
 }
 
 func (s mysqlStore) HasMiner(maddr address.Address) (bool, error) {

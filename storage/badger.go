@@ -1,11 +1,13 @@
 package storage
 
 import (
+	"time"
+
 	"github.com/dgraph-io/badger/v3"
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/venus-auth/core"
 	"golang.org/x/xerrors"
-	"time"
+
+	"github.com/filecoin-project/venus-auth/core"
 )
 
 var _ Store = &badgerStore{}
@@ -37,7 +39,7 @@ func newBadgerStore(filePath string) (Store, error) {
 }
 
 func (s *badgerStore) Put(kp *KeyPair) error {
-	val, err := kp.CreateTimeBytes()
+	val, err := kp.Bytes()
 	if err != nil {
 		return xerrors.Errorf("failed to marshal time :%s", err)
 	}
@@ -75,6 +77,34 @@ func (s *badgerStore) Has(token Token) (bool, error) {
 	return true, nil
 }
 
+func (s *badgerStore) Get(token Token) (*KeyPair, error) {
+	kp := new(KeyPair)
+	key := s.tokenKey(token.String())
+
+	err := s.db.View(func(txn *badger.Txn) error {
+		val, err := txn.Get(key)
+		if err != nil || err == badger.ErrKeyNotFound {
+			return xerrors.Errorf("token %s not exit", token)
+		}
+
+		return val.Value(func(val []byte) error {
+			return kp.FromBytes(val)
+		})
+	})
+
+	return kp, err
+}
+
+func (s *badgerStore) UpdateToken(kp *KeyPair) error {
+	val, err := kp.Bytes()
+	if err != nil {
+		return err
+	}
+	return s.db.Update(func(txn *badger.Txn) error {
+		return txn.Set(s.tokenKey(kp.Token.String()), val)
+	})
+}
+
 func (s *badgerStore) List(skip, limit int64) ([]*KeyPair, error) {
 	data := make(chan *KeyPair, limit)
 	err := s.db.View(func(txn *badger.Txn) error {
@@ -90,7 +120,6 @@ func (s *badgerStore) List(skip, limit int64) ([]*KeyPair, error) {
 		for it.Rewind(); it.Valid() && idx < skip+limit; it.Next() {
 			if idx >= skip {
 				item := it.Item()
-				k := item.Key()
 				val := new([]byte)
 				err := item.Value(func(v []byte) error {
 					val = &v
@@ -101,7 +130,7 @@ func (s *badgerStore) List(skip, limit int64) ([]*KeyPair, error) {
 					return err
 				}
 				kp := new(KeyPair)
-				err = kp.FromBytes(k, *val)
+				err = kp.FromBytes(*val)
 				if err != nil {
 					close(data)
 					return err

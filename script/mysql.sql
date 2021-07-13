@@ -5,6 +5,7 @@ CREATE TABLE `token`
 (
     `name`       varchar(50)  NOT NULL,
     `token`      varchar(512) NOT NULL,
+    `secret`     varchar(255) NOT NULL,
     `createTime` datetime     NOT NULL,
     `perm`       varchar(50)  NOT NULL,
     `extra`      varchar(255) DEFAULT NULL,

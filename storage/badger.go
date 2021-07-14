@@ -1,6 +1,9 @@
 package storage
 
 import (
+	"encoding/json"
+	"errors"
+	"github.com/google/uuid"
 	"time"
 
 	"github.com/dgraph-io/badger/v3"
@@ -359,4 +362,89 @@ func (s *badgerStore) GetMiner(maddr address.Address) (*User, error) {
 		return nil, xerrors.Errorf("miner %s not exit", maddr)
 	}
 	return data, nil
+}
+
+func (s *badgerStore) GetRateLimits(name, id string) ([]*UserRateLimit, error) {
+	mRateLimits, err := s.listRateLimits(name, id)
+	if err != nil {
+		return nil, err
+	}
+
+	var rateLimits = make([]*UserRateLimit, len(mRateLimits))
+	var idx = 0
+	for _, l := range mRateLimits {
+		rateLimits[idx] = l
+		idx++
+	}
+
+	return rateLimits, err
+}
+
+func (s *badgerStore) PutRateLimit(limit *UserRateLimit) (string, error) {
+	if limit.Id == "" {
+		limit.Id = uuid.NewString()
+	}
+	limits, err := s.listRateLimits(limit.Name, "")
+	if err != nil {
+		if !xerrors.Is(err, badger.ErrKeyNotFound) {
+			return "", err
+		}
+		limits = make(map[string]*UserRateLimit)
+	}
+
+	limits[limit.Id] = limit
+
+	return limit.Id, s.updateUserRateLimit(limit.Name, limits)
+}
+
+func (s *badgerStore) DelRateLimit(name, id string) error {
+	if len(name) == 0 || len(id) == 0 {
+		return errors.New("user and rate-limit id is required for removing rate limit regulation")
+	}
+
+	mRateLimit, err := s.listRateLimits(name, id)
+	if err != nil {
+		return err
+	}
+	if _, exist := mRateLimit[id]; !exist {
+		return nil
+	}
+	delete(mRateLimit, id)
+	return s.updateUserRateLimit(name, mRateLimit)
+}
+
+func (s *badgerStore) listRateLimits(user, id string) (map[string]*UserRateLimit, error) {
+	var mRateLimits map[string]*UserRateLimit
+	if err := s.db.View(func(txn *badger.Txn) error {
+		val, err := txn.Get(s.rateLimitKey(user))
+		if err != nil || err == badger.ErrKeyNotFound {
+			return xerrors.Errorf("users %s not exit, %w", user, err)
+		}
+		return val.Value(func(val []byte) error {
+			return json.Unmarshal(val, &mRateLimits)
+		})
+	}); err != nil {
+		return nil, err
+	}
+
+	if len(id) != 0 {
+		res := make(map[string]*UserRateLimit)
+		if rl, exists := mRateLimits[id]; exists {
+			res[id] = rl
+		}
+		return res, nil
+	}
+
+	return mRateLimits, nil
+
+}
+
+func (s *badgerStore) updateUserRateLimit(name string, limits map[string]*UserRateLimit) error {
+	val, err := json.Marshal(limits)
+	if err != nil {
+		return err
+	}
+	return s.db.Update(func(txn *badger.Txn) error {
+		return txn.Set(s.rateLimitKey(name), val)
+	})
 }

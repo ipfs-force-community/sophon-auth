@@ -18,6 +18,12 @@ type OAuthApp interface {
 	GetMiner(c *gin.Context)
 	HasMiner(c *gin.Context)
 	GetUser(c *gin.Context)
+
+	AddUserRateLimit(c *gin.Context)
+	UpdateUserRateLimit(c *gin.Context)
+	UpsertUserRateLimit(c *gin.Context)
+	GetUserRateLimit(c *gin.Context)
+	DelUserRateLimit(c *gin.Context)
 }
 
 type oauthApp struct {
@@ -200,4 +206,65 @@ func (o *oauthApp) GetUser(c *gin.Context) {
 		return
 	}
 	SuccessResponse(c, res)
+}
+
+func (o *oauthApp) AddUserRateLimit(c *gin.Context) {
+	req := new(UpsertUserRateLimitReq)
+	if err := c.ShouldBind(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+
+	res, err := o.srv.UpsertUserRateLimit(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	SuccessResponse(c, res)
+}
+func (o *oauthApp) UpdateUserRateLimit(c *gin.Context) {
+
+}
+func (o *oauthApp) UpsertUserRateLimit(c *gin.Context) {
+	req := new(UpsertUserRateLimitReq)
+	if err := c.ShouldBind(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+
+	res, err := o.srv.UpsertUserRateLimit(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	SuccessResponse(c, res)
+}
+
+func (o *oauthApp) GetUserRateLimit(c *gin.Context) {
+	req := new(GetUserRateLimitsReq)
+	if err := c.ShouldBind(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+
+	res, err := o.srv.GetUserRateLimits(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	SuccessResponse(c, res)
+}
+
+func (o *oauthApp) DelUserRateLimit(c *gin.Context) {
+	req := new(DelUserRateLimitReq)
+	if err := c.ShouldBind(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+	err := o.srv.DelUserRateLimit(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	SuccessResponse(c, req.Id)
 }

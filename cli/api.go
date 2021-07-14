@@ -18,6 +18,7 @@ type LocalClient interface {
 	GenerateToken(name, perm, extra string) (string, error)
 	Tokens(pageIndex, pageSize int64) (auth.GetTokensResponse, error)
 	RemoveToken(token string) error
+	DelUserRateLimit(req *auth.DelUserRateLimitReq) (string, error)
 }
 
 type localClient struct {
@@ -109,6 +110,7 @@ func (lc *localClient) CreateUser(req *auth.CreateUserRequest) (*auth.CreateUser
 	return nil, resp.Error().(*errcode.ErrMsg).Err()
 }
 
+// UpdateUser
 func (lc *localClient) UpdateUser(req *auth.UpdateUserRequest) error {
 	resp, err := lc.cli.R().
 		SetHeader("Content-Type", "application/json").
@@ -178,4 +180,44 @@ func (lc *localClient) HasMiner(req *auth.HasMinerRequest) (bool, error) {
 		return *resp.Result().(*bool), nil
 	}
 	return false, resp.Error().(*errcode.ErrMsg).Err()
+}
+
+func (lc *localClient) GetUserRateLimit(name, id string) (auth.GetUserRateLimitResponse, error) {
+	var res auth.GetUserRateLimitResponse
+	resp, err := lc.cli.R().SetQueryParams(
+		map[string]string{"name": name, "id": id}).
+		SetResult(&res).
+		SetError(&errcode.ErrMsg{}).
+		Get("/user/ratelimit")
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusOK {
+		return *(resp.Result().(*auth.GetUserRateLimitResponse)), nil
+	}
+	return nil, resp.Error().(*errcode.ErrMsg).Err()
+}
+
+func (lc *localClient) UpsertUserRateLimit(req *auth.UpsertUserRateLimitReq) (string, error) {
+	var res string
+	resp, err := lc.cli.R().SetBody(req).SetResult(&res).SetError(&errcode.ErrMsg{}).Post("/user/ratelimit/upsert")
+	if err != nil {
+		return "", err
+	}
+	if resp.StatusCode() == http.StatusOK {
+		return *(resp.Result().(*string)), nil
+	}
+	return "", resp.Error().(*errcode.ErrMsg).Err()
+}
+
+func (lc *localClient) DelUserRateLimit(req *auth.DelUserRateLimitReq) (string, error) {
+	var id string
+	resp, err := lc.cli.R().SetBody(req).SetResult(&id).SetError(&errcode.ErrMsg{}).Post("/user/ratelimit/del")
+	if err != nil {
+		return "", err
+	}
+	if resp.StatusCode() == http.StatusOK {
+		return *(resp.Result().(*string)), nil
+	}
+	return "", resp.Error().(*errcode.ErrMsg).Err()
 }

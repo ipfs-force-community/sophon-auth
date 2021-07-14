@@ -25,6 +25,7 @@ require (
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/cast v1.3.0
 	github.com/spf13/viper v1.3.2
+	github.com/stretchr/testify v1.6.1
 	github.com/ugorji/go v1.2.4 // indirect
 	github.com/urfave/cli/v2 v2.3.0
 	go.opencensus.io v0.23.0

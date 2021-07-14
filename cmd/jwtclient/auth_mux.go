@@ -71,9 +71,9 @@ func (authMux *AuthMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var host = r.Host
 
-	if !reflect.ValueOf(authMux.local).IsNil() {
+	if !isNil(authMux.local) {
 		if perms, err = authMux.local.Verify(ctx, token); err != nil {
-			if !reflect.ValueOf(authMux.remote).IsNil() {
+			if !isNil(authMux.remote) {
 				if perms, err = authMux.remote.Verify(ctx, token); err != nil {
 					authMux.Warnf("JWT Verification failed (originating from %s): %s", r.RemoteAddr, err)
 					w.WriteHeader(401)
@@ -86,7 +86,7 @@ func (authMux *AuthMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	} else {
-		if !reflect.ValueOf(authMux.remote).IsNil() {
+		if !isNil(authMux.remote) {
 			if perms, err = authMux.remote.Verify(ctx, token); err != nil {
 				authMux.Warnf("JWT Verification failed (originating from %s): %s", r.RemoteAddr, err)
 				w.WriteHeader(401)
@@ -106,6 +106,13 @@ func (authMux *AuthMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	*r = *(r.WithContext(ctx))
 
 	authMux.handler.ServeHTTP(w, r)
+}
+
+func isNil(ac IJwtAuthClient) bool {
+	if ac != nil && !reflect.ValueOf(ac).IsNil() {
+		return false
+	}
+	return true
 }
 
 func (authMux *AuthMux) Warnf(template string, args ...interface{}) {

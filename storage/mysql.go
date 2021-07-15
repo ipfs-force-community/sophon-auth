@@ -2,13 +2,13 @@ package storage
 
 import (
 	"github.com/filecoin-project/go-address"
-	"golang.org/x/xerrors"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
-
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/util"
+	"github.com/google/uuid"
+	"golang.org/x/xerrors"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 type mysqlStore struct {
@@ -21,7 +21,7 @@ func newMySQLStore(cnf *config.DBConfig) (Store, error) {
 	if err != nil {
 		return nil, xerrors.Errorf("[db connection failed] Database name: %s %w", cnf.DSN, err)
 	}
-	if cnf.Debug {
+	if cnf.Debug || true {
 		db = db.Debug()
 	}
 	sqlDB, err := db.DB()
@@ -56,7 +56,7 @@ func newMySQLStore(cnf *config.DBConfig) (Store, error) {
 		}
 	}
 
-	if err = session.AutoMigrate(&KeyPair{}, &User{}); err != nil {
+	if err = session.AutoMigrate(&KeyPair{}, &User{}, &UserRateLimit{}); err != nil {
 		return nil, err
 	}
 
@@ -123,11 +123,7 @@ func (s *mysqlStore) UpdateUser(user *User) error {
 }
 
 func (s *mysqlStore) PutUser(user *User) error {
-	err := s.db.Table("users").Save(user).Error
-	if err != nil {
-		return err
-	}
-	return nil
+	return s.db.Table("users").Save(user).Error
 }
 
 func (s *mysqlStore) ListUsers(skip, limit int64, state int, sourceType core.SourceType, code core.KeyCode) ([]*User, error) {
@@ -169,4 +165,26 @@ func (s *mysqlStore) GetMiner(maddr address.Address) (*User, error) {
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (s *mysqlStore) GetRateLimits(name string, id string) ([]*UserRateLimit, error) {
+	var limits []*UserRateLimit
+	tmp := s.db.Model((*UserRateLimit)(nil)).Where("name = ?", name)
+	if len(id) != 0 {
+		tmp = tmp.Where("id = ?", id)
+	}
+	return limits, tmp.Find(&limits).Error
+}
+
+func (s *mysqlStore) PutRateLimit(limit *UserRateLimit) (string, error) {
+	if len(limit.Id) == 0 {
+		limit.Id = uuid.NewString()
+	}
+	return limit.Id, s.db.Table("user_rate_limits").Save(limit).Error
+}
+
+func (s *mysqlStore) DelRateLimit(name, id string) error {
+	return s.db.Table("user_rate_limits").
+		Where("id = ? and name= ?", id, name).
+		Delete(nil).Error
 }

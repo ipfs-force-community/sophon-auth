@@ -5,8 +5,10 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/core"
+	"github.com/filecoin-project/venus-auth/storage"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
+	"strconv"
 	"time"
 )
 
@@ -20,6 +22,7 @@ var userSubCommand = &cli.Command{
 		activeUserCmd,
 		getUserCmd,
 		hasMinerCmd,
+		rateLimitSubCmds,
 	},
 }
 
@@ -42,8 +45,6 @@ var addUserCmd = &cli.Command{
 			Name:  "sourceType",
 			Value: 0,
 		},
-		&cli.IntFlag{Name: "reqLimitAmount"},
-		&cli.StringFlag{Name: "reqLimitResetDuration", Value: "24h", Usage: "10h, 5m, 10h5m, 2h5m20s"},
 	},
 	Action: func(ctx *cli.Context) error {
 		client, err := GetCli(ctx)
@@ -65,16 +66,6 @@ var addUserCmd = &cli.Command{
 				return err
 			}
 			user.Miner = mAddr.String()
-		}
-
-		if ctx.IsSet("reqLimitAmount") {
-			user.ReqLimit.Cap = ctx.Int64("reqLimitAmount")
-			if user.ReqLimit.ResetDur, err = time.ParseDuration(ctx.String("reqLimitResetDuration")); err != nil {
-				return err
-			}
-			if user.ReqLimit.ResetDur <= time.Second {
-				return fmt.Errorf("request limit reset duration must larger than 1(second)")
-			}
 		}
 		res, err := client.CreateUser(user)
 		if err != nil {
@@ -105,8 +96,6 @@ var updateUserCmd = &cli.Command{
 		&cli.IntFlag{
 			Name: "state",
 		},
-		&cli.IntFlag{Name: "reqLimitAmount"},
-		&cli.StringFlag{Name: "reqLimitResetDuration"},
 	},
 	Action: func(ctx *cli.Context) error {
 		client, err := GetCli(ctx)
@@ -135,16 +124,6 @@ var updateUserCmd = &cli.Command{
 		if ctx.IsSet("sourceType") {
 			req.SourceType = ctx.Int("sourceType")
 			req.KeySum |= 8
-		}
-		if ctx.IsSet("reqLimitAmount") {
-			req.ReqLimit.Cap = ctx.Int64("reqLimitAmount")
-			if req.ReqLimit.ResetDur, err = time.ParseDuration(ctx.String("reqLimitResetDuration")); err != nil {
-				return err
-			}
-			if req.ReqLimit.ResetDur <= time.Second {
-				return fmt.Errorf("request limit reset duration must larger than 1(second)")
-			}
-			req.KeySum |= 0x10
 		}
 		err = client.UpdateUser(req)
 		if err != nil {
@@ -237,7 +216,6 @@ var listUsersCmd = &cli.Command{
 			fmt.Println("miner:", v.Miner)
 			fmt.Println("sourceType:", v.SourceType, "\t// miner:1")
 			fmt.Println("state", v.State, "\t// 0: disable, 1: enable")
-			fmt.Printf("reqLimit:\tamount:%d, resetDuration:%s\n", v.ReqLimit.Cap, v.ReqLimit.ResetDur.String())
 			fmt.Println("comment:", v.Comment)
 			fmt.Println("createTime:", time.Unix(v.CreateTime, 0).Format(time.RFC1123))
 			fmt.Println("updateTime:", time.Unix(v.CreateTime, 0).Format(time.RFC1123))
@@ -269,7 +247,6 @@ var getUserCmd = &cli.Command{
 		fmt.Println("miner:", user.Miner)
 		fmt.Println("sourceType:", user.SourceType, "\t// miner:1")
 		fmt.Println("state", user.State, "\t// 0: disable, 1: enable")
-		fmt.Printf("reqLimit:\tamount:%d, resetDuration:%s\n", user.ReqLimit.Cap, user.ReqLimit.ResetDur.String())
 		fmt.Println("comment:", user.Comment)
 		fmt.Println("createTime:", time.Unix(user.CreateTime, 0).Format(time.RFC1123))
 		fmt.Println("updateTime:", time.Unix(user.CreateTime, 0).Format(time.RFC1123))
@@ -301,6 +278,191 @@ var hasMinerCmd = &cli.Command{
 			return err
 		}
 		fmt.Println(has)
+		return nil
+	},
+}
+
+var rateLimitSubCmds = &cli.Command{
+	Name: "rate-limit",
+	Subcommands: []*cli.Command{
+		rateLimitAdd,
+		rateLimitUpdate,
+		rateLimitGet,
+		rateLimitDel},
+}
+
+var rateLimitGet = &cli.Command{
+	Name:      "get",
+	Usage:     "get user request rate limit",
+	Flags:     []cli.Flag{},
+	ArgsUsage: "name",
+	Action: func(ctx *cli.Context) error {
+		client, err := GetCli(ctx)
+		if err != nil {
+			return err
+		}
+
+		if ctx.NArg() != 1 {
+			return xerrors.New("expect name")
+		}
+
+		name := ctx.Args().Get(0)
+		var limits []*storage.UserRateLimit
+		limits, err = client.GetUserRateLimit(name, "")
+		if err != nil {
+			return err
+		}
+
+		if len(limits) == 0 {
+			fmt.Printf("user have no request rate limit\n")
+		} else {
+			for _, l := range limits {
+				fmt.Printf("user:%s, limit id:%s, request limit amount:%d, duration:%.2f(h)\n",
+					l.Name, l.Id, l.ReqLimit.Cap, l.ReqLimit.ResetDur.Hours())
+			}
+		}
+		return nil
+	},
+}
+
+var rateLimitAdd = &cli.Command{
+	Name:  "add",
+	Usage: "add user request rate limit",
+	Flags: []cli.Flag{
+		&cli.StringFlag{Name: "id", Usage: "rate limit id to update"},
+	},
+	ArgsUsage: "user rate-limit add <name> <limitAmount> <duration(2h, 1h:20m, 2m10s)>",
+	Action: func(ctx *cli.Context) error {
+		client, err := GetCli(ctx)
+		if err != nil {
+			return err
+		}
+
+		if ctx.Args().Len() < 3 {
+			return cli.ShowAppHelp(ctx)
+		}
+
+		name := ctx.Args().Get(0)
+
+		if res, err := client.GetUserRateLimit(name, ""); err != nil {
+			return err
+		} else if len(res) > 0 {
+			return fmt.Errorf("user rate limit:%s exists", res[0].Id)
+		}
+
+		var limitAmount uint64
+		var resetDuration time.Duration
+		if limitAmount, err = strconv.ParseUint(ctx.Args().Get(1), 10, 64); err != nil {
+			return err
+		}
+		if resetDuration, err = time.ParseDuration(ctx.Args().Get(2)); err != nil {
+			return err
+		}
+		if resetDuration <= 0 {
+			return fmt.Errorf("reset duratoin must be positive")
+		}
+
+		userLimit := &auth.UpsertUserRateLimitReq{
+			Name:     name,
+			ReqLimit: storage.ReqLimit{Cap: int64(limitAmount), ResetDur: resetDuration},
+		}
+
+		if ctx.IsSet("id") {
+			userLimit.Id = ctx.String("id")
+		}
+
+		if userLimit.Id, err = client.UpsertUserRateLimit(userLimit); err != nil {
+			return err
+		}
+
+		fmt.Printf("upsert user rate limit success:\t%s\n", userLimit.Id)
+
+		return nil
+	},
+}
+
+var rateLimitUpdate = &cli.Command{
+	Name:      "update",
+	Usage:     "update user request rate limit",
+	Flags:     []cli.Flag{},
+	ArgsUsage: "<name> <rate-limit-id> <limitAmount> <duration(2h, 1h:20m, 2m10s)>",
+	Action: func(ctx *cli.Context) error {
+		client, err := GetCli(ctx)
+		if err != nil {
+			return err
+		}
+
+		if ctx.Args().Len() != 4 {
+			return cli.ShowAppHelp(ctx)
+		}
+
+		name := ctx.Args().Get(0)
+		id := ctx.Args().Get(1)
+
+		if res, err := client.GetUserRateLimit(name, id); err != nil {
+			return err
+		} else if len(res) == 0 {
+			return fmt.Errorf("user rate limit:%s NOT exists", id)
+		}
+
+		var limitAmount uint64
+		var resetDuration time.Duration
+		if limitAmount, err = strconv.ParseUint(ctx.Args().Get(2), 10, 64); err != nil {
+			return err
+		}
+		if resetDuration, err = time.ParseDuration(ctx.Args().Get(3)); err != nil {
+			return err
+		}
+		if resetDuration <= 0 {
+			return fmt.Errorf("reset duratoin must be positive")
+		}
+
+		userLimit := &auth.UpsertUserRateLimitReq{
+			Id: id, Name: name,
+			ReqLimit: storage.ReqLimit{Cap: int64(limitAmount), ResetDur: resetDuration},
+		}
+
+		if userLimit.Id, err = client.UpsertUserRateLimit(userLimit); err != nil {
+			return err
+		}
+
+		fmt.Printf("upsert user rate limit success:\t%s\n", userLimit.Id)
+
+		return nil
+	},
+}
+
+var rateLimitDel = &cli.Command{
+	Name:      "del",
+	Usage:     "delete user request rate limit",
+	Flags:     []cli.Flag{},
+	ArgsUsage: "user rate-limit <user> <rate-limit-id> ",
+	Action: func(ctx *cli.Context) error {
+		client, err := GetCli(ctx)
+		if err != nil {
+			return err
+		}
+
+		if ctx.Args().Len() != 2 {
+			return cli.ShowAppHelp(ctx)
+		}
+
+		var delReq = &auth.DelUserRateLimitReq{
+			Name: ctx.Args().Get(0),
+			Id:   ctx.Args().Get(1)}
+
+		if res, err := client.GetUserRateLimit(delReq.Name, delReq.Id); err != nil {
+			return err
+		} else if len(res) == 0 {
+			fmt.Printf("user:%s, rate-limit-id:%s Not exits\n", delReq.Name, delReq.Id)
+			return nil
+		}
+
+		var id string
+		if id, err = client.DelUserRateLimit(delReq); err != nil {
+			return err
+		}
+		fmt.Printf("delete rate limit success, %s\n", id)
 		return nil
 	},
 }

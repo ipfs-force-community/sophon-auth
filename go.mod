@@ -15,7 +15,7 @@ require (
 	github.com/golang/protobuf v1.5.1 // indirect
 	github.com/google/uuid v1.2.0
 	github.com/influxdata/influxdb-client-go/v2 v2.2.2
-	github.com/ipfs-force-community/metrics v0.0.0-20210705093944-918711d7932a
+	github.com/ipfs-force-community/metrics v0.0.0-20210714124606-3d65e2d7cec1
 	github.com/ipfs/go-ipfs-cmds v0.0.0-00010101000000-000000000000
 	github.com/ipfs/go-log v1.0.5 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
@@ -33,7 +33,7 @@ require (
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gorm.io/driver/mysql v1.1.1
-	gorm.io/gorm v1.21.11
+	gorm.io/gorm v1.21.12
 	gotest.tools v2.2.0+incompatible
 )
 

@@ -48,6 +48,10 @@ type OAuthService interface {
 	GetMiner(ctx context.Context, req *GetMinerRequest) (*OutputUser, error)
 	HasMiner(ctx context.Context, req *HasMinerRequest) (bool, error)
 	GetUser(ctx context.Context, req *GetUserRequest) (*OutputUser, error)
+
+	GetUserRateLimits(ctx context.Context, req *GetUserRateLimitsReq) (GetUserRateLimitResponse, error)
+	UpsertUserRateLimit(ctx context.Context, req *UpsertUserRateLimitReq) (string, error)
+	DelUserRateLimit(ctx context.Context, req *DelUserRateLimitReq) error
 }
 
 type jwtOAuth struct {
@@ -208,7 +212,6 @@ func (o *jwtOAuth) CreateUser(ctx context.Context, req *CreateUserRequest) (*Cre
 		Comment:    req.Comment,
 		SourceType: req.SourceType,
 		State:      req.State,
-		ReqLimit:   req.ReqLimit,
 		CreateTime: time.Now().Local(),
 		UpdateTime: time.Now().Local(),
 	}
@@ -240,9 +243,6 @@ func (o *jwtOAuth) UpdateUser(ctx context.Context, req *UpdateUserRequest) error
 	}
 	if req.KeySum&8 == 8 {
 		user.SourceType = req.SourceType
-	}
-	if req.KeySum&16 == 16 {
-		user.ReqLimit = req.ReqLimit
 	}
 	return o.store.UpdateUser(user)
 }
@@ -286,6 +286,18 @@ func (o *jwtOAuth) GetUser(ctx context.Context, req *GetUserRequest) (*OutputUse
 		return nil, err
 	}
 	return o.mp.ToOutPutUser(user), nil
+}
+
+func (o jwtOAuth) GetUserRateLimits(ctx context.Context, req *GetUserRateLimitsReq) (GetUserRateLimitResponse, error) {
+	return o.store.GetRateLimits(req.Name, req.Id)
+}
+
+func (o *jwtOAuth) UpsertUserRateLimit(ctx context.Context, req *UpsertUserRateLimitReq) (string, error) {
+	return o.store.PutRateLimit((*storage.UserRateLimit)(req))
+}
+
+func (o jwtOAuth) DelUserRateLimit(ctx context.Context, req *DelUserRateLimitReq) error {
+	return o.store.DelRateLimit(req.Name, req.Id)
 }
 
 func DecodeToBytes(enc []byte) ([]byte, error) {

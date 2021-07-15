@@ -45,6 +45,10 @@ type Store interface {
 	PutUser(*User) error
 	UpdateUser(*User) error
 	ListUsers(skip, limit int64, state int, sourceType core.SourceType, code core.KeyCode) ([]*User, error)
+	// rate limit
+	GetRateLimits(name, id string) ([]*UserRateLimit, error)
+	PutRateLimit(limit *UserRateLimit) (string, error)
+	DelRateLimit(name, id string) error
 }
 
 type KeyPair struct {
@@ -90,15 +94,26 @@ func (t *KeyPair) FromBytes(val []byte) error {
 }
 
 type User struct {
-	Id         string          `gorm:"column:id;type:varchar(255);primary_key"`
+	Id         string          `gorm:"column:id;type:varchar(64);primary_key"`
 	Name       string          `gorm:"column:name;type:varchar(50);uniqueIndex:users_name_IDX,type:btree;not null"`
 	Miner      string          `gorm:"column:miner;type:varchar(255);index:users_miner_IDX,type:btree"`
 	Comment    string          `gorm:"column:comment;type:varchar(255);"`
 	SourceType core.SourceType `gorm:"column:stype;type:tinyint(4);default:0;NOT NULL"`
 	State      int             `gorm:"column:state;type:tinyint(4);default:0;NOT NULL"`
-	ReqLimit   ReqLimit        `gorm:"column:reqLimit;type:varchar(512)"`
 	CreateTime time.Time       `gorm:"column:createTime;type:datetime;NOT NULL"`
 	UpdateTime time.Time       `gorm:"column:updateTime;type:datetime;NOT NULL"`
+}
+
+type UserRateLimit struct {
+	Id       string   `gorm:"column:id;type:varchar(64);primary_key"`
+	Name     string   `gorm:"column:name;type:varchar(50);index:user_service_api_IDX;not null"`
+	Service  string   `gorm:"column:service;type:varchar(50);index:user_service_api_IDX"`
+	API      string   `gorm:"column:api;type:varchar(50);index:user_service_api_IDX"`
+	ReqLimit ReqLimit `gorm:"column:reqLimit;type:varchar(256)"`
+}
+
+func (l *UserRateLimit) LimitKey() string {
+	return l.Name + l.Service + l.API
 }
 
 type ReqLimit struct {

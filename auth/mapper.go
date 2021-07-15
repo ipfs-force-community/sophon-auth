@@ -30,8 +30,7 @@ func (o *mapper) ToOutPutUser(m *storage.User) *OutputUser {
 		State:      m.State,
 		SourceType: m.SourceType,
 		CreateTime: m.CreateTime.Unix(),
-		UpdateTime: m.UpdateTime.Unix(),
-		ReqLimit:   m.ReqLimit}
+		UpdateTime: m.UpdateTime.Unix()}
 }
 
 func (o *mapper) ToOutPutUsers(arr []*storage.User) []*OutputUser {

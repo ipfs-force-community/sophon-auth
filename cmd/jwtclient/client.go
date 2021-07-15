@@ -120,3 +120,17 @@ func (c *JWTClient) HasMiner(req *auth.HasMinerRequest) (bool, error) {
 	}
 	return false, resp.Error().(*errcode.ErrMsg).Err()
 }
+
+func (c *JWTClient) GetUserRateLimit(name string) (auth.GetUserRateLimitResponse, error) {
+	var res auth.GetUserRateLimitResponse
+	resp, err := c.cli.R().SetQueryParams(map[string]string{
+		"name": name}).SetResult(&res).SetError(&errcode.ErrMsg{}).Get("/user/ratelimit")
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode() == http.StatusOK {
+		return *(resp.Result().(*auth.GetUserRateLimitResponse)), nil
+	}
+	return nil, resp.Error().(*errcode.ErrMsg).Err()
+}

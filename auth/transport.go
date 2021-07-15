@@ -55,13 +55,25 @@ type ListUsersResponse = []*OutputUser
 
 type GetTokensResponse = []*TokenInfo
 
+type GetUserRateLimitsReq struct {
+	Id   string `form:"id"`
+	Name string `form:"name"`
+}
+
+type DelUserRateLimitReq struct {
+	Name string `form:"name"`
+	Id   string `form:"id"`
+}
+
+type GetUserRateLimitResponse []*storage.UserRateLimit
+type UpsertUserRateLimitReq storage.UserRateLimit
+
 type CreateUserRequest struct {
-	Name       string           `form:"name" binding:"required"`
-	Miner      string           `form:"miner"` // miner address f01234
-	Comment    string           `form:"comment"`
-	State      int              `form:"state"` // 0: disable, 1: enable
-	SourceType core.SourceType  `form:"sourceType"`
-	ReqLimit   storage.ReqLimit `form:"reqLimitAmount"`
+	Name       string          `form:"name" binding:"required"`
+	Miner      string          `form:"miner"` // miner address f01234
+	Comment    string          `form:"comment"`
+	State      int             `form:"state"` // 0: disable, 1: enable
+	SourceType core.SourceType `form:"sourceType"`
 }
 type CreateUserResponse = OutputUser
 
@@ -69,23 +81,21 @@ type UpdateUserRequest struct {
 	KeySum core.KeyCode `form:"keySum"` // keyCode Sum
 	Name   string       `form:"name"`
 	// todo make miner tobe address
-	Miner      string           `form:"miner"`      // keyCode:1
-	Comment    string           `form:"comment"`    // keyCode:2
-	State      int              `form:"state"`      // keyCode:4
-	SourceType core.SourceType  `form:"sourceType"` // keyCode:8
-	ReqLimit   storage.ReqLimit `form:"reqLimit"`   // keyCode:16
+	Miner      string          `form:"miner"`      // keyCode:1
+	Comment    string          `form:"comment"`    // keyCode:2
+	State      int             `form:"state"`      // keyCode:4
+	SourceType core.SourceType `form:"sourceType"` // keyCode:8
 }
 
 type OutputUser struct {
-	Id         string           `json:"id"`
-	Name       string           `json:"name"`
-	Miner      address.Address  `json:"miner"` // miner address f01234
-	SourceType core.SourceType  `json:"sourceType"`
-	ReqLimit   storage.ReqLimit `form:"reqLimit"`
-	Comment    string           `json:"comment"`
-	State      int              `json:"state"`
-	CreateTime int64            `json:"createTime"`
-	UpdateTime int64            `json:"updateTime"`
+	Id         string          `json:"id"`
+	Name       string          `json:"name"`
+	Miner      address.Address `json:"miner"` // miner address f01234
+	SourceType core.SourceType `json:"sourceType"`
+	Comment    string          `json:"comment"`
+	State      int             `json:"state"`
+	CreateTime int64           `json:"createTime"`
+	UpdateTime int64           `json:"updateTime"`
 }
 
 type GetUserRequest struct {
@@ -100,4 +110,15 @@ type HasMinerRequest struct {
 type GetMinerRequest struct {
 	// todo make miner tobe address
 	Miner string `form:"miner"`
+}
+
+func (ls GetUserRateLimitResponse) MatchedLimit(service, api string) *storage.UserRateLimit {
+	// just returns root matched limit currently
+	// todo: returns most matched limit
+	for _, l := range ls {
+		if l.Service == "" && l.API == "" {
+			return l
+		}
+	}
+	return nil
 }

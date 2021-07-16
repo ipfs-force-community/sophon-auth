@@ -163,3 +163,13 @@ func CtxWithTokenLocation(ctx context.Context, v string) context.Context {
 func CtxGetTokenLocation(ctx context.Context) (location string, exists bool) {
 	return ctxGetString(ctx, tokenLocationKey)
 }
+
+type ValueFromCtx struct{}
+
+func (vfc *ValueFromCtx) AccFromCtx(ctx context.Context) (string, bool) {
+	return CtxGetName(ctx)
+}
+
+func (vfc *ValueFromCtx) HostFromCtx(ctx context.Context) (string, bool) {
+	return CtxGetTokenLocation(ctx)
+}

@@ -69,7 +69,9 @@ func (authMux *AuthMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var perms []auth.Permission
 	var err error
-	var host = r.Host
+	var host = r.RemoteAddr
+
+	ctx = CtxWithTokenLocation(ctx, host)
 
 	if !isNil(authMux.local) {
 		if perms, err = authMux.local.Verify(ctx, token); err != nil {
@@ -97,7 +99,6 @@ func (authMux *AuthMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	ctx = auth.WithPerm(ctx, perms)
 	ctx = ipfsHttp.WithPerm(ctx, perms)
-	ctx = CtxWithTokenLocation(ctx, host)
 
 	if name, _ := auth2.JwtUserFromToken(token); len(name) != 0 {
 		ctx = CtxWithName(ctx, name)

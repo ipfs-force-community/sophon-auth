@@ -22,15 +22,6 @@ $ venus-auth
 ## 1. verify token
 - method: POST
 - route : http://localhost:8989/verify
-- Header params:
-
-name | type | desc |e.g.
----|---|---|---
-X-Forwarded-For | string | clientIP | 192.168.1.2
-X-Real-Ip | string| clientIP | 192.168.1.2
-spanId | string | service unique Id | venus-1
-preHost| string | the IP of the token node | 192.168.1.3 
-svcName| string | service name | venus
 
 - Body params:
 
@@ -115,55 +106,54 @@ limit | int | \> 0 | 20
 ## 1. generate token
 ```
 # show help
-$ ./auth-server genToken -h  
+$ ./venus-auth token gen -h
 USAGE:
-   auth-server genToken [command options] [name]
+   venus-auth token gen [command options] [name]
 
 OPTIONS:
    --perm value   permission for API auth (read, write, sign, admin) (default: "read")
    --extra value  custom string in JWT payload
 
-$ ./auth-server genToken token1 --perm admin --extra custom_str
+$ ./venus-auth token gen token1 --perm admin --extra custom_str
 generate token success: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidG9rZW4xIiwicGVybSI6InJlYWQiLCJleHQiOiIifQ.s3jvO-yewsf3PHMF-tsWSbb-3aW7V-tlMsnEAkYdxgA
 ```
 ## 2. list token info
 ```
 # show help
 
-$ ./auth-server tokens -h 
+$ ./venus-auth token list -h
 USAGE:
-   auth-server tokens [command options] [arguments...]
+   venus-auth token list [command options] [arguments...]
 
 OPTIONS:
    --skip value   (default: 0)
    --limit value  (default: 20)
    --help, -h     show help (default: false)
 
-$ ./auth-server tokens --skip 0 --limit 10
-num     name            createTime              token
-1       name1           2021-04-09 09:29:34     eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoibmFtZTEiLCJwZXJtIjoicmVhZCIsImV4dCI6IiJ9.NmjYuWFEznE9Jmen68xESkACu4hfF1ezeC8ZEY8iMrg
-2       token1          2021-04-09 09:29:46     eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidG9rZW4xIiwicGVybSI6InJlYWQiLCJleHQiOiIifQ.s3jvO-yewsf3PHMF-tsWSbb-3aW7V-tlMsnEAkYdxgA
-3       testName1       2021-04-08 18:23:49     eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidGVzdE5hbWUxIiwicGVybSI6InJlYWQiLCJleHQiOiIifQ.uMj0V4Jkh_rJ94JdpAEllP3G3EZPaKNkx5EdI9hMPhQ
-4       testName2       2021-04-08 18:23:51     eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidGVzdE5hbWUyIiwicGVybSI6InJlYWQiLCJleHQiOiIifQ.aWoZ2PuxybS_VlKE58_o-SZ0er2XbcqB_TNJorP0d90
-5       testName3       2021-04-08 18:23:53     eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidGVzdE5hbWUzIiwicGVybSI6InJlYWQiLCJleHQiOiIifQ.ywsQO933d_P4R1vYrGsMw1P4GQWrQvnDSZD1eVW1Ess
+$ ./venus-auth token list --skip 0 --limit 10
+num     name          perm    createTime              token
+1       token1        admin   2021-05-31 18:45:02     eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidG9rZW4xIiwicGVybSI6InJlYWQiLCJleHQiOiIifQ.s3jvO-yewsf3PHMF-tsWSbb-3aW7V-tlMsnEAkYdxgA
+2       token2        read    2021-06-18 13:31:47     eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiZmF0bWFuMTMiLCJwZXJtIjoicmVhZCIsImV4dCI6IiJ9.F0frWmZSsEpyZIY_VOQ9WiAVxAfzqUdhvrU16ltbP9U
+3       token3        write   2021-06-19 00:14:02     eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiZmF0bWFuMTMiLCJwZXJtIjoid3JpdGUiLCJleHQiOiIifQ.Txu3yYCAtbKL9jSzsf3ldDWz7WX5F3w7RnQBDzMtY-0
+4       token4        sign    2021-07-06 11:14:06     eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiaGUiLCJwZXJtIjoicmVhZCIsImV4dCI6IiJ9.Hjmnh4snGYc1lT2PplH4tffIdBNta7QPRiwCeWsty2s
 ```
 
 ## 3. remove token
 ```
 # show help
-$ ./auth-server rmToken -h 
+$ ./venus-auth token rm -h
 USAGE:
-   auth-server rmToken [command options] [token]
+   venus-auth token rm [command options] [token]
 
 OPTIONS:
    --help, -h  show help (default: false)
 
-$ ./auth-server rmToken eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoibmFtZTEiLCJwZXJtIjoicmVhZCIsImV4dCI6IiJ9.NmjYuWFEznE9Jmen68xESkACu4hfF1ezeC8ZEY8iMrg 
-remove token success: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoibmFtZTEiLCJwZXJtIjoicmVhZCIsImV4dCI6IiJ9.NmjYuWFEznE9Jmen68xESkACu4hfF1ezeC8ZEY8iMrg
+$ ./venus-auth token rm eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidG9rZW4xIiwicGVybSI6InJlYWQiLCJleHQiOiIifQ.s3jvO-yewsf3PHMF-tsWSbb-3aW7V-tlMsnEAkYdxgA 
+remove token success: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidG9rZW4xIiwicGVybSI6InJlYWQiLCJleHQiOiIifQ.s3jvO-yewsf3PHMF-tsWSbb-3aW7V-tlMsnEAkYdxgA
 
 ```
 # Config
->the default config path is "~/.auth_home/config.toml"
+>the default config path is "~/.auth-auth/config.toml"
 ```
 Port = "8989" 
 Secret = "88b8a61690ee648bef9bc73463b8a05917f1916df169c775a3896719466be04a"
@@ -172,37 +162,36 @@ WriteTimeout = "1m"
 IdleTimeout = "1m"
 
 [db]
-# support: badger (default), mysql 
-# the mysql DDL is in the script package 
-type = "badger" 
-# The following parameters apply to MySQL
-DSN = "rennbon:111111@(127.0.0.1:3306)/auth_server?parseTime=true&loc=Local&charset=utf8mb4&collation=utf8mb4_unicode_ci&readTimeout=10s&writeTimeout=10s"
-# conns 1500 concurrent
-maxOpenConns = 64
-maxIdleConns = 128
-maxLifeTime = "120s"
-maxIdleTime = "30s"
+  # support: badger (default), mysql
+  # the mysql DDL is in the script package
+  type = "badger"
+  # The following parameters apply to MySQL
+  DSN = "rennbon:111111@(127.0.0.1:3306)/auth_server?parseTime=true&loc=Local&charset=utf8mb4&collation=utf8mb4_unicode_ci&readTimeout=10s&writeTimeout=10s"
+  # conns 1500 concurrent
+  maxOpenConns = 64
+  maxIdleConns = 128
+  maxLifeTime = "120s"
+  maxIdleTime = "30s"
 
 [log]
-# trace,debug,info,warning,error,fatal,panic
-# output level
-logLevel = trace
-# db type, 1:influxDB
-type = 1
-# db hook switch
-hookSwitch = true
-[log.influxdb]
-# the influxDB view config is in the script package 
-serverURL = "http://192.168.1.141:8086"
-authToken = "jcomkQ-dVBRoCrKSEWMuYxA4COj_EfyCvwgPW5Ql-tT-cCizIjE24rPJQNx8Kkqzz4gCW8YNFq0wcDaHJOcGMQ=="
-org = "venus-oauth"
-bucket = "bkt2"
-measurement = "verify"
-flushInterval = "30s"
-batchSize = 100
+  # trace,debug,info,warning,error,fatal,panic
+  # output level
+  logLevel = trace
+  # db type, 1:influxDB
+  type = 1
+  # db hook switch
+  hookSwitch = true
+
+[Trace]
+  # Enable trace
+  JaegerTracingEnabled = true
+  # Frequency of collection
+  ProbabilitySampler = 1.0
+  JaegerEndpoint = "127.0.0.1:6831"
+  ServerName = "venus-auth"
 ```
+
 ## [Script](./script)
-- mysql.sql => mysql storage DDL
 - influxdb-docker-compose.yml => rename docker-compose.yml and install influxdb in docker
 - influxDB_view.md => histogram and graph view config
 

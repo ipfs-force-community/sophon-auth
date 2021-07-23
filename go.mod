@@ -15,7 +15,7 @@ require (
 	github.com/golang/protobuf v1.5.1 // indirect
 	github.com/google/uuid v1.2.0
 	github.com/influxdata/influxdb-client-go/v2 v2.2.2
-	github.com/ipfs-force-community/metrics v0.0.0-20210721095706-e644662d8554
+	github.com/ipfs-force-community/metrics v1.0.0
 	github.com/ipfs/go-ipfs-cmds v0.0.0-00010101000000-000000000000
 	github.com/ipfs/go-log v1.0.5 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect

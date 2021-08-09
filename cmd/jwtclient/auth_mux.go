@@ -39,13 +39,28 @@ func NewAuthMux(local, remote IJwtAuthClient, handler http.Handler, logger Logge
 }
 
 // TrustHandle for requests that can be accessed directly
+// if 'pattern' with '/' as suffix, 'TrustHandler' treat it as a root path,
+// that it's all sub-path will be trusted.
+// if 'pattern' have no '/' with suffix,
+// only the URI exactly matches the 'pattern' would be treat as trusted.
 func (authMux *AuthMux) TrustHandle(pattern string, handler http.Handler) {
 	authMux.trustHandle[pattern] = handler
 }
 
+func (AuthMux *AuthMux) trustedHandler(uri string) http.Handler {
+	// todo: we don't consider the situation that 'trustHandle' is changed in parallelly,
+	//  cause we assume trusted handler is static after application initialized
+	for trustedURI, handler := range AuthMux.trustHandle {
+		if trustedURI == uri || (trustedURI[len(trustedURI)-1] == '/' && strings.HasPrefix(uri, trustedURI)) {
+			return handler
+		}
+	}
+	return nil
+}
+
 func (authMux *AuthMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if handle, ok := authMux.trustHandle[r.RequestURI]; ok {
-		handle.ServeHTTP(w, r)
+	if h := authMux.trustedHandler(r.RequestURI); h != nil {
+		h.ServeHTTP(w, r)
 		return
 	}
 

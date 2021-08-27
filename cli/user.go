@@ -344,9 +344,7 @@ var rateLimitAdd = &cli.Command{
 
 		name := ctx.Args().Get(0)
 
-		if res, err := client.GetUserRateLimit(name, ""); err != nil {
-			return err
-		} else if len(res) > 0 {
+		if res, _ := client.GetUserRateLimit(name, ""); len(res) > 0 {
 			return fmt.Errorf("user rate limit:%s exists", res[0].Id)
 		}
 

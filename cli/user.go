@@ -2,14 +2,16 @@ package cli
 
 import (
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/filecoin-project/go-address"
+	"github.com/urfave/cli/v2"
+	"golang.org/x/xerrors"
+
 	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/storage"
-	"github.com/urfave/cli/v2"
-	"golang.org/x/xerrors"
-	"strconv"
-	"time"
 )
 
 var userSubCommand = &cli.Command{
@@ -22,6 +24,7 @@ var userSubCommand = &cli.Command{
 		activeUserCmd,
 		getUserCmd,
 		hasMinerCmd,
+		joinRewardPoolCmd,
 		rateLimitSubCmds,
 	},
 }
@@ -45,6 +48,11 @@ var addUserCmd = &cli.Command{
 			Name:  "sourceType",
 			Value: 0,
 		},
+		&cli.IntFlag{
+			Name:  "rewardPoolState",
+			Value: core.NotJoin,
+			Usage: "Status of users in the reward pool, 0: not join, 1: joined, 2: exited",
+		},
 	},
 	Action: func(ctx *cli.Context) error {
 		client, err := GetCli(ctx)
@@ -66,6 +74,25 @@ var addUserCmd = &cli.Command{
 				return err
 			}
 			user.Miner = mAddr.String()
+
+			has, err := client.HasMiner(&auth.HasMinerRequest{Miner: user.Miner})
+			if err != nil {
+				return err
+			}
+			if has {
+				return xerrors.Errorf("miner %s exist", user.Miner)
+			}
+		}
+		if ctx.IsSet("rewardPoolState") {
+			user.RewardPoolState = ctx.Int("rewardPoolState")
+			if user.RewardPoolState != core.NotJoin && user.RewardPoolState != core.Joined {
+				return xerrors.Errorf("unexpected state: %d, please choice %d or %d", user.RewardPoolState, core.NotJoin, core.Joined)
+			}
+			if user.RewardPoolState == core.Joined {
+				if len(user.Miner) == 0 {
+					return xerrors.New("want to join reward pool but not set miner")
+				}
+			}
 		}
 		res, err := client.CreateUser(user)
 		if err != nil {
@@ -112,6 +139,14 @@ var updateUserCmd = &cli.Command{
 			}
 			req.Miner = addr.String()
 			req.KeySum |= 1
+
+			has, err := client.HasMiner(&auth.HasMinerRequest{Miner: req.Miner})
+			if err != nil {
+				return err
+			}
+			if has {
+				return xerrors.Errorf("miner %s exist", req.Miner)
+			}
 		}
 		if ctx.IsSet("comment") {
 			req.Comment = ctx.String("comment")
@@ -165,6 +200,50 @@ var activeUserCmd = &cli.Command{
 	},
 }
 
+var joinRewardPoolCmd = &cli.Command{
+	Name:      "join-reward-pool",
+	Usage:     "user join reward pool",
+	Flags:     []cli.Flag{},
+	ArgsUsage: "name",
+	Action: func(ctx *cli.Context) error {
+		client, err := GetCli(ctx)
+		if err != nil {
+			return err
+		}
+
+		if ctx.NArg() != 1 {
+			return xerrors.New("expect name")
+		}
+
+		req := &auth.UpdateUserRequest{
+			Name: ctx.Args().Get(0),
+		}
+
+		user, err := client.GetUser(&auth.GetUserRequest{Name: ctx.Args().Get(0)})
+		if err != nil {
+			return err
+		}
+		if user.Miner == address.Undef {
+			return xerrors.New("miner is empty")
+		}
+		if user.RewardPoolState == core.Joined {
+			return xerrors.New("miner already join reward pool")
+		}
+
+		req.RewardPoolState = core.Joined
+		req.KeySum += 16
+		req.JoinRewardPoolTime = time.Now().Unix()
+		req.KeySum += 32
+
+		err = client.UpdateUser(req)
+		if err != nil {
+			return err
+		}
+		fmt.Println("join reward pool success")
+		return nil
+	},
+}
+
 var listUsersCmd = &cli.Command{
 	Name:  "list",
 	Usage: "list users",
@@ -185,6 +264,10 @@ var listUsersCmd = &cli.Command{
 			Name:  "sourceType",
 			Value: 0,
 		},
+		&cli.IntFlag{
+			Name:  "rewardPoolState",
+			Value: core.NotJoin,
+		},
 	},
 	Action: func(ctx *cli.Context) error {
 		client, err := GetCli(ctx)
@@ -196,14 +279,18 @@ var listUsersCmd = &cli.Command{
 				Limit: ctx.Int64("limit"),
 				Skip:  ctx.Int64("skip"),
 			},
-			SourceType: ctx.Int("sourceType"),
-			State:      ctx.Int("state"),
+			SourceType:      ctx.Int("sourceType"),
+			State:           ctx.Int("state"),
+			RewardPoolState: ctx.Int("rewardPoolState"),
 		}
 		if ctx.IsSet("sourceType") {
 			req.KeySum += 1
 		}
 		if ctx.IsSet("state") {
 			req.KeySum += 2
+		}
+		if ctx.IsSet("rewardPoolState") {
+			req.KeySum += 4
 		}
 		users, err := client.ListUsers(req)
 		if err != nil {
@@ -217,6 +304,13 @@ var listUsersCmd = &cli.Command{
 			fmt.Println("sourceType:", v.SourceType, "\t// miner:1")
 			fmt.Println("state", v.State, "\t// 0: disable, 1: enable")
 			fmt.Println("comment:", v.Comment)
+			fmt.Println("rewardPoolState:", v.RewardPoolState, "\t// 0: not join, 1: joined, 2: exited")
+			if v.RewardPoolState != core.NotJoin {
+				fmt.Println("joinRewardPoolTime:", time.Unix(v.JoinRewardPoolTime, 0).Format(time.RFC1123))
+				if v.RewardPoolState == core.Exited {
+					fmt.Println("exitRewardPoolTime:", time.Unix(v.ExitRewardPoolTime, 0).Format(time.RFC1123))
+				}
+			}
 			fmt.Println("createTime:", time.Unix(v.CreateTime, 0).Format(time.RFC1123))
 			fmt.Println("updateTime:", time.Unix(v.CreateTime, 0).Format(time.RFC1123))
 			fmt.Println()
@@ -248,6 +342,13 @@ var getUserCmd = &cli.Command{
 		fmt.Println("sourceType:", user.SourceType, "\t// miner:1")
 		fmt.Println("state", user.State, "\t// 0: disable, 1: enable")
 		fmt.Println("comment:", user.Comment)
+		fmt.Println("rewardPoolState:", user.RewardPoolState, "\t// 0: not join, 1: joined, 2: exited")
+		if user.RewardPoolState != core.NotJoin {
+			fmt.Println("joinRewardPoolTime:", time.Unix(user.JoinRewardPoolTime, 0).Format(time.RFC1123))
+			if user.RewardPoolState == core.Exited {
+				fmt.Println("exitRewardPoolTime:", time.Unix(user.ExitRewardPoolTime, 0).Format(time.RFC1123))
+			}
+		}
 		fmt.Println("createTime:", time.Unix(user.CreateTime, 0).Format(time.RFC1123))
 		fmt.Println("updateTime:", time.Unix(user.CreateTime, 0).Format(time.RFC1123))
 		fmt.Println()

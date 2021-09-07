@@ -126,13 +126,16 @@ func (s *mysqlStore) PutUser(user *User) error {
 	return s.db.Table("users").Save(user).Error
 }
 
-func (s *mysqlStore) ListUsers(skip, limit int64, state int, sourceType core.SourceType, code core.KeyCode) ([]*User, error) {
+func (s *mysqlStore) ListUsers(skip, limit int64, state int, sourceType core.SourceType, rewardPoolState core.RewardPoolState, code core.KeyCode) ([]*User, error) {
 	exec := s.db.Table("users")
 	if code&1 == 1 {
 		exec = exec.Where("stype=?", sourceType)
 	}
 	if code&2 == 2 {
 		exec = exec.Where("state=?", state)
+	}
+	if code&4 == 4 {
+		exec = exec.Where("reward_pool_state=?", rewardPoolState)
 	}
 	arr := make([]*User, 0)
 	err := exec.Order("createTime").Offset(int(skip)).Limit(int(limit)).Scan(&arr).Error

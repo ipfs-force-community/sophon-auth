@@ -206,14 +206,18 @@ func (o *jwtOAuth) CreateUser(ctx context.Context, req *CreateUserRequest) (*Cre
 		return nil, err
 	}
 	userNew := &storage.User{
-		Id:         uid.String(),
-		Name:       req.Name,
-		Miner:      mAddr.String(),
-		Comment:    req.Comment,
-		SourceType: req.SourceType,
-		State:      req.State,
-		CreateTime: time.Now().Local(),
-		UpdateTime: time.Now().Local(),
+		Id:              uid.String(),
+		Name:            req.Name,
+		Miner:           mAddr.String(),
+		Comment:         req.Comment,
+		SourceType:      req.SourceType,
+		State:           req.State,
+		RewardPoolState: req.RewardPoolState,
+		CreateTime:      time.Now().Local(),
+		UpdateTime:      time.Now().Local(),
+	}
+	if userNew.RewardPoolState == core.Joined {
+		userNew.JoinRewardPoolTime = time.Now().Unix()
 	}
 	err = o.store.PutUser(userNew)
 	if err != nil {
@@ -244,16 +248,24 @@ func (o *jwtOAuth) UpdateUser(ctx context.Context, req *UpdateUserRequest) error
 	if req.KeySum&8 == 8 {
 		user.SourceType = req.SourceType
 	}
+	if req.KeySum&16 == 16 {
+		user.RewardPoolState = req.RewardPoolState
+	}
+	if req.KeySum&32 == 32 {
+		user.JoinRewardPoolTime = req.JoinRewardPoolTime
+	}
+	if req.KeySum&64 == 64 {
+		user.ExitRewardPoolTime = req.ExitRewardPoolTime
+	}
 	return o.store.UpdateUser(user)
 }
 
 func (o *jwtOAuth) ListUsers(ctx context.Context, req *ListUsersRequest) (ListUsersResponse, error) {
-	users, err := o.store.ListUsers(req.GetSkip(), req.GetLimit(), req.State, req.SourceType, req.KeySum)
+	users, err := o.store.ListUsers(req.GetSkip(), req.GetLimit(), req.State, req.SourceType, req.RewardPoolState, req.KeySum)
 	if err != nil {
 		return nil, err
 	}
 	return o.mp.ToOutPutUsers(users), nil
-
 }
 
 func (o *jwtOAuth) GetMiner(ctx context.Context, req *GetMinerRequest) (*OutputUser, error) {

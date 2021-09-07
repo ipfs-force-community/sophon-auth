@@ -23,14 +23,18 @@ func (o *mapper) ToOutPutUser(m *storage.User) *OutputUser {
 	}
 	addr, _ := address.NewFromString(m.Miner)
 	return &OutputUser{
-		Id:         m.Id,
-		Name:       m.Name,
-		Miner:      addr,
-		Comment:    m.Comment,
-		State:      m.State,
-		SourceType: m.SourceType,
-		CreateTime: m.CreateTime.Unix(),
-		UpdateTime: m.UpdateTime.Unix()}
+		Id:                 m.Id,
+		Name:               m.Name,
+		Miner:              addr,
+		Comment:            m.Comment,
+		State:              m.State,
+		SourceType:         m.SourceType,
+		RewardPoolState:    m.RewardPoolState,
+		JoinRewardPoolTime: m.JoinRewardPoolTime,
+		ExitRewardPoolTime: m.ExitRewardPoolTime,
+		CreateTime:         m.CreateTime.Unix(),
+		UpdateTime:         m.UpdateTime.Unix(),
+	}
 }
 
 func (o *mapper) ToOutPutUsers(arr []*storage.User) []*OutputUser {

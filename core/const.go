@@ -105,9 +105,16 @@ var TagFields = []LogField{
 // request params code sum,enum 1 2 4 8, to multi-select
 type KeyCode = int
 type SourceType = int
+type RewardPoolState = int
 
 const (
 	Miner SourceType = 1
+)
+
+const (
+	NotJoin RewardPoolState = iota
+	Joined
+	Exited
 )
 
 type Page struct {

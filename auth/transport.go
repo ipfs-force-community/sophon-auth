@@ -46,9 +46,10 @@ func NewListUsersRequest(skip, limit int64, sourceType core.SourceType, state in
 
 type ListUsersRequest struct {
 	*core.Page
-	SourceType core.SourceType `form:"sourceType" json:"sourceType"` // keyCode:1
-	State      int             `form:"state" json:"state"`           // keyCode: 2
-	KeySum     core.KeyCode    `form:"keySum"`                       // keyCode sum
+	SourceType      core.SourceType      `form:"sourceType" json:"sourceType"`           // keyCode:1
+	State           int                  `form:"state" json:"state"`                     // keyCode:2
+	RewardPoolState core.RewardPoolState `form:"rewardPoolState" json:"rewardPoolState"` // keyCode:4
+	KeySum          core.KeyCode         `form:"keySum"`                                 // keyCode sum
 }
 
 type ListUsersResponse = []*OutputUser
@@ -69,11 +70,13 @@ type GetUserRateLimitResponse []*storage.UserRateLimit
 type UpsertUserRateLimitReq storage.UserRateLimit
 
 type CreateUserRequest struct {
-	Name       string          `form:"name" binding:"required"`
-	Miner      string          `form:"miner"` // miner address f01234
-	Comment    string          `form:"comment"`
-	State      int             `form:"state"` // 0: disable, 1: enable
-	SourceType core.SourceType `form:"sourceType"`
+	Name               string               `form:"name" binding:"required"`
+	Miner              string               `form:"miner"` // miner address f01234
+	Comment            string               `form:"comment"`
+	State              int                  `form:"state"` // 0: disable, 1: enable
+	SourceType         core.SourceType      `form:"sourceType"`
+	RewardPoolState    core.RewardPoolState `form:"rewardPoolState"` // 0: not join, 1: joined, 2: exited
+	JoinRewardPoolTime int64                `form:"joinRewardPoolTime"`
 }
 type CreateUserResponse = OutputUser
 
@@ -81,21 +84,27 @@ type UpdateUserRequest struct {
 	KeySum core.KeyCode `form:"keySum"` // keyCode Sum
 	Name   string       `form:"name"`
 	// todo make miner tobe address
-	Miner      string          `form:"miner"`      // keyCode:1
-	Comment    string          `form:"comment"`    // keyCode:2
-	State      int             `form:"state"`      // keyCode:4
-	SourceType core.SourceType `form:"sourceType"` // keyCode:8
+	Miner              string               `form:"miner"`              // keyCode:1
+	Comment            string               `form:"comment"`            // keyCode:2
+	State              int                  `form:"state"`              // keyCode:4
+	SourceType         core.SourceType      `form:"sourceType"`         // keyCode:8
+	RewardPoolState    core.RewardPoolState `form:"rewardPoolState"`    // keyCode:16
+	JoinRewardPoolTime int64                `form:"joinRewardPoolTime"` // keyCode:32
+	ExitRewardPoolTime int64                `form:"exitRewardPoolTime"` // keyCode:64
 }
 
 type OutputUser struct {
-	Id         string          `json:"id"`
-	Name       string          `json:"name"`
-	Miner      address.Address `json:"miner"` // miner address f01234
-	SourceType core.SourceType `json:"sourceType"`
-	Comment    string          `json:"comment"`
-	State      int             `json:"state"`
-	CreateTime int64           `json:"createTime"`
-	UpdateTime int64           `json:"updateTime"`
+	Id                 string               `json:"id"`
+	Name               string               `json:"name"`
+	Miner              address.Address      `json:"miner"` // miner address f01234
+	SourceType         core.SourceType      `json:"sourceType"`
+	Comment            string               `json:"comment"`
+	State              int                  `json:"state"`
+	RewardPoolState    core.RewardPoolState `json:"rewardPoolState"`
+	JoinRewardPoolTime int64                `json:"joinRewardPoolTime"`
+	ExitRewardPoolTime int64                `json:"exitRewardPoolTime"`
+	CreateTime         int64                `json:"createTime"`
+	UpdateTime         int64                `json:"updateTime"`
 }
 
 type GetUserRequest struct {

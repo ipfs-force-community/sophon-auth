@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strconv"
+
 	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/errcode"
 	"github.com/go-resty/resty/v2"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
-	"net/http"
-	"strconv"
 )
 
 type JWTClient struct {
@@ -66,11 +67,12 @@ func (c *JWTClient) Verify(ctx context.Context, token string) (*auth.VerifyRespo
 
 func (c *JWTClient) ListUsers(req *auth.ListUsersRequest) (auth.ListUsersResponse, error) {
 	resp, err := c.cli.R().SetQueryParams(map[string]string{
-		"skip":       strconv.FormatInt(req.Skip, 10),
-		"limit":      strconv.FormatInt(req.Limit, 10),
-		"sourceType": strconv.Itoa(req.SourceType),
-		"state":      strconv.Itoa(req.State),
-		"keySum":     strconv.Itoa(req.KeySum),
+		"skip":            strconv.FormatInt(req.Skip, 10),
+		"limit":           strconv.FormatInt(req.Limit, 10),
+		"sourceType":      strconv.Itoa(req.SourceType),
+		"state":           strconv.Itoa(req.State),
+		"keySum":          strconv.Itoa(req.KeySum),
+		"rewardPoolState": strconv.Itoa(req.RewardPoolState),
 	}).SetResult(&auth.ListUsersResponse{}).SetError(&errcode.ErrMsg{}).Get("/user/list")
 	if err != nil {
 		return nil, err
@@ -119,6 +121,19 @@ func (c *JWTClient) HasMiner(req *auth.HasMinerRequest) (bool, error) {
 		return *resp.Result().(*bool), nil
 	}
 	return false, resp.Error().(*errcode.ErrMsg).Err()
+}
+
+func (c *JWTClient) UpdateUser(req *auth.UpdateUserRequest) error {
+	resp, err := c.cli.R().
+		SetHeader("Content-Type", "application/json").
+		SetBody(req).SetError(&errcode.ErrMsg{}).Post("/user/update")
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode() == http.StatusOK {
+		return nil
+	}
+	return resp.Error().(*errcode.ErrMsg).Err()
 }
 
 func (c *JWTClient) GetUserRateLimit(name string) (auth.GetUserRateLimitResponse, error) {

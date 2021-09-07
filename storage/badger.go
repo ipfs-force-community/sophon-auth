@@ -3,8 +3,9 @@ package storage
 import (
 	"encoding/json"
 	"errors"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/dgraph-io/badger/v3"
 	"github.com/filecoin-project/go-address"
@@ -218,7 +219,7 @@ func (s *badgerStore) PutUser(user *User) error {
 	})
 }
 
-func (s *badgerStore) ListUsers(skip, limit int64, state int, sourceType core.SourceType, code core.KeyCode) ([]*User, error) {
+func (s *badgerStore) ListUsers(skip, limit int64, state int, sourceType core.SourceType, rpState core.RewardPoolState, code core.KeyCode) ([]*User, error) {
 	var data []*User
 	err := s.db.View(func(txn *badger.Txn) error {
 		opts := badger.IteratorOptions{
@@ -260,6 +261,15 @@ func (s *badgerStore) ListUsers(skip, limit int64, state int, sourceType core.So
 				}
 				if code&2 == 2 {
 					need = need && user.State == state
+				} else {
+					need = need && true
+				}
+
+				if !need {
+					continue
+				}
+				if code&4 == 4 {
+					need = need && user.RewardPoolState == rpState
 				} else {
 					need = need && true
 				}

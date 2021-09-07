@@ -1,17 +1,19 @@
 package cli
 
 import (
-	"github.com/filecoin-project/venus-auth/auth"
-	"github.com/filecoin-project/venus-auth/config"
-	"github.com/filecoin-project/venus-auth/core"
-	"github.com/filecoin-project/venus-auth/errcode"
+	"net/http"
+	"path"
+	"strconv"
+
 	"github.com/go-resty/resty/v2"
 	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
-	"net/http"
-	"path"
-	"strconv"
+
+	"github.com/filecoin-project/venus-auth/auth"
+	"github.com/filecoin-project/venus-auth/config"
+	"github.com/filecoin-project/venus-auth/core"
+	"github.com/filecoin-project/venus-auth/errcode"
 )
 
 type LocalClient interface {
@@ -126,11 +128,12 @@ func (lc *localClient) UpdateUser(req *auth.UpdateUserRequest) error {
 
 func (lc *localClient) ListUsers(req *auth.ListUsersRequest) (auth.ListUsersResponse, error) {
 	resp, err := lc.cli.R().SetQueryParams(map[string]string{
-		"skip":       strconv.FormatInt(req.Skip, 10),
-		"limit":      strconv.FormatInt(req.Limit, 10),
-		"sourceType": strconv.Itoa(req.SourceType),
-		"state":      strconv.Itoa(req.State),
-		"keySum":     strconv.Itoa(req.KeySum),
+		"skip":            strconv.FormatInt(req.Skip, 10),
+		"limit":           strconv.FormatInt(req.Limit, 10),
+		"sourceType":      strconv.Itoa(req.SourceType),
+		"state":           strconv.Itoa(req.State),
+		"keySum":          strconv.Itoa(req.KeySum),
+		"rewardPoolState": strconv.Itoa(req.RewardPoolState),
 	}).SetResult(&auth.ListUsersResponse{}).SetError(&errcode.ErrMsg{}).Get("/user/list")
 	if err != nil {
 		return nil, err

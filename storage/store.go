@@ -44,7 +44,7 @@ type Store interface {
 	GetMiner(maddr address.Address) (*User, error)
 	PutUser(*User) error
 	UpdateUser(*User) error
-	ListUsers(skip, limit int64, state int, sourceType core.SourceType, code core.KeyCode) ([]*User, error)
+	ListUsers(skip, limit int64, state int, sourceType core.SourceType, rewardPool core.RewardPoolState, code core.KeyCode) ([]*User, error)
 	// rate limit
 	GetRateLimits(name, id string) ([]*UserRateLimit, error)
 	PutRateLimit(limit *UserRateLimit) (string, error)
@@ -94,14 +94,17 @@ func (t *KeyPair) FromBytes(val []byte) error {
 }
 
 type User struct {
-	Id         string          `gorm:"column:id;type:varchar(64);primary_key"`
-	Name       string          `gorm:"column:name;type:varchar(50);uniqueIndex:users_name_IDX,type:btree;not null"`
-	Miner      string          `gorm:"column:miner;type:varchar(255);index:users_miner_IDX,type:btree"`
-	Comment    string          `gorm:"column:comment;type:varchar(255);"`
-	SourceType core.SourceType `gorm:"column:stype;type:tinyint(4);default:0;NOT NULL"`
-	State      int             `gorm:"column:state;type:tinyint(4);default:0;NOT NULL"`
-	CreateTime time.Time       `gorm:"column:createTime;type:datetime;NOT NULL"`
-	UpdateTime time.Time       `gorm:"column:updateTime;type:datetime;NOT NULL"`
+	Id                 string               `gorm:"column:id;type:varchar(64);primary_key"`
+	Name               string               `gorm:"column:name;type:varchar(50);uniqueIndex:users_name_IDX,type:btree;not null"`
+	Miner              string               `gorm:"column:miner;type:varchar(255);index:users_miner_IDX,type:btree"` // Can be empty and cannot be repeated
+	Comment            string               `gorm:"column:comment;type:varchar(255);"`
+	SourceType         core.SourceType      `gorm:"column:stype;type:tinyint(4);default:0;NOT NULL"`
+	State              int                  `gorm:"column:state;type:tinyint(4);default:0;NOT NULL"`             // 0 disable,, 1 enable,
+	RewardPoolState    core.RewardPoolState `gorm:"column:reward_pool_state;type:tinyint(4);default:0;NOT NULL"` // 0 not join reward pool, 1 joined reward pool
+	JoinRewardPoolTime int64                `gorm:"column:join_reward_pool_time;type:bigint;default:0;NOT NULL"` // Time to join the reward pool, use timestamp
+	ExitRewardPoolTime int64                `gorm:"column:exit_reward_pool_time;type:bigint;default:0;NOT NULL"` // Time to exit the reward pool, use timestamp
+	CreateTime         time.Time            `gorm:"column:createTime;type:datetime;NOT NULL"`
+	UpdateTime         time.Time            `gorm:"column:updateTime;type:datetime;NOT NULL"`
 }
 
 type UserRateLimit struct {

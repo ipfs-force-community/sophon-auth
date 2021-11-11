@@ -15,14 +15,17 @@ func InitRouter(app OAuthApp) http.Handler {
 	router.Use(CorsMiddleWare())
 	router.POST("/verify", verifyInterceptor(), app.Verify)
 	router.POST("/genToken", app.GenerateToken)
-	router.DELETE("/token", app.RemoveToken)
+	router.GET("/token", app.GetToken)
 	router.GET("/tokens", app.Tokens)
+	router.DELETE("/token/del", app.RemoveToken)
 
 	userGroup := router.Group("/user")
 	userGroup.PUT("/new", app.CreateUser)
 	userGroup.POST("/update", app.UpdateUser)
 	userGroup.GET("/list", app.ListUsers)
 	userGroup.GET("", app.GetUser)
+	userGroup.GET("/has", app.HasUser)
+	userGroup.DELETE("/del", app.DeleteUser)
 
 	rateLimitGroup := userGroup.Group("/ratelimit")
 	rateLimitGroup.POST("/upsert", app.UpsertUserRateLimit)

@@ -23,6 +23,7 @@ var userSubCommand = &cli.Command{
 		activeUserCmd,
 		getUserCmd,
 		hasMinerCmd,
+		deleteUserCmd,
 		rateLimitSubCmds,
 		minerSubCmds,
 	},
@@ -266,6 +267,41 @@ var hasMinerCmd = &cli.Command{
 			return err
 		}
 		fmt.Println(has)
+		return nil
+	},
+}
+
+var deleteUserCmd = &cli.Command{
+	Name:      "delete",
+	Usage:     "delete user",
+	ArgsUsage: "name",
+	Action: func(ctx *cli.Context) error {
+		client, err := GetCli(ctx)
+		if err != nil {
+			return err
+		}
+
+		if ctx.NArg() != 1 {
+			return xerrors.New("expect name")
+		}
+
+		has, err := client.HasUser(&auth.HasUserRequest{Name: ctx.Args().First()})
+		if err != nil {
+			return err
+		}
+		if !has {
+			return xerrors.Errorf("not found user")
+		}
+
+		req := &auth.DeleteUserRequest{
+			Name: ctx.Args().First(),
+		}
+
+		err = client.DeleteUser(req)
+		if err != nil {
+			return err
+		}
+		fmt.Println("delete user success")
 		return nil
 	},
 }

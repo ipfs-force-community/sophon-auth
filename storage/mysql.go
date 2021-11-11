@@ -90,6 +90,15 @@ func (s mysqlStore) Get(token Token) (*KeyPair, error) {
 	return &kp, err
 }
 
+func (s *mysqlStore) ByName(name string) ([]*KeyPair, error) {
+	var tokens []*KeyPair
+	err := s.db.Find(&tokens, "name = ?", name).Error
+	if err != nil {
+		return nil, err
+	}
+	return tokens, nil
+}
+
 func (s mysqlStore) List(skip, limit int64) ([]*KeyPair, error) {
 	var tokens []*KeyPair
 	err := s.db.Offset(int(skip)).Limit(int(limit)).Order("name").Find(&tokens).Error
@@ -114,7 +123,7 @@ func (s *mysqlStore) UpdateToken(kp *KeyPair) error {
 
 func (s mysqlStore) HasUser(name string) (bool, error) {
 	var count int64
-	err := s.db.Table("users").Where("name=?", name).Count(&count).Error
+	err := s.db.Table("users").Where("name=? and is_deleted=?", name, core.NotDelete).Count(&count).Error
 	if err != nil {
 		return false, err
 	}
@@ -138,7 +147,7 @@ func (s *mysqlStore) ListUsers(skip, limit int64, state int, sourceType core.Sou
 		exec = exec.Where("state=?", state)
 	}
 	arr := make([]*User, 0)
-	err := exec.Order("createTime").Offset(int(skip)).Limit(int(limit)).Scan(&arr).Error
+	err := exec.Where("is_deleted=?", core.NotDelete).Order("createTime").Offset(int(skip)).Limit(int(limit)).Scan(&arr).Error
 	if err != nil {
 		return nil, err
 	}
@@ -147,15 +156,27 @@ func (s *mysqlStore) ListUsers(skip, limit int64, state int, sourceType core.Sou
 
 func (s *mysqlStore) GetUser(name string) (*User, error) {
 	var user User
-	err := s.db.Table("users").Take(&user, "name=?", name).Error
+	err := s.db.Table("users").Take(&user, "name=? and is_deleted=?", name, core.NotDelete).Error
 
 	return &user, err
 }
 
+func (s *mysqlStore) DeleteUser(name string) error {
+	has, err := s.HasUser(name)
+	if err != nil {
+		return err
+	}
+	if !has {
+		return gorm.ErrRecordNotFound
+	}
+	return s.db.Table("users").Where("name=?", name).Update("is_deleted", core.Deleted).Error
+}
+
 func (s mysqlStore) HasMiner(maddr address.Address) (bool, error) {
 	var count int64
-	if err := s.db.Table("miners").Where("miner = ?", storedAddress(maddr)).Count(&count).Error; err != nil {
-		return false, nil
+	err := s.db.Table("users").Where("miner=? and is_deleted=?", maddr.String(), core.NotDelete).Count(&count).Error
+	if err != nil {
+		return false, err
 	}
 	return count > 0, nil
 }

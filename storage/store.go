@@ -45,6 +45,7 @@ func NewStore(cnf *config.DBConfig, dataPath string) (Store, error) {
 type Store interface {
 	// token
 	Get(token Token) (*KeyPair, error)
+	ByName(name string) ([]*KeyPair, error)
 	Put(kp *KeyPair) error
 	Delete(token Token) error
 	Has(token Token) (bool, error)
@@ -58,6 +59,7 @@ type Store interface {
 	PutUser(*User) error
 	UpdateUser(*User) error
 	ListUsers(skip, limit int64, state int, sourceType core.SourceType, code core.KeyCode) ([]*User, error)
+	DeleteUser(name string) error
 
 	// rate limit
 	GetRateLimits(name, id string) ([]*UserRateLimit, error)
@@ -127,6 +129,7 @@ type User struct {
 	State      core.UserState  `gorm:"column:state;type:tinyint(4);default:0;NOT NULL"`
 	CreateTime time.Time       `gorm:"column:createTime;type:datetime;NOT NULL"`
 	UpdateTime time.Time       `gorm:"column:updateTime;type:datetime;NOT NULL"`
+	IsDeleted  int             `gorm:"column:is_deleted;index;default:-1;NOT NULL"`
 }
 
 type OrmTimestamp struct {

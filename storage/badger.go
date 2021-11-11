@@ -56,6 +56,44 @@ func (s *badgerStore) Get(token Token) (*KeyPair, error) {
 	return &kp, s.getObj(tokenKey(token.String()), &kp)
 }
 
+func (s *badgerStore) ByName(name string) ([]*KeyPair, error) {
+	res := make([]*KeyPair, 0)
+	err := s.db.View(func(txn *badger.Txn) error {
+		opts := badger.IteratorOptions{
+			PrefetchValues: true,
+			Reverse:        false,
+			AllVersions:    false,
+			Prefix:         []byte(PrefixToken),
+		}
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			val := new([]byte)
+			err := item.Value(func(v []byte) error {
+				val = &v
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+			kp := new(KeyPair)
+			err = kp.FromBytes(*val)
+			if err != nil {
+				return err
+			}
+			if kp.Name == name {
+				res = append(res, kp)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 func (s *badgerStore) UpdateToken(kp *KeyPair) error {
 	return s.putBadgerObj(kp)
 }
@@ -140,6 +178,12 @@ func (s *badgerStore) ListUsers(skip, limit int64, state int, sourceType core.So
 
 func (s *badgerStore) HasMiner(maddr address.Address) (bool, error) {
 	return s.isExist(minerKey(maddr.String()))
+}
+
+func (s *badgerStore) DeleteUser(name string) error {
+	return s.db.Update(func(txn *badger.Txn) error {
+		return txn.Delete(userKey(name))
+	})
 }
 
 func (s *badgerStore) GetRateLimits(name, id string) ([]*UserRateLimit, error) {

@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
+
 	"github.com/filecoin-project/venus-auth/log"
 
 	"github.com/filecoin-project/go-address"
@@ -41,13 +43,18 @@ type OAuthService interface {
 	Verify(ctx context.Context, token string) (*JWTPayload, error)
 	RemoveToken(ctx context.Context, token string) error
 	Tokens(ctx context.Context, skip, limit int64) ([]*TokenInfo, error)
+	GetToken(c context.Context, token string) (*TokenInfo, error)
+	GetTokenByName(c context.Context, name string) ([]*TokenInfo, error)
 
 	CreateUser(ctx context.Context, req *CreateUserRequest) (*CreateUserResponse, error)
 	UpdateUser(ctx context.Context, req *UpdateUserRequest) error
 	ListUsers(ctx context.Context, req *ListUsersRequest) (ListUsersResponse, error)
+	GetUser(ctx context.Context, req *GetUserRequest) (*OutputUser, error)
+	HasUser(ctx context.Context, req *HasUserRequest) (bool, error)
+	DeleteUser(ctx *gin.Context, req *DeleteUserRequest) error
+
 	GetMiner(ctx context.Context, req *GetMinerRequest) (*OutputUser, error)
 	HasMiner(ctx context.Context, req *HasMinerRequest) (bool, error)
-	GetUser(ctx context.Context, req *GetUserRequest) (*OutputUser, error)
 
 	GetUserRateLimits(ctx context.Context, req *GetUserRateLimitsReq) (GetUserRateLimitResponse, error)
 	UpsertUserRateLimit(ctx context.Context, req *UpsertUserRateLimitReq) (string, error)
@@ -159,6 +166,44 @@ type TokenInfo struct {
 	CreateTime time.Time `json:"createTime"`
 }
 
+func (o *jwtOAuth) GetToken(c context.Context, token string) (*TokenInfo, error) {
+	pair, err := o.store.Get(storage.Token(token))
+	if err != nil {
+		return nil, err
+	}
+	jwtPayload, err := util.JWTPayloadMap(string(pair.Token))
+	if err != nil {
+		return nil, err
+	}
+	return &TokenInfo{
+		Token:      pair.Token.String(),
+		CreateTime: pair.CreateTime,
+		Name:       jwtPayload["name"].(string),
+		Perm:       jwtPayload["perm"].(string),
+	}, nil
+}
+
+func (o *jwtOAuth) GetTokenByName(c context.Context, name string) ([]*TokenInfo, error) {
+	pairs, err := o.store.ByName(name)
+	if err != nil {
+		return nil, err
+	}
+	tokenInfos := make([]*TokenInfo, 0, len(pairs))
+	for _, pair := range pairs {
+		jwtPayload, err := util.JWTPayloadMap(string(pair.Token))
+		if err != nil {
+			return nil, err
+		}
+		tokenInfos = append(tokenInfos, &TokenInfo{
+			Token:      pair.Token.String(),
+			CreateTime: pair.CreateTime,
+			Name:       jwtPayload["name"].(string),
+			Perm:       jwtPayload["perm"].(string),
+		})
+	}
+	return tokenInfos, nil
+}
+
 func (o *jwtOAuth) Tokens(ctx context.Context, skip, limit int64) ([]*TokenInfo, error) {
 	pairs, err := o.store.List(skip, limit)
 	if err != nil {
@@ -253,7 +298,14 @@ func (o *jwtOAuth) ListUsers(ctx context.Context, req *ListUsersRequest) (ListUs
 		return nil, err
 	}
 	return o.mp.ToOutPutUsers(users), nil
+}
 
+func (o *jwtOAuth) HasUser(ctx context.Context, req *HasUserRequest) (bool, error) {
+	return o.store.HasUser(req.Name)
+}
+
+func (o *jwtOAuth) DeleteUser(ctx *gin.Context, req *DeleteUserRequest) error {
+	return o.store.DeleteUser(req.Name)
 }
 
 func (o *jwtOAuth) GetMiner(ctx context.Context, req *GetMinerRequest) (*OutputUser, error) {

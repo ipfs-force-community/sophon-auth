@@ -3,8 +3,9 @@ package storage
 import (
 	"encoding/json"
 	"errors"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/dgraph-io/badger/v3"
 	"github.com/filecoin-project/go-address"
@@ -96,6 +97,44 @@ func (s *badgerStore) Get(token Token) (*KeyPair, error) {
 	})
 
 	return kp, err
+}
+
+func (s *badgerStore) ByName(name string) ([]*KeyPair, error) {
+	res := make([]*KeyPair, 0)
+	err := s.db.View(func(txn *badger.Txn) error {
+		opts := badger.IteratorOptions{
+			PrefetchValues: true,
+			Reverse:        false,
+			AllVersions:    false,
+			Prefix:         []byte(PrefixToken),
+		}
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			val := new([]byte)
+			err := item.Value(func(v []byte) error {
+				val = &v
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+			kp := new(KeyPair)
+			err = kp.FromBytes(*val)
+			if err != nil {
+				return err
+			}
+			if kp.Name == name {
+				res = append(res, kp)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 func (s *badgerStore) UpdateToken(kp *KeyPair) error {
@@ -276,6 +315,12 @@ func (s *badgerStore) ListUsers(skip, limit int64, state int, sourceType core.So
 		return nil, err
 	}
 	return data, nil
+}
+
+func (s *badgerStore) DeleteUser(name string) error {
+	return s.db.Update(func(txn *badger.Txn) error {
+		return txn.Delete(s.userKey(name))
+	})
 }
 
 func (s *badgerStore) HasMiner(maddr address.Address) (bool, error) {

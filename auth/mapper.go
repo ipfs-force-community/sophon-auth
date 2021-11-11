@@ -2,6 +2,7 @@ package auth
 
 import (
 	"github.com/filecoin-project/go-address"
+	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/storage"
 )
 
@@ -28,6 +29,7 @@ func (o *mapper) ToOutPutUser(m *storage.User) *OutputUser {
 		Miner:      addr,
 		Comment:    m.Comment,
 		State:      m.State,
+		IsDeleted:  m.IsDeleted == core.Deleted,
 		SourceType: m.SourceType,
 		CreateTime: m.CreateTime.Unix(),
 		UpdateTime: m.UpdateTime.Unix()}

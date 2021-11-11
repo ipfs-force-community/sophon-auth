@@ -21,6 +21,11 @@ type GenTokenResponse struct {
 	Token string `json:"token"`
 }
 
+type GetTokenRequest struct {
+	Token string `form:"token" json:"token"`
+	Name  string `form:"name" json:"name"`
+}
+
 type RemoveTokenRequest struct {
 	Token string `form:"token" json:"token" binding:"required"`
 }
@@ -94,11 +99,20 @@ type OutputUser struct {
 	SourceType core.SourceType `json:"sourceType"`
 	Comment    string          `json:"comment"`
 	State      int             `json:"state"`
+	IsDeleted  bool            `json:"isDeleted"`
 	CreateTime int64           `json:"createTime"`
 	UpdateTime int64           `json:"updateTime"`
 }
 
 type GetUserRequest struct {
+	Name string `form:"name"`
+}
+
+type HasUserRequest struct {
+	Name string `form:"name"`
+}
+
+type DeleteUserRequest struct {
 	Name string `form:"name"`
 }
 

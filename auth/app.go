@@ -1,9 +1,12 @@
 package auth
 
 import (
+	"net/http"
+
+	"golang.org/x/xerrors"
+
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 type OAuthApp interface {
@@ -11,13 +14,17 @@ type OAuthApp interface {
 	GenerateToken(c *gin.Context)
 	RemoveToken(c *gin.Context)
 	Tokens(c *gin.Context)
+	GetToken(c *gin.Context)
 
 	UpdateUser(c *gin.Context)
 	CreateUser(c *gin.Context)
 	ListUsers(c *gin.Context)
+	HasUser(c *gin.Context)
+	GetUser(c *gin.Context)
+	DeleteUser(c *gin.Context)
+
 	GetMiner(c *gin.Context)
 	HasMiner(c *gin.Context)
-	GetUser(c *gin.Context)
 
 	AddUserRateLimit(c *gin.Context)
 	UpdateUserRateLimit(c *gin.Context)
@@ -108,6 +115,36 @@ func (o *oauthApp) RemoveToken(c *gin.Context) {
 	Response(c, err)
 }
 
+func (o *oauthApp) GetToken(c *gin.Context) {
+	req := new(GetTokenRequest)
+	if err := c.ShouldBindQuery(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+	if len(req.Name) == 0 && len(req.Token) == 0 {
+		BadResponse(c, xerrors.Errorf("`name` and `token` both empty"))
+		return
+	}
+	var res []*TokenInfo
+	if len(req.Token) > 0 {
+		info, err := o.srv.GetToken(c, req.Token)
+		if err != nil {
+			BadResponse(c, err)
+			return
+		}
+		res = append(res, info)
+	} else {
+		var err error
+		res, err = o.srv.GetTokenByName(c, req.Name)
+		if err != nil {
+			BadResponse(c, err)
+			return
+		}
+	}
+
+	SuccessResponse(c, res)
+}
+
 func (o *oauthApp) Tokens(c *gin.Context) {
 	req := new(GetTokensRequest)
 	if err := c.ShouldBind(req); err != nil {
@@ -164,6 +201,34 @@ func (o *oauthApp) ListUsers(c *gin.Context) {
 		return
 	}
 	SuccessResponse(c, res)
+}
+
+func (o *oauthApp) HasUser(c *gin.Context) {
+	req := new(HasUserRequest)
+	if err := c.ShouldBindQuery(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+	has, err := o.srv.HasUser(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	SuccessResponse(c, has)
+}
+
+func (o *oauthApp) DeleteUser(c *gin.Context) {
+	req := new(DeleteUserRequest)
+	if err := c.ShouldBind(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+	err := o.srv.DeleteUser(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	Response(c, nil)
 }
 
 func (o *oauthApp) GetMiner(c *gin.Context) {

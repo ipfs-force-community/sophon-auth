@@ -149,6 +149,6 @@ func (us UserState) String() string {
 }
 
 const (
-	NotDelete = -1
+	NotDelete = 0
 	Deleted   = 1
 )

@@ -97,7 +97,6 @@ type OutputUser struct {
 	SourceType core.SourceType `json:"sourceType"`
 	Comment    string          `json:"comment"`
 	State      core.UserState  `json:"state"`
-	IsDeleted  bool            `json:"isDeleted"`
 	CreateTime int64           `json:"createTime"`
 	UpdateTime int64           `json:"updateTime"`
 	// the field `Miners` is used for compound api `ListUserWithMiners`

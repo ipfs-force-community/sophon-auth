@@ -71,6 +71,20 @@ func (lc *AuthClient) GenerateToken(name, perm, extra string) (string, error) {
 	return core.EmptyString, resp.Error().(*errcode.ErrMsg).Err()
 }
 
+func (lc *AuthClient) GetToken(name, token string) ([]*auth.TokenInfo, error) {
+	resp, err := lc.cli.R().SetQueryParams(map[string]string{
+		"name":  name,
+		"token": token,
+	}).SetResult(&[]*auth.TokenInfo{}).SetError(&errcode.ErrMsg{}).Get("/token")
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusOK {
+		return *(resp.Result().(*[]*auth.TokenInfo)), nil
+	}
+	return nil, resp.Error().(*errcode.ErrMsg).Err()
+}
+
 func (lc *AuthClient) Tokens(skip, limit int64) (auth.GetTokensResponse, error) {
 	resp, err := lc.cli.R().SetQueryParams(map[string]string{
 		"skip":  strconv.FormatInt(skip, 10),
@@ -201,6 +215,20 @@ func (lc *AuthClient) GetUserByMiner(req *auth.GetUserByMinerRequest) (*auth.Out
 	return nil, resp.Error().(*errcode.ErrMsg).Err()
 }
 
+func (lc *AuthClient) HasUser(req *auth.HasUserRequest) (bool, error) {
+	var has bool
+	resp, err := lc.cli.R().SetQueryParams(map[string]string{
+		"name": req.Name,
+	}).SetResult(&has).SetError(&errcode.ErrMsg{}).Get("/user/has")
+	if err != nil {
+		return false, err
+	}
+	if resp.StatusCode() == http.StatusOK {
+		return *(resp.Result().(*bool)), nil
+	}
+	return false, nil
+}
+
 func (lc *AuthClient) HasMiner(req *auth.HasMinerRequest) (bool, error) {
 	var has bool
 	resp, err := lc.cli.R().SetQueryParams(map[string]string{
@@ -214,6 +242,17 @@ func (lc *AuthClient) HasMiner(req *auth.HasMinerRequest) (bool, error) {
 		return *resp.Result().(*bool), nil
 	}
 	return false, resp.Error().(*errcode.ErrMsg).Err()
+}
+
+func (lc *AuthClient) DeleteUser(req *auth.DeleteUserRequest) error {
+	resp, err := lc.cli.R().SetBody(req).SetError(&errcode.ErrMsg{}).Post("/user/del")
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode() == http.StatusOK {
+		return nil
+	}
+	return resp.Error().(*errcode.ErrMsg).Err()
 }
 
 func (lc *AuthClient) GetUserRateLimit(name, id string) (auth.GetUserRateLimitResponse, error) {

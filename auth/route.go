@@ -17,7 +17,7 @@ func InitRouter(app OAuthApp) http.Handler {
 	router.POST("/genToken", app.GenerateToken)
 	router.GET("/token", app.GetToken)
 	router.GET("/tokens", app.Tokens)
-	router.DELETE("/token/del", app.RemoveToken)
+	router.DELETE("/token", app.RemoveToken)
 
 	userGroup := router.Group("/user")
 	userGroup.PUT("/new", app.CreateUser)
@@ -25,7 +25,7 @@ func InitRouter(app OAuthApp) http.Handler {
 	userGroup.GET("/list", app.ListUsers)
 	userGroup.GET("", app.GetUser)
 	userGroup.GET("/has", app.HasUser)
-	userGroup.DELETE("/del", app.DeleteUser)
+	userGroup.POST("/del", app.DeleteUser)
 
 	rateLimitGroup := userGroup.Group("/ratelimit")
 	rateLimitGroup.POST("/upsert", app.UpsertUserRateLimit)

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/filecoin-project/venus-auth/log"
+
 	"github.com/google/uuid"
 
 	"github.com/dgraph-io/badger/v3"
@@ -57,41 +59,26 @@ func (s *badgerStore) Get(token Token) (*KeyPair, error) {
 }
 
 func (s *badgerStore) ByName(name string) ([]*KeyPair, error) {
-	res := make([]*KeyPair, 0)
-	err := s.db.View(func(txn *badger.Txn) error {
-		opts := badger.IteratorOptions{
-			PrefetchValues: true,
-			Reverse:        false,
-			AllVersions:    false,
-			Prefix:         []byte(PrefixToken),
-		}
-		it := txn.NewIterator(opts)
-		defer it.Close()
-		for it.Rewind(); it.Valid(); it.Next() {
-			item := it.Item()
-			val := new([]byte)
-			err := item.Value(func(v []byte) error {
-				val = &v
-				return nil
-			})
-			if err != nil {
-				return err
-			}
+	var kps []*KeyPair
+	if err := s.walkThroughPrefix([]byte(PrefixToken), func(item *badger.Item) (bool, error) {
+		if err := item.Value(func(val []byte) error {
 			kp := new(KeyPair)
-			err = kp.FromBytes(*val)
-			if err != nil {
+			if err := kp.FromBytes(val); err != nil {
 				return err
 			}
 			if kp.Name == name {
-				res = append(res, kp)
+				kps = append(kps, kp)
 			}
+			return nil
+		}); err != nil {
+			return false, err
 		}
-		return nil
-	})
-	if err != nil {
+		return true, nil
+	}); err != nil {
 		return nil, err
 	}
-	return res, nil
+
+	return kps, nil
 }
 
 func (s *badgerStore) UpdateToken(kp *KeyPair) error {
@@ -182,7 +169,25 @@ func (s *badgerStore) HasMiner(maddr address.Address) (bool, error) {
 
 func (s *badgerStore) DeleteUser(name string) error {
 	return s.db.Update(func(txn *badger.Txn) error {
-		return txn.Delete(userKey(name))
+		if err := txn.Delete(userKey(name)); err != nil {
+			return err
+		}
+
+		// delete miners
+		miners, err := s.ListMiners(name)
+		if err != nil {
+			return err
+		}
+		addrs := make([]address.Address, 0, len(miners))
+		for _, miner := range miners {
+			if _, err := s.DelMiner(miner.Miner.Address()); err != nil {
+				return err
+			}
+			addrs = append(addrs, miner.Miner.Address())
+		}
+		log.Infof("delete user %s, delete miners %v", name, addrs)
+
+		return nil
 	})
 }
 

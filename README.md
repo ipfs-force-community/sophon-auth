@@ -7,6 +7,8 @@ Unified authorization service for Venus cluster
 - Log collection (Provide influxdb storage solution)
 - RESTful API
 
+Use [Venus Issues](https://github.com/filecoin-project/venus/issues) for reporting issues about this repository.
+
 ---
 # Get Started
 ```

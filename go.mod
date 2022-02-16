@@ -15,7 +15,7 @@ require (
 	github.com/google/uuid v1.2.0
 	github.com/influxdata/influxdb-client-go/v2 v2.2.2
 	github.com/ipfs-force-community/metrics v1.0.0
-	github.com/ipfs/go-ipfs-cmds v0.0.0-00010101000000-000000000000
+	github.com/ipfs/go-ipfs-cmds v0.6.1-0.20220212012746-40b8fddb899f
 	github.com/ipfs/go-log v1.0.5 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/magefile/mage v1.11.0 // indirect
@@ -37,7 +37,5 @@ require (
 )
 
 replace github.com/google/flatbuffers => github.com/google/flatbuffers v1.12.1
-
-replace github.com/ipfs/go-ipfs-cmds => github.com/ipfs-force-community/go-ipfs-cmds v0.6.1-0.20210521090123-4587df7fa0ab
 
 replace github.com/filecoin-project/go-jsonrpc => github.com/ipfs-force-community/go-jsonrpc v0.1.4-0.20210721095535-a67dff16de21

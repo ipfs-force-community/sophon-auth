@@ -15,8 +15,6 @@ require (
 	github.com/google/uuid v1.2.0
 	github.com/influxdata/influxdb-client-go/v2 v2.2.2
 	github.com/ipfs-force-community/metrics v1.0.0
-	github.com/ipfs/go-ipfs-cmds v0.0.0-00010101000000-000000000000
-	github.com/ipfs/go-log v1.0.5 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/magefile/mage v1.11.0 // indirect
 	github.com/magiconair/properties v1.8.0
@@ -25,7 +23,6 @@ require (
 	github.com/spf13/cast v1.3.0
 	github.com/spf13/viper v1.3.2
 	github.com/stretchr/testify v1.6.1
-	github.com/ugorji/go v1.2.4 // indirect
 	github.com/urfave/cli/v2 v2.3.0
 	go.opencensus.io v0.23.0
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2 // indirect
@@ -37,7 +34,5 @@ require (
 )
 
 replace github.com/google/flatbuffers => github.com/google/flatbuffers v1.12.1
-
-replace github.com/ipfs/go-ipfs-cmds => github.com/ipfs-force-community/go-ipfs-cmds v0.6.1-0.20210521090123-4587df7fa0ab
 
 replace github.com/filecoin-project/go-jsonrpc => github.com/ipfs-force-community/go-jsonrpc v0.1.4-0.20210721095535-a67dff16de21

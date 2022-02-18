@@ -9,7 +9,6 @@ import (
 
 	"github.com/filecoin-project/go-jsonrpc/auth"
 	auth2 "github.com/filecoin-project/venus-auth/auth"
-	ipfsHttp "github.com/ipfs/go-ipfs-cmds/http"
 )
 
 type CtxKey int
@@ -113,7 +112,6 @@ func (authMux *AuthMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx = auth.WithPerm(ctx, perms)
-	ctx = ipfsHttp.WithPerm(ctx, perms)
 
 	if name, _ := auth2.JwtUserFromToken(token); len(name) != 0 {
 		ctx = CtxWithName(ctx, name)

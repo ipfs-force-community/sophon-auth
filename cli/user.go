@@ -23,6 +23,7 @@ var userSubCommand = &cli.Command{
 		getUserCmd,
 		hasMinerCmd,
 		rateLimitSubCmds,
+		minerSubCmds,
 	},
 }
 
@@ -60,13 +61,6 @@ var addUserCmd = &cli.Command{
 			State:      0,
 			SourceType: sourceType,
 		}
-		if ctx.IsSet("miner") {
-			mAddr, err := address.NewFromString(ctx.String("miner"))
-			if err != nil {
-				return err
-			}
-			user.Miner = mAddr.String()
-		}
 		res, err := client.CreateUser(user)
 		if err != nil {
 			return err
@@ -85,16 +79,14 @@ var updateUserCmd = &cli.Command{
 			Required: true,
 		},
 		&cli.StringFlag{
-			Name: "miner",
-		},
-		&cli.StringFlag{
 			Name: "comment",
 		},
 		&cli.IntFlag{
 			Name: "sourceType",
 		},
 		&cli.IntFlag{
-			Name: "state",
+			Name:  "state",
+			Usage: "0:disabled, 1:enabled",
 		},
 	},
 	Action: func(ctx *cli.Context) error {
@@ -105,20 +97,12 @@ var updateUserCmd = &cli.Command{
 		req := &auth.UpdateUserRequest{
 			Name: ctx.String("name"),
 		}
-		if ctx.IsSet("miner") {
-			addr, err := address.NewFromString(ctx.String("miner"))
-			if err != nil {
-				return err
-			}
-			req.Miner = addr.String()
-			req.KeySum |= 1
-		}
 		if ctx.IsSet("comment") {
 			req.Comment = ctx.String("comment")
 			req.KeySum |= 2
 		}
 		if ctx.IsSet("state") {
-			req.State = ctx.Int("state")
+			req.State = core.UserState(ctx.Int("state"))
 			req.KeySum |= 4
 		}
 		if ctx.IsSet("sourceType") {
@@ -170,8 +154,7 @@ var listUsersCmd = &cli.Command{
 	Usage: "list users",
 	Flags: []cli.Flag{
 		&cli.UintFlag{
-			Name:  "skip",
-			Value: 0,
+			Name: "skip",
 		},
 		&cli.UintFlag{
 			Name:  "limit",
@@ -179,11 +162,10 @@ var listUsersCmd = &cli.Command{
 		},
 		&cli.IntFlag{
 			Name:  "state",
-			Value: 0,
+			Usage: "0:disabled, 1:enabled, not-set:[show all]",
 		},
 		&cli.IntFlag{
-			Name:  "sourceType",
-			Value: 0,
+			Name: "sourceType",
 		},
 	},
 	Action: func(ctx *cli.Context) error {
@@ -211,12 +193,25 @@ var listUsersCmd = &cli.Command{
 		}
 
 		for k, v := range users {
+			var minerStr interface{}
+			if miners, err := client.ListMiners(v.Name); err != nil {
+				minerStr = err.Error()
+			} else if len(miners) > 0 {
+				ms := make([]string, len(miners))
+				for idx, m := range miners {
+					ms[idx] = m.Miner
+				}
+				minerStr = ms
+			}
 			fmt.Println("number:", k+1)
 			fmt.Println("name:", v.Name)
-			fmt.Println("miner:", v.Miner)
-			fmt.Println("sourceType:", v.SourceType, "\t// miner:1")
-			fmt.Println("state", v.State, "\t// 0: disable, 1: enable")
-			fmt.Println("comment:", v.Comment)
+			fmt.Println("state:", v.State.String())
+			if minerStr != nil {
+				fmt.Println("miners:", minerStr)
+			}
+			if len(v.Comment) != 0 {
+				fmt.Println("comment:", v.Comment)
+			}
 			fmt.Println("createTime:", time.Unix(v.CreateTime, 0).Format(time.RFC1123))
 			fmt.Println("updateTime:", time.Unix(v.CreateTime, 0).Format(time.RFC1123))
 			fmt.Println()
@@ -244,7 +239,6 @@ var getUserCmd = &cli.Command{
 		}
 
 		fmt.Println("name:", user.Name)
-		fmt.Println("miner:", user.Miner)
 		fmt.Println("sourceType:", user.SourceType, "\t// miner:1")
 		fmt.Println("state", user.State, "\t// 0: disable, 1: enable")
 		fmt.Println("comment:", user.Comment)
@@ -283,7 +277,8 @@ var hasMinerCmd = &cli.Command{
 }
 
 var rateLimitSubCmds = &cli.Command{
-	Name: "rate-limit",
+	Name:  "rate-limit",
+	Usage: "sub cmds for managing user request limits",
 	Subcommands: []*cli.Command{
 		rateLimitAdd,
 		rateLimitUpdate,

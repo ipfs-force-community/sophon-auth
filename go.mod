@@ -11,6 +11,7 @@ require (
 	github.com/gbrlsnchs/jwt/v3 v3.0.0
 	github.com/gin-gonic/gin v1.7.0
 	github.com/go-resty/resty/v2 v2.4.0
+	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang/protobuf v1.5.1 // indirect
 	github.com/google/uuid v1.2.0
 	github.com/influxdata/influxdb-client-go/v2 v2.2.2

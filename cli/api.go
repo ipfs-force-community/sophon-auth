@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/core"
@@ -13,13 +14,6 @@ import (
 	"path"
 	"strconv"
 )
-
-type LocalClient interface {
-	GenerateToken(name, perm, extra string) (string, error)
-	Tokens(pageIndex, pageSize int64) (auth.GetTokensResponse, error)
-	RemoveToken(token string) error
-	DelUserRateLimit(req *auth.DelUserRateLimitReq) (string, error)
-}
 
 type localClient struct {
 	cli *resty.Client
@@ -220,4 +214,50 @@ func (lc *localClient) DelUserRateLimit(req *auth.DelUserRateLimitReq) (string, 
 		return *(resp.Result().(*string)), nil
 	}
 	return "", resp.Error().(*errcode.ErrMsg).Err()
+}
+
+func (lc *localClient) UpsertMiner(user, miner string) (bool, error) {
+	if _, err := address.NewFromString(miner); err != nil {
+		return false, xerrors.Errorf("invalid miner address:%s", miner)
+	}
+	var isCreate bool
+	resp, err := lc.cli.R().SetBody(&auth.UpsertMinerReq{Miner: miner, User: user}).
+		SetResult(&isCreate).SetError(&errcode.ErrMsg{}).Post("/miner/add-miner")
+	if err != nil {
+		return false, err
+	}
+	if resp.StatusCode() == http.StatusOK {
+		return *(resp.Result().(*bool)), nil
+	}
+	return false, resp.Error().(*errcode.ErrMsg).Err()
+}
+
+func (lc *localClient) ListMiners(user string) (auth.ListMinerResp, error) {
+	var res auth.ListMinerResp
+	resp, err := lc.cli.R().SetQueryParams(map[string]string{"user": user}).
+		SetResult(&res).SetError(&errcode.ErrMsg{}).Get("/miner/list-by-user")
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusOK {
+		return *(resp.Result().(*auth.ListMinerResp)), nil
+	}
+	return nil, resp.Error().(*errcode.ErrMsg).Err()
+}
+
+func (lc *localClient) DelMiner(miner string) (bool, error) {
+	if _, err := address.NewFromString(miner); err != nil {
+		return false, xerrors.Errorf("invalid miner address:%s", miner)
+	}
+
+	var res bool
+	resp, err := lc.cli.R().SetBody(auth.DelMinerReq{Miner: miner}).
+		SetResult(&res).SetError(&errcode.ErrMsg{}).Post("/miner/del")
+	if err != nil {
+		return res, err
+	}
+	if resp.StatusCode() == http.StatusOK {
+		return *(resp.Result().(*bool)), nil
+	}
+	return res, resp.Error().(*errcode.ErrMsg).Err()
 }

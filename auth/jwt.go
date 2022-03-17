@@ -52,6 +52,10 @@ type OAuthService interface {
 	GetUserRateLimits(ctx context.Context, req *GetUserRateLimitsReq) (GetUserRateLimitResponse, error)
 	UpsertUserRateLimit(ctx context.Context, req *UpsertUserRateLimitReq) (string, error)
 	DelUserRateLimit(ctx context.Context, req *DelUserRateLimitReq) error
+
+	UpsertMiner(ctx context.Context, req *UpsertMinerReq) (bool, error)
+	ListMiners(ctx context.Context, req *ListMinerReq) (ListMinerResp, error)
+	DelMiner(ctx context.Context, req *DelMinerReq) (bool, error)
 }
 
 type jwtOAuth struct {
@@ -201,14 +205,9 @@ func (o *jwtOAuth) CreateUser(ctx context.Context, req *CreateUserRequest) (*Cre
 	if err != nil {
 		return nil, err
 	}
-	mAddr, err := address.NewFromString(req.Miner) // convert address type to local
-	if err != nil {
-		return nil, err
-	}
 	userNew := &storage.User{
 		Id:         uid.String(),
 		Name:       req.Name,
-		Miner:      mAddr.String(),
 		Comment:    req.Comment,
 		SourceType: req.SourceType,
 		State:      req.State,
@@ -228,13 +227,6 @@ func (o *jwtOAuth) UpdateUser(ctx context.Context, req *UpdateUserRequest) error
 		return err
 	}
 	user.UpdateTime = time.Now().Local()
-	if req.KeySum&1 == 1 {
-		mAddr, err := address.NewFromString(req.Miner)
-		if err != nil {
-			return err
-		}
-		user.Miner = mAddr.String()
-	}
 	if req.KeySum&2 == 2 {
 		user.Comment = req.Comment
 	}
@@ -261,7 +253,7 @@ func (o *jwtOAuth) GetMiner(ctx context.Context, req *GetMinerRequest) (*OutputU
 	if err != nil {
 		return nil, err
 	}
-	user, err := o.store.GetMiner(mAddr)
+	user, err := o.store.GetUserByMiner(mAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -298,6 +290,41 @@ func (o *jwtOAuth) UpsertUserRateLimit(ctx context.Context, req *UpsertUserRateL
 
 func (o jwtOAuth) DelUserRateLimit(ctx context.Context, req *DelUserRateLimitReq) error {
 	return o.store.DelRateLimit(req.Name, req.Id)
+}
+
+func (o *jwtOAuth) UpsertMiner(ctx context.Context, req *UpsertMinerReq) (bool, error) {
+	maddr, err := address.NewFromString(req.Miner)
+	if err != nil || maddr.Empty() {
+		return false, xerrors.Errorf("invalid miner address:%s, error: %w", req.Miner, err)
+	}
+	return o.store.UpsertMiner(maddr, req.User)
+}
+
+func (o *jwtOAuth) ListMiners(ctx context.Context, req *ListMinerReq) (ListMinerResp, error) {
+	miners, err := o.store.ListMiners(req.User)
+	if err != nil {
+		return nil, xerrors.Errorf("list user:%s miners failed:%w", req.User, err)
+	}
+
+	outs := make([]*OutputMiner, len(miners))
+	for idx, m := range miners {
+		addrStr := m.Miner.Address().String()
+		outs[idx] = &OutputMiner{
+			Miner:     addrStr,
+			User:      m.User,
+			CreatedAt: m.CreatedAt,
+			UpdatedAt: m.UpdatedAt,
+		}
+	}
+	return outs, nil
+}
+
+func (o jwtOAuth) DelMiner(ctx context.Context, req *DelMinerReq) (bool, error) {
+	miner, err := address.NewFromString(req.Miner)
+	if err != nil {
+		return false, xerrors.Errorf("invalid miner address:%s, %w", req.Miner, err)
+	}
+	return o.store.DelMiner(miner)
 }
 
 func DecodeToBytes(enc []byte) ([]byte, error) {

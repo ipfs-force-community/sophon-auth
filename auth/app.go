@@ -24,6 +24,10 @@ type OAuthApp interface {
 	UpsertUserRateLimit(c *gin.Context)
 	GetUserRateLimit(c *gin.Context)
 	DelUserRateLimit(c *gin.Context)
+
+	UpsertMiner(c *gin.Context)
+	ListMiners(c *gin.Context)
+	DelMiner(c *gin.Context)
 }
 
 type oauthApp struct {
@@ -267,4 +271,45 @@ func (o *oauthApp) DelUserRateLimit(c *gin.Context) {
 		return
 	}
 	SuccessResponse(c, req.Id)
+}
+
+func (o *oauthApp) UpsertMiner(c *gin.Context) {
+	req := new(UpsertMinerReq)
+	if err := c.ShouldBind(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+	isCreate, err := o.srv.UpsertMiner(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	SuccessResponse(c, isCreate)
+}
+
+func (o *oauthApp) ListMiners(c *gin.Context) {
+	req := new(ListMinerReq)
+	if err := c.ShouldBind(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+	res, err := o.srv.ListMiners(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	SuccessResponse(c, res)
+}
+
+func (o *oauthApp) DelMiner(c *gin.Context) {
+	req := new(DelMinerReq)
+	if err := c.ShouldBind(req); err != nil {
+		BadResponse(c, err)
+	}
+	res, err := o.srv.DelMiner(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	SuccessResponse(c, res)
 }

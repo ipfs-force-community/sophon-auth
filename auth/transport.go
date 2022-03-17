@@ -1,9 +1,9 @@
 package auth
 
 import (
-	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/storage"
+	"time"
 )
 
 type VerifyRequest struct {
@@ -70,9 +70,8 @@ type UpsertUserRateLimitReq storage.UserRateLimit
 
 type CreateUserRequest struct {
 	Name       string          `form:"name" binding:"required"`
-	Miner      string          `form:"miner"` // miner address f01234
 	Comment    string          `form:"comment"`
-	State      int             `form:"state"` // 0: disable, 1: enable
+	State      core.UserState  `form:"state"` // 0: disable, 1: enable
 	SourceType core.SourceType `form:"sourceType"`
 }
 type CreateUserResponse = OutputUser
@@ -81,19 +80,17 @@ type UpdateUserRequest struct {
 	KeySum core.KeyCode `form:"keySum"` // keyCode Sum
 	Name   string       `form:"name"`
 	// todo make miner tobe address
-	Miner      string          `form:"miner"`      // keyCode:1
 	Comment    string          `form:"comment"`    // keyCode:2
-	State      int             `form:"state"`      // keyCode:4
+	State      core.UserState  `form:"state"`      // keyCode:4
 	SourceType core.SourceType `form:"sourceType"` // keyCode:8
 }
 
 type OutputUser struct {
 	Id         string          `json:"id"`
 	Name       string          `json:"name"`
-	Miner      address.Address `json:"miner"` // miner address f01234
 	SourceType core.SourceType `json:"sourceType"`
 	Comment    string          `json:"comment"`
-	State      int             `json:"state"`
+	State      core.UserState  `json:"state"`
 	CreateTime int64           `json:"createTime"`
 	UpdateTime int64           `json:"updateTime"`
 }
@@ -121,4 +118,23 @@ func (ls GetUserRateLimitResponse) MatchedLimit(service, api string) *storage.Us
 		}
 	}
 	return nil
+}
+
+type UpsertMinerReq struct {
+	User, Miner string
+}
+
+type ListMinerReq struct {
+	User string `form:"user"`
+}
+
+type OutputMiner struct {
+	Miner, User          string
+	CreatedAt, UpdatedAt time.Time
+}
+
+type ListMinerResp []*OutputMiner
+
+type DelMinerReq struct {
+	Miner string `json:"miner"`
 }

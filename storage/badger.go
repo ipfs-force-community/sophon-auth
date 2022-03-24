@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"encoding/json"
 	"errors"
 	"github.com/google/uuid"
 	"time"
@@ -24,9 +23,7 @@ func newBadgerStore(filePath string) (Store, error) {
 	if err != nil {
 		return nil, xerrors.Errorf("open db failed :%s", err)
 	}
-	s := &badgerStore{
-		db: db,
-	}
+	s := &badgerStore{db: db}
 	go func() {
 		ticker := time.NewTicker(5 * time.Minute)
 		defer ticker.Stop()
@@ -42,135 +39,55 @@ func newBadgerStore(filePath string) (Store, error) {
 }
 
 func (s *badgerStore) Put(kp *KeyPair) error {
-	val, err := kp.Bytes()
-	if err != nil {
-		return xerrors.Errorf("failed to marshal time :%s", err)
-	}
-	key := s.tokenKey(kp.Token.String())
-	return s.db.Update(func(txn *badger.Txn) error {
-		return txn.Set(key, val)
-	})
+	return s.putBadgerObj(kp)
 }
 
 func (s *badgerStore) Delete(token Token) error {
-	key := s.tokenKey(token.String())
-	return s.db.Update(func(txn *badger.Txn) error {
-		return txn.Delete(key)
-	})
+	return s.delObj(tokenKey(token.String()))
 }
 
 func (s *badgerStore) Has(token Token) (bool, error) {
-	key := s.tokenKey(token.String())
-	var value []byte
-	err := s.db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get(key)
-		if err != nil {
-			return err
-		}
-
-		value, err = item.ValueCopy(value)
-		return err
-	})
-	if err != nil {
-		if err.Error() == "Key not found" {
-			return false, nil
-		}
-		return false, err
-	}
-	return true, nil
+	return s.isExist(tokenKey(token.String()))
 }
 
 func (s *badgerStore) Get(token Token) (*KeyPair, error) {
-	kp := new(KeyPair)
-	key := s.tokenKey(token.String())
-
-	err := s.db.View(func(txn *badger.Txn) error {
-		val, err := txn.Get(key)
-		if err != nil || err == badger.ErrKeyNotFound {
-			return xerrors.Errorf("token %s not exit", token)
-		}
-
-		return val.Value(func(val []byte) error {
-			return kp.FromBytes(val)
-		})
-	})
-
-	return kp, err
+	var kp KeyPair
+	return &kp, s.getObj(tokenKey(token.String()), &kp)
 }
 
 func (s *badgerStore) UpdateToken(kp *KeyPair) error {
-	val, err := kp.Bytes()
-	if err != nil {
-		return err
-	}
-	return s.db.Update(func(txn *badger.Txn) error {
-		return txn.Set(s.tokenKey(kp.Token.String()), val)
-	})
+	return s.putBadgerObj(kp)
 }
 
 func (s *badgerStore) List(skip, limit int64) ([]*KeyPair, error) {
-	data := make(chan *KeyPair, limit)
-	err := s.db.View(func(txn *badger.Txn) error {
-		opts := badger.IteratorOptions{
-			PrefetchValues: true,
-			Reverse:        false,
-			AllVersions:    false,
-			Prefix:         []byte(PrefixToken),
+	var offset int64
+	var kps []*KeyPair
+	if err := s.walkThroughPrefix([]byte(PrefixToken), func(item *badger.Item) (bool, error) {
+		offset++
+		if offset <= skip {
+			return true, nil
 		}
-		it := txn.NewIterator(opts)
-		defer it.Close()
-		idx := int64(0)
-		for it.Rewind(); it.Valid() && idx < skip+limit; it.Next() {
-			if idx >= skip {
-				item := it.Item()
-				val := new([]byte)
-				err := item.Value(func(v []byte) error {
-					val = &v
-					return nil
-				})
-				if err != nil {
-					close(data)
-					return err
-				}
-				kp := new(KeyPair)
-				err = kp.FromBytes(*val)
-				if err != nil {
-					close(data)
-					return err
-				}
-				data <- kp
+		if err := item.Value(func(val []byte) error {
+			kp := new(KeyPair)
+			if err := kp.FromBytes(val); err != nil {
+				return err
 			}
-			idx++
+			kps = append(kps, kp)
+			return nil
+		}); err != nil {
+			return false, err
 		}
-		close(data)
-		return nil
-	})
-	if err != nil {
+
+		return limit == 0 || offset-skip < limit, nil
+	}); err != nil {
 		return nil, err
 	}
-	res := make([]*KeyPair, 0, limit)
-	for ch := range data {
-		res = append(res, ch)
-	}
-	return res, nil
+	return kps, nil
 }
 
 func (s *badgerStore) GetUser(name string) (*User, error) {
 	user := new(User)
-	err := s.db.View(func(txn *badger.Txn) error {
-		val, err := txn.Get(s.userKey(name))
-		if err != nil || err == badger.ErrKeyNotFound {
-			return xerrors.Errorf("users %s not exit", name)
-		}
-
-		return val.Value(func(val []byte) error {
-			return user.FromBytes(val)
-		})
-	})
-	if err != nil {
-		return nil, err
-	}
-	return user, nil
+	return user, s.getObj(userKey(name), user)
 }
 
 func (s *badgerStore) UpdateUser(user *User) error {
@@ -179,194 +96,57 @@ func (s *badgerStore) UpdateUser(user *User) error {
 		return err
 	}
 	user.Id = old.Id
-	val, err := user.Bytes()
-	if err != nil {
-		return err
-	}
-	return s.db.Update(func(txn *badger.Txn) error {
-		return txn.Set(s.userKey(user.Name), val)
-	})
+	return s.putBadgerObj(user)
 }
 
 func (s *badgerStore) HasUser(name string) (bool, error) {
-	var value []byte
-	err := s.db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get(s.userKey(name))
-		if err != nil {
-			return err
-		}
-
-		value, err = item.ValueCopy(value)
-		return err
-	})
-	if err != nil {
-		if err.Error() == "Key not found" {
-			return false, nil
-		}
-		return false, err
-	}
-	return true, nil
+	return s.isExist(userKey(name))
 }
 
 func (s *badgerStore) PutUser(user *User) error {
-	val, err := user.Bytes()
-	if err != nil {
-		return err
-	}
-	return s.db.Update(func(txn *badger.Txn) error {
-		return txn.Set(s.userKey(user.Name), val)
-	})
+	return s.putBadgerObj(user)
 }
 
 func (s *badgerStore) ListUsers(skip, limit int64, state int, sourceType core.SourceType, code core.KeyCode) ([]*User, error) {
-	var data []*User
-	err := s.db.View(func(txn *badger.Txn) error {
-		opts := badger.IteratorOptions{
-			PrefetchValues: true,
-			Reverse:        false,
-			AllVersions:    false,
-			Prefix:         []byte(PrefixUser),
-		}
-		it := txn.NewIterator(opts)
-		defer it.Close()
-		idx := int64(0)
-		for it.Rewind(); it.Valid() && idx < skip+limit; it.Next() {
-			if idx >= skip {
-				item := it.Item()
-				// k := item.Key()
-				val := new([]byte)
-				err := item.Value(func(v []byte) error {
-					val = &v
-					return nil
-				})
-				if err != nil {
-					return err
-				}
-				user := new(User)
-				err = user.FromBytes(*val)
-				if err != nil {
-					return err
-				}
-				// aggregation multi-select
-				need := false
-				if code&1 == 1 {
-					need = user.SourceType == sourceType
-				} else {
-					need = true
-				}
-
-				if !need {
-					continue
-				}
-				if code&2 == 2 {
-					need = need && user.State == state
-				} else {
-					need = need && true
-				}
-				if need {
-
-					data = append(data, user)
-					idx++
-				}
+	var users []*User
+	var satisfiedItemCount = int64(0)
+	if err := s.walkThroughPrefix([]byte(PrefixUser), func(item *badger.Item) (bool, error) {
+		err := item.Value(func(val []byte) error {
+			var user = new(User)
+			if err := user.FromBytes(val); err != nil {
+				return err
 			}
-		}
-		return nil
-	})
-	if err != nil {
+			if code&1 == 1 && user.SourceType != sourceType {
+				return nil
+			}
+			if code&2 == 2 && int(user.State) != state {
+				return nil
+			}
+			satisfiedItemCount++
+			if satisfiedItemCount <= skip {
+				return nil
+			}
+			users = append(users, user)
+			return nil
+		})
+		return limit == 0 || satisfiedItemCount-skip < limit, err
+	}); err != nil {
 		return nil, err
 	}
-	return data, nil
+
+	return users, nil
 }
 
 func (s *badgerStore) HasMiner(maddr address.Address) (bool, error) {
-	var has bool
-	err := s.db.View(func(txn *badger.Txn) error {
-		opts := badger.IteratorOptions{
-			PrefetchValues: true,
-			Reverse:        false,
-			AllVersions:    false,
-			Prefix:         []byte(PrefixUser),
-		}
-		it := txn.NewIterator(opts)
-		defer it.Close()
-		for it.Rewind(); it.Valid(); it.Next() {
-			item := it.Item()
-			// k := item.Key()
-			val := new([]byte)
-			err := item.Value(func(v []byte) error {
-				// fmt.Printf("key=%s, value=%s\n", k, v)
-				val = &v
-				return nil
-			})
-			if err != nil {
-				return err
-			}
-			user := new(User)
-			err = user.FromBytes(*val)
-			if err != nil {
-				return err
-			}
-
-			if user.Miner == maddr.String() {
-				has = true
-				return nil
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		return false, err
-	}
-	return has, nil
-}
-
-func (s *badgerStore) GetMiner(maddr address.Address) (*User, error) {
-	var data *User
-	err := s.db.View(func(txn *badger.Txn) error {
-		opts := badger.IteratorOptions{
-			PrefetchValues: true,
-			Reverse:        false,
-			AllVersions:    false,
-			Prefix:         []byte(PrefixUser),
-		}
-		it := txn.NewIterator(opts)
-		defer it.Close()
-		for it.Rewind(); it.Valid(); it.Next() {
-			item := it.Item()
-			// k := item.Key()
-			val := new([]byte)
-			err := item.Value(func(v []byte) error {
-				// fmt.Printf("key=%s, value=%s\n", k, v)
-				val = &v
-				return nil
-			})
-			if err != nil {
-				return err
-			}
-			user := new(User)
-			err = user.FromBytes(*val)
-			if err != nil {
-				return err
-			}
-			if user.Miner == maddr.String() {
-				data = user
-				return nil
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	if data == nil {
-		return nil, xerrors.Errorf("miner %s not exit", maddr)
-	}
-	return data, nil
+	return s.isExist(minerKey(maddr.String()))
 }
 
 func (s *badgerStore) GetRateLimits(name, id string) ([]*UserRateLimit, error) {
 	mRateLimits, err := s.listRateLimits(name, id)
 	if err != nil {
+		if xerrors.Is(err, badger.ErrKeyNotFound) {
+			return nil, nil
+		}
 		return nil, err
 	}
 
@@ -401,7 +181,6 @@ func (s *badgerStore) DelRateLimit(name, id string) error {
 	if len(name) == 0 || len(id) == 0 {
 		return errors.New("user and rate-limit id is required for removing rate limit regulation")
 	}
-
 	mRateLimit, err := s.listRateLimits(name, id)
 	if err != nil {
 		return err
@@ -409,21 +188,18 @@ func (s *badgerStore) DelRateLimit(name, id string) error {
 	if _, exist := mRateLimit[id]; !exist {
 		return nil
 	}
+
 	delete(mRateLimit, id)
+
+	if len(mRateLimit) == 0 {
+		return s.delObj(rateLimitKey(name))
+	}
 	return s.updateUserRateLimit(name, mRateLimit)
 }
 
 func (s *badgerStore) listRateLimits(user, id string) (map[string]*UserRateLimit, error) {
-	var mRateLimits map[string]*UserRateLimit
-	if err := s.db.View(func(txn *badger.Txn) error {
-		val, err := txn.Get(s.rateLimitKey(user))
-		if err != nil || err == badger.ErrKeyNotFound {
-			return xerrors.Errorf("users %s not exit, %w", user, err)
-		}
-		return val.Value(func(val []byte) error {
-			return json.Unmarshal(val, &mRateLimits)
-		})
-	}); err != nil {
+	var mRateLimits mapedRatelimit
+	if err := s.getObj(rateLimitKey(user), &mRateLimits); err != nil {
 		return nil, err
 	}
 
@@ -432,19 +208,102 @@ func (s *badgerStore) listRateLimits(user, id string) (map[string]*UserRateLimit
 		if rl, exists := mRateLimits[id]; exists {
 			res[id] = rl
 		}
-		return res, nil
+		mRateLimits = res
 	}
-
 	return mRateLimits, nil
-
 }
 
-func (s *badgerStore) updateUserRateLimit(name string, limits map[string]*UserRateLimit) error {
-	val, err := json.Marshal(limits)
-	if err != nil {
-		return err
+func (s *badgerStore) updateUserRateLimit(name string, limits mapedRatelimit) error {
+	return s.put(rateLimitKey(name), &limits)
+}
+
+// miner
+func (s *badgerStore) getMiner(maddr address.Address) (*Miner, error) {
+	var miner Miner
+	if err := s.getObj(minerKey(maddr.String()), &miner); err != nil {
+		return nil, err
 	}
-	return s.db.Update(func(txn *badger.Txn) error {
-		return txn.Set(s.rateLimitKey(name), val)
+	return &miner, nil
+}
+
+func (s *badgerStore) GetUserByMiner(mAddr address.Address) (*User, error) {
+	miner, err := s.getMiner(mAddr)
+	if err != nil {
+		return nil, err
+	}
+	return s.GetUser(miner.User)
+}
+
+func (s *badgerStore) DelMiner(miner address.Address) (bool, error) {
+	err := s.delObj(minerKey(miner.String()))
+	if err != nil {
+		if xerrors.Is(err, badger.ErrKeyNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+func (s *badgerStore) UpsertMiner(maddr address.Address, userName string) (bool, error) {
+	miner := &Miner{}
+	now := time.Now()
+	var isCreate bool
+	userkey, minerkey := userKey(userName), minerKey(maddr.String())
+	return isCreate, s.db.Update(func(txn *badger.Txn) error {
+		// this 'get(userKey)' purpose to makesure 'user' exist
+		if _, err := txn.Get(userkey); err != nil {
+			if xerrors.Is(err, badger.ErrKeyNotFound) {
+				return xerrors.Errorf("can't bind miner:%s to not exist user:%s",
+					maddr.String(), userName)
+			}
+			return xerrors.Errorf("bound miner:%s to user:%s failed, %w",
+				maddr.String(), userName, err)
+		}
+
+		// if miner already exists, update it
+		if item, err := txn.Get(minerkey); err != nil {
+			if xerrors.Is(err, badger.ErrKeyNotFound) {
+				miner.Miner = storedAddress(maddr)
+				miner.CreatedAt = now
+				isCreate = true
+			} else {
+				return err
+			}
+		} else {
+			if err = item.Value(func(val []byte) error { return miner.FromBytes(val) }); err != nil {
+				return err
+			}
+		}
+		miner.User = userName
+		miner.UpdatedAt = now
+
+		if val, err := miner.Bytes(); err != nil {
+			return xerrors.Errorf("get miner object data failed:%w", err)
+		} else {
+			return txn.Set(minerkey, val)
+		}
 	})
+}
+
+func (s *badgerStore) ListMiners(user string) ([]*Miner, error) {
+	var miners []*Miner
+	if err := s.walkThroughPrefix([]byte(PrefixMiner), func(item *badger.Item) (isContinueWalk bool, err error) {
+		var m Miner
+		if err := item.Value(func(val []byte) error {
+			if err := m.FromBytes(val); err != nil {
+				return err
+			}
+			if m.User == user {
+				miners = append(miners, &m)
+			}
+			return nil
+		}); err != nil {
+			return false, err
+		}
+		return true, nil
+	}); err != nil {
+		return nil, err
+	}
+	return miners, nil
 }

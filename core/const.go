@@ -127,3 +127,23 @@ func (o *Page) GetLimit() int64 {
 	}
 	return o.Limit
 }
+
+type UserState int
+
+const (
+	UserStateDisabled UserState = 0
+	UserStateEnabled  UserState = 1
+)
+
+var userStateStrs = map[UserState]string{
+	UserStateEnabled:  "enabled",
+	UserStateDisabled: "disabled",
+}
+
+func (us UserState) String() string {
+	stateStr, exists := userStateStrs[us]
+	if exists {
+		return stateStr
+	}
+	return "unknown state"
+}

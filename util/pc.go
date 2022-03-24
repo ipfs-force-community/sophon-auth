@@ -18,20 +18,4 @@ func GetAvailablePort() (int, error) {
 
 	defer listener.Close()
 	return listener.Addr().(*net.TCPAddr).Port, nil
-
-}
-func MacAddr() string {
-	interfaces, err := net.Interfaces()
-	if err != nil {
-		panic("net interfaces" + err.Error())
-	}
-	mac := ""
-	for _, netInterface := range interfaces {
-		mac = netInterface.HardwareAddr.String()
-		if len(mac) == 0 {
-			continue
-		}
-		break
-	}
-	return mac
 }

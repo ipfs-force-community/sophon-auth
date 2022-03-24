@@ -105,7 +105,6 @@ func TestUserBusiness(t *testing.T) {
 	cli := mockClient(t)
 	res1, err := cli.CreateUser(&auth.CreateUserRequest{
 		Name:       "name1",
-		Miner:      "f01234",
 		Comment:    "this is a comment",
 		State:      1,
 		SourceType: 1,
@@ -117,7 +116,6 @@ func TestUserBusiness(t *testing.T) {
 
 	res2, err := cli.CreateUser(&auth.CreateUserRequest{
 		Name:       "name2",
-		Miner:      "f02345",
 		Comment:    "this is a comment",
 		State:      1,
 		SourceType: 1,
@@ -138,20 +136,17 @@ func TestUserBusiness(t *testing.T) {
 		t.Fatalf("get tokens err:%s", err)
 	}
 	assert.DeepEqual(t, res1.Name, users[0].Name)
-	assert.DeepEqual(t, res1.Miner.String(), users[0].Miner.String())
 	assert.DeepEqual(t, res1.Comment, users[0].Comment)
 	assert.DeepEqual(t, res1.State, users[0].State)
 	assert.DeepEqual(t, res1.SourceType, users[0].SourceType)
 
 	assert.DeepEqual(t, res2.Name, users[1].Name)
-	assert.DeepEqual(t, res2.Miner.String(), users[1].Miner.String())
 	assert.DeepEqual(t, res2.Comment, users[1].Comment)
 	assert.DeepEqual(t, res2.State, users[1].State)
 	assert.DeepEqual(t, res2.SourceType, users[1].SourceType)
 
 	err = cli.UpdateUser(&auth.UpdateUserRequest{
 		Name:       res1.Name,
-		Miner:      "f01111",
 		Comment:    "this is a comment?",
 		State:      1,
 		SourceType: 2,
@@ -160,13 +155,14 @@ func TestUserBusiness(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	miner, err := cli.GetMiner(&auth.GetMinerRequest{
+	_, err = cli.UpsertMiner(res1.Name, "f02345")
+	assert.NilError(t, err)
+
+	if _, err = cli.GetMiner(&auth.GetMinerRequest{
 		Miner: "f02345",
-	})
-	if err != nil {
+	}); err != nil {
 		t.Fatalf("get miner err:%s", err)
 	}
-	assert.DeepEqual(t, users[1].Miner.String(), miner.Miner.String())
 
 	has, err := cli.HasMiner(&auth.HasMinerRequest{
 		Miner: "f02345",
@@ -191,5 +187,4 @@ func TestUserBusiness(t *testing.T) {
 		t.Fatalf("get user err:%s", err)
 	}
 	assert.DeepEqual(t, users[1].Name, user.Name)
-	assert.DeepEqual(t, users[1].Miner.String(), user.Miner.String())
 }

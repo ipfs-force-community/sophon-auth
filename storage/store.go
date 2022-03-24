@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"gorm.io/gorm"
 	"strings"
 	"time"
 
@@ -17,15 +18,27 @@ import (
 )
 
 func NewStore(cnf *config.DBConfig, dataPath string) (Store, error) {
+	var store Store
+	var err error
 	switch strings.ToLower(cnf.Type) {
 	case config.Mysql:
 		log.Warn("mysql storage")
-		return newMySQLStore(cnf)
+		store, err = newMySQLStore(cnf)
 	case config.Badger:
 		log.Warn("badger storage")
-		return newBadgerStore(dataPath)
+		store, err = newBadgerStore(dataPath)
+	default:
+		return nil, fmt.Errorf("the type %s is not currently supported", cnf.Type)
 	}
-	return nil, fmt.Errorf("the type %s is not currently supported", cnf.Type)
+
+	if err != nil {
+		return nil, err
+	}
+	if err = StoreMigrate(store); err != nil {
+		return nil, xerrors.Errorf("migrate store failed:%w", err)
+	}
+
+	return store, nil
 }
 
 type Store interface {
@@ -41,14 +54,25 @@ type Store interface {
 	HasUser(name string) (bool, error)
 	GetUser(name string) (*User, error)
 	HasMiner(maddr address.Address) (bool, error)
-	GetMiner(maddr address.Address) (*User, error)
 	PutUser(*User) error
 	UpdateUser(*User) error
 	ListUsers(skip, limit int64, state int, sourceType core.SourceType, code core.KeyCode) ([]*User, error)
+
 	// rate limit
 	GetRateLimits(name, id string) ([]*UserRateLimit, error)
 	PutRateLimit(limit *UserRateLimit) (string, error)
 	DelRateLimit(name, id string) error
+
+	// miner
+	// first returned bool, 'miner' is created(true) or updated(false)
+	UpsertMiner(miner address.Address, userName string) (bool, error)
+	// first returned bool, if miner exists(true) or false
+	DelMiner(miner address.Address) (bool, error)
+	GetUserByMiner(miner address.Address) (*User, error)
+	ListMiners(user string) ([]*Miner, error)
+
+	Version() (uint64, error)
+	MigrateToV1() error
 }
 
 type KeyPair struct {
@@ -69,6 +93,7 @@ type Token string
 func (t Token) Bytes() []byte {
 	return []byte(t)
 }
+
 func (t Token) String() string {
 	return string(t)
 }
@@ -96,12 +121,91 @@ func (t *KeyPair) FromBytes(val []byte) error {
 type User struct {
 	Id         string          `gorm:"column:id;type:varchar(64);primary_key"`
 	Name       string          `gorm:"column:name;type:varchar(50);uniqueIndex:users_name_IDX,type:btree;not null"`
-	Miner      string          `gorm:"column:miner;type:varchar(255);index:users_miner_IDX,type:btree"`
 	Comment    string          `gorm:"column:comment;type:varchar(255);"`
 	SourceType core.SourceType `gorm:"column:stype;type:tinyint(4);default:0;NOT NULL"`
-	State      int             `gorm:"column:state;type:tinyint(4);default:0;NOT NULL"`
+	State      core.UserState  `gorm:"column:state;type:tinyint(4);default:0;NOT NULL"`
 	CreateTime time.Time       `gorm:"column:createTime;type:datetime;NOT NULL"`
 	UpdateTime time.Time       `gorm:"column:updateTime;type:datetime;NOT NULL"`
+}
+
+type OrmTimestamp struct {
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+}
+
+type storedAddress address.Address
+
+func (s storedAddress) Address() address.Address {
+	return address.Address(s)
+}
+
+func (s storedAddress) String() string {
+	var val = s.Address().String()
+	if s.Address().Empty() {
+		return val
+	}
+	return val[1:]
+}
+
+func (a *storedAddress) Scan(value interface{}) error {
+	val, isok := value.([]byte)
+	if !isok {
+		return xerrors.New("non-string types unsupported")
+	}
+	var s string
+	if address.CurrentNetwork == address.Mainnet {
+		s = address.MainnetPrefix + string(val)
+	} else {
+		s = address.TestnetPrefix + string(val)
+	}
+
+	addr, err := address.NewFromString(s)
+	if err != nil {
+		return err
+	}
+	*a = storedAddress(addr)
+	return nil
+}
+
+func (a *storedAddress) UnmarshalJSON(b []byte) error {
+	return (*address.Address)(a).UnmarshalJSON(b)
+}
+
+// MarshalJSON implements the json marshal interface.
+func (a storedAddress) MarshalJSON() ([]byte, error) {
+	return address.Address(a).MarshalJSON()
+}
+
+func (a storedAddress) Value() (driver.Value, error) {
+	var val = a.String()
+	if a.Address().Empty() {
+		return val, nil
+	}
+	return a.String(), nil
+}
+
+type Miner struct {
+	Miner storedAddress `gorm:"column:miner;type:varchar(128);primarykey;index:user_miner_idx,priority:2"`
+	User  string        `gorm:"column:user;type:varchar(50);index:user_miner_idx,priority:1;not null"`
+	OrmTimestamp
+}
+
+type StoreVersion struct {
+	ID      uint64 `grom:"primary_key"`
+	Version uint64 `gorm:"column:version"`
+}
+
+func (s *StoreVersion) key() []byte {
+	return storeVersionKey
+}
+
+func (s *StoreVersion) FromBytes(bytes []byte) error {
+	return json.Unmarshal(bytes, s)
+}
+
+func (s *StoreVersion) Bytes() ([]byte, error) {
+	return json.Marshal(s)
 }
 
 type UserRateLimit struct {
@@ -150,8 +254,7 @@ func (t *User) Bytes() ([]byte, error) {
 }
 
 func (t *User) FromBytes(buff []byte) error {
-	err := json.Unmarshal(buff, t)
-	return err
+	return json.Unmarshal(buff, t)
 }
 
 func (t *User) CreateTimeBytes() ([]byte, error) {
@@ -161,3 +264,61 @@ func (t *User) CreateTimeBytes() ([]byte, error) {
 	}
 	return val, nil
 }
+
+func (m *Miner) Bytes() ([]byte, error) {
+	return json.Marshal(m)
+}
+
+func (m *Miner) FromBytes(buf []byte) error {
+	return json.Unmarshal(buf, m)
+}
+
+func (m *Miner) key() []byte {
+	return minerKey(m.Miner.Address().String())
+}
+
+func (u *User) key() []byte {
+	return userKey(u.Name)
+}
+
+func (kp *KeyPair) key() []byte {
+	return tokenKey(kp.Token.String())
+}
+
+type mapedRatelimit map[string]*UserRateLimit
+
+// todo: should think about if `mapedRatelimte` is empty?
+func (mr *mapedRatelimit) key() []byte {
+	for _, v := range *mr {
+		return rateLimitKey(v.Name)
+	}
+	return nil
+}
+
+func (mr *mapedRatelimit) FromBytes(buf []byte) error {
+	return json.Unmarshal(buf, mr)
+}
+
+func (mr *mapedRatelimit) Bytes() ([]byte, error) {
+	return json.Marshal(mr)
+}
+
+type iKableObj interface {
+	key() []byte
+}
+
+type iStreamableObj interface {
+	FromBytes([]byte) error
+	Bytes() ([]byte, error)
+}
+
+type iBadgerObj interface {
+	iKableObj
+	iStreamableObj
+}
+
+var _ iBadgerObj = (*Miner)(nil)
+var _ iBadgerObj = (*User)(nil)
+var _ iBadgerObj = (*KeyPair)(nil)
+var _ iBadgerObj = (*mapedRatelimit)(nil)
+var _ iBadgerObj = (*StoreVersion)(nil)

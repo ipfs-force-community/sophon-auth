@@ -1,19 +1,21 @@
 package storage
 
 import (
+	"database/sql"
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/core"
-	"github.com/filecoin-project/venus-auth/util"
+	"github.com/filecoin-project/venus-auth/log"
 	"github.com/google/uuid"
 	"golang.org/x/xerrors"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+	"time"
 )
 
 type mysqlStore struct {
-	db  *gorm.DB
-	pkg string
+	db *gorm.DB
 }
 
 func newMySQLStore(cnf *config.DBConfig) (Store, error) {
@@ -21,7 +23,7 @@ func newMySQLStore(cnf *config.DBConfig) (Store, error) {
 	if err != nil {
 		return nil, xerrors.Errorf("[db connection failed] Database name: %s %w", cnf.DSN, err)
 	}
-	if cnf.Debug || true {
+	if cnf.Debug {
 		db = db.Debug()
 	}
 	sqlDB, err := db.DB()
@@ -56,11 +58,11 @@ func newMySQLStore(cnf *config.DBConfig) (Store, error) {
 		}
 	}
 
-	if err = session.AutoMigrate(&KeyPair{}, &User{}, &UserRateLimit{}); err != nil {
+	if err = session.AutoMigrate(&KeyPair{}, &User{}, &Miner{}, &UserRateLimit{}, &StoreVersion{}); err != nil {
 		return nil, err
 	}
 
-	return &mysqlStore{db: db, pkg: util.PackagePath(mysqlStore{})}, nil
+	return &mysqlStore{db: db}, nil
 }
 
 func (s *mysqlStore) Put(kp *KeyPair) error {
@@ -151,20 +153,10 @@ func (s *mysqlStore) GetUser(name string) (*User, error) {
 
 func (s mysqlStore) HasMiner(maddr address.Address) (bool, error) {
 	var count int64
-	err := s.db.Table("users").Where("miner=?", maddr.String()).Count(&count).Error
-	if err != nil {
-		return false, err
+	if err := s.db.Table("miners").Where("miner = ?", maddr.String()).Count(&count).Error; err != nil {
+		return false, nil
 	}
 	return count > 0, nil
-}
-
-func (s *mysqlStore) GetMiner(maddr address.Address) (*User, error) {
-	var user User
-	err := s.db.Table("users").Take(&user, "miner=?", maddr.String()).Error
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
 }
 
 func (s *mysqlStore) GetRateLimits(name string, id string) ([]*UserRateLimit, error) {
@@ -187,4 +179,96 @@ func (s *mysqlStore) DelRateLimit(name, id string) error {
 	return s.db.Table("user_rate_limits").
 		Where("id = ? and name= ?", id, name).
 		Delete(nil).Error
+}
+
+func (s *mysqlStore) GetUserByMiner(miner address.Address) (*User, error) {
+	var user User
+	if err := s.db.Model(&Miner{}).Select("miner").
+		Joins("inner join users on miner.miner = ? and user.miner = miner.miner", miner.String()).
+		Scan(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (s *mysqlStore) UpsertMiner(miner address.Address, userName string) (bool, error) {
+	var isCreate bool
+	stoMiner := storedAddress(miner)
+	return isCreate, s.db.Transaction(func(tx *gorm.DB) error {
+		var user User
+		if err := tx.Model(&user).First(&user, "name = ?", userName).Error; err != nil {
+			if xerrors.Is(err, gorm.ErrRecordNotFound) {
+				return xerrors.Errorf("can't bind miner:%s to not exist user:%s", miner.String(), userName)
+			}
+			return xerrors.Errorf("bind miner:%s to user:%s failed:%w", miner.String(), userName, err)
+		}
+		var count int64
+		if err := tx.Model(&Miner{}).Where("miner = ?", stoMiner).Count(&count).Error; err != nil {
+			return err
+		}
+		isCreate = count > 0
+		return tx.Model(&Miner{}).
+			Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "miner"}}, UpdateAll: true}).
+			Create(&Miner{Miner: stoMiner, User: user.Name}).Error
+	}, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false})
+}
+
+func (s *mysqlStore) DelMiner(miner address.Address) (bool, error) {
+	db := s.db.Model((*Miner)(nil)).Delete(&Miner{}, "miner = ?", storedAddress(miner))
+	return db.RowsAffected > 0, db.Error
+}
+
+func (s *mysqlStore) ListMiners(user string) ([]*Miner, error) {
+	var miners []*Miner
+	if err := s.db.Model((*Miner)(nil)).Find(&miners, "user = ?", user).Error; err != nil {
+		return nil, err
+	}
+	return miners, nil
+}
+
+func (s *mysqlStore) Version() (uint64, error) {
+	var v StoreVersion
+	if err := s.db.Model(&StoreVersion{}).First(&v).Error; err != nil {
+		if xerrors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, nil
+		}
+		return 0, err
+	}
+	return v.Version, nil
+}
+
+func (s *mysqlStore) MigrateToV1() error {
+	arr := make([]*struct {
+		User  string `gorm:"column:name"`
+		Miner string
+	}, 0)
+	if err := s.db.Table("users").Scan(&arr).Error; err != nil {
+		return err
+	}
+
+	var now = time.Now()
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		for _, u := range arr {
+			maddr, err := address.NewFromString(u.Miner)
+			if err != nil || maddr.Empty() {
+				log.Warnf("won't migrate miner:%s, invalid miner address", u.Miner)
+				continue
+			}
+			if err := tx.Model(&Miner{}).
+				Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "miner"}}, UpdateAll: true}).
+				Create(&Miner{
+					Miner: storedAddress(maddr),
+					User:  u.User,
+					OrmTimestamp: OrmTimestamp{
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+				}).Error; err != nil {
+				return err
+			}
+		}
+		return tx.Model(&StoreVersion{}).
+			Clauses(clause.OnConflict{UpdateAll: true}).
+			Create(&StoreVersion{ID: 1, Version: 1}).Error
+	})
 }

@@ -2,8 +2,9 @@ package auth
 
 import (
 	"encoding/json"
-	"github.com/magiconair/properties/assert"
 	"testing"
+
+	"github.com/magiconair/properties/assert"
 )
 
 func TestTokenDecode(t *testing.T) {

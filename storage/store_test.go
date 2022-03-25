@@ -4,15 +4,16 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
-	"io/ioutil"
-	"os"
-	"testing"
-	"time"
 )
 
 var theStore Store

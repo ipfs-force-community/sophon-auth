@@ -2,9 +2,10 @@ package jwtclient
 
 import (
 	"context"
-	"github.com/filecoin-project/venus-auth/auth"
 	"os"
 	"testing"
+
+	"github.com/filecoin-project/venus-auth/auth"
 )
 
 var MockCli *JWTClient

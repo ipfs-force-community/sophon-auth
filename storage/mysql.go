@@ -2,6 +2,8 @@ package storage
 
 import (
 	"database/sql"
+	"time"
+
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/core"
@@ -11,7 +13,6 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"time"
 )
 
 type mysqlStore struct {

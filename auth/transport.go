@@ -1,9 +1,10 @@
 package auth
 
 import (
+	"time"
+
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/storage"
-	"time"
 )
 
 type VerifyRequest struct {

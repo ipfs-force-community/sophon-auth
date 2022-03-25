@@ -2,8 +2,9 @@ package core
 
 import (
 	"context"
-	"gotest.tools/assert"
 	"testing"
+
+	"gotest.tools/assert"
 )
 
 func TestAdaptOldStrategy(t *testing.T) {

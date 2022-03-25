@@ -2,10 +2,11 @@ package log
 
 import (
 	"context"
-	"github.com/sirupsen/logrus"
 	"io"
 	"log"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type Fields = logrus.Fields

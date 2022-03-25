@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strconv"
+
 	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/errcode"
 	"github.com/go-resty/resty/v2"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
-	"net/http"
-	"strconv"
 )
 
 type JWTClient struct {

@@ -2,8 +2,9 @@ package storage
 
 import (
 	"errors"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/dgraph-io/badger/v3"
 	"github.com/filecoin-project/go-address"
@@ -278,11 +279,11 @@ func (s *badgerStore) UpsertMiner(maddr address.Address, userName string) (bool,
 		miner.User = userName
 		miner.UpdatedAt = now
 
-		if val, err := miner.Bytes(); err != nil {
+		val, err := miner.Bytes()
+		if err != nil {
 			return xerrors.Errorf("get miner object data failed:%w", err)
-		} else {
-			return txn.Set(minerkey, val)
 		}
+		return txn.Set(minerkey, val)
 	})
 }
 

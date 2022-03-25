@@ -2,12 +2,13 @@ package cli
 
 import (
 	"fmt"
-	"github.com/filecoin-project/venus-auth/auth"
-	"github.com/urfave/cli/v2"
-	"golang.org/x/xerrors"
 	"os"
 	"text/tabwriter"
 	"time"
+
+	"github.com/filecoin-project/venus-auth/auth"
+	"github.com/urfave/cli/v2"
+	"golang.org/x/xerrors"
 )
 
 var minerSubCmds = &cli.Command{
@@ -85,7 +86,7 @@ var cmdListMiners = &cli.Command{
 		for idx, miner := range miners {
 			fmt.Fprintf(w, "%d\t%s\t%s\t\n", idx, miner.Miner, miner.CreatedAt.Format(time.RFC1123))
 		}
-		w.Flush()
+		_ = w.Flush()
 		return nil
 	},
 }

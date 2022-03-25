@@ -46,10 +46,10 @@ func (authMux *AuthMux) TrustHandle(pattern string, handler http.Handler) {
 	authMux.trustHandle[pattern] = handler
 }
 
-func (AuthMux *AuthMux) trustedHandler(uri string) http.Handler {
+func (authMux *AuthMux) trustedHandler(uri string) http.Handler {
 	// todo: we don't consider the situation that 'trustHandle' is changed in parallelly,
 	//  cause we assume trusted handler is static after application initialized
-	for trustedURI, handler := range AuthMux.trustHandle {
+	for trustedURI, handler := range authMux.trustHandle {
 		if trustedURI == uri || (trustedURI[len(trustedURI)-1] == '/' && strings.HasPrefix(uri, trustedURI)) {
 			return handler
 		}

@@ -16,6 +16,6 @@ func GetAvailablePort() (int, error) {
 		return 0, err
 	}
 
-	defer listener.Close()
+	defer func() { _ = listener.Close() }()
 	return listener.Addr().(*net.TCPAddr).Port, nil
 }

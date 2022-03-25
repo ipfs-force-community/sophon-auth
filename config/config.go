@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/hex"
-	"github.com/BurntSushi/toml"
-	"github.com/ipfs-force-community/metrics"
-	"golang.org/x/xerrors"
 	"io"
 	"io/ioutil"
 	"os"
 	"time"
+
+	"github.com/BurntSushi/toml"
+	"github.com/ipfs-force-community/metrics"
+	"golang.org/x/xerrors"
 )
 
 type Config struct {

@@ -1,11 +1,12 @@
 package log
 
 import (
-	"github.com/filecoin-project/venus-auth/config"
-	"github.com/sirupsen/logrus"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/filecoin-project/venus-auth/config"
+	"github.com/sirupsen/logrus"
 )
 
 func TestLog(t *testing.T) {

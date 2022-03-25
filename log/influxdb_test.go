@@ -2,9 +2,10 @@ package log
 
 import (
 	"fmt"
-	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"os"
 	"testing"
+
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 )
 
 func TestInfluxDB(t *testing.T) {

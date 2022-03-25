@@ -1,9 +1,10 @@
 package log
 
 import (
+	"os"
+
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/sirupsen/logrus"
-	"os"
 )
 
 func init() {

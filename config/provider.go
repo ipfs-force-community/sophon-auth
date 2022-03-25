@@ -2,7 +2,6 @@ package config
 
 import (
 	"github.com/fsnotify/fsnotify"
-	"github.com/spf13/cast"
 	"github.com/spf13/viper"
 )
 
@@ -31,16 +30,4 @@ func FromConfigString(path, configType string) (Provider, error) {
 		return nil, err
 	}
 	return v, nil
-}
-
-// GetStringSlicePreserveString returns a string slice from the given config and key.
-// It differs from the GetStringSlice method in that if the config value is a string,
-// we do not attempt to split it into fields.
-func GetStringSlicePreserveString(cfg Provider, key string) []string {
-	sd := cfg.Get(key)
-	if sds, ok := sd.(string); ok {
-		return []string{sds}
-	} else {
-		return cast.ToStringSlice(sd)
-	}
 }

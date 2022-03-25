@@ -1,6 +1,10 @@
 package cli
 
 import (
+	"net/http"
+	"path"
+	"strconv"
+
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/config"
@@ -10,15 +14,13 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
-	"net/http"
-	"path"
-	"strconv"
 )
 
 type localClient struct {
 	cli *resty.Client
 }
 
+// nolint
 func GetCli(ctx *cli.Context) (*localClient, error) {
 	p, err := homedir.Expand(ctx.String("repo"))
 	if err != nil {
@@ -35,7 +37,8 @@ func GetCli(ctx *cli.Context) (*localClient, error) {
 	if err != nil {
 		return nil, xerrors.Errorf("failed to decode config err: %w", err)
 	}
-	return newClient(cnf.Port)
+	c, err := newClient(cnf.Port)
+	return c, err
 }
 
 func newClient(port string) (*localClient, error) {

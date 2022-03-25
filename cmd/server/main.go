@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/filecoin-project/go-address"
 	locli "github.com/filecoin-project/venus-auth/cli"
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/urfave/cli/v2"
-	"os"
 )
 
 func main() {

@@ -4,9 +4,10 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
-	"gorm.io/gorm"
 	"strings"
 	"time"
+
+	"gorm.io/gorm"
 
 	"golang.org/x/xerrors"
 
@@ -98,24 +99,24 @@ func (t Token) String() string {
 	return string(t)
 }
 
-func (t *KeyPair) Bytes() ([]byte, error) {
-	buff, err := json.Marshal(t)
+func (kp *KeyPair) Bytes() ([]byte, error) {
+	buff, err := json.Marshal(kp)
 	if err != nil {
 		return nil, err
 	}
 	return buff, nil
 }
 
-func (t *KeyPair) CreateTimeBytes() ([]byte, error) {
-	val, err := t.CreateTime.MarshalBinary()
+func (kp *KeyPair) CreateTimeBytes() ([]byte, error) {
+	val, err := kp.CreateTime.MarshalBinary()
 	if err != nil {
 		return nil, err
 	}
 	return val, nil
 }
 
-func (t *KeyPair) FromBytes(val []byte) error {
-	return json.Unmarshal(val, t)
+func (kp *KeyPair) FromBytes(val []byte) error {
+	return json.Unmarshal(val, kp)
 }
 
 type User struct {
@@ -136,53 +137,53 @@ type OrmTimestamp struct {
 
 type storedAddress address.Address
 
-func (s storedAddress) Address() address.Address {
-	return address.Address(s)
+func (sa storedAddress) Address() address.Address {
+	return address.Address(sa)
 }
 
-func (s storedAddress) String() string {
-	var val = s.Address().String()
-	if s.Address().Empty() {
+func (sa storedAddress) String() string {
+	var val = sa.Address().String()
+	if sa.Address().Empty() {
 		return val
 	}
 	return val[1:]
 }
 
-func (a *storedAddress) Scan(value interface{}) error {
+func (sa *storedAddress) Scan(value interface{}) error {
 	val, isok := value.([]byte)
 	if !isok {
 		return xerrors.New("non-string types unsupported")
 	}
-	var s string
+	var str string
 	if address.CurrentNetwork == address.Mainnet {
-		s = address.MainnetPrefix + string(val)
+		str = address.MainnetPrefix + string(val)
 	} else {
-		s = address.TestnetPrefix + string(val)
+		str = address.TestnetPrefix + string(val)
 	}
 
-	addr, err := address.NewFromString(s)
+	addr, err := address.NewFromString(str)
 	if err != nil {
 		return err
 	}
-	*a = storedAddress(addr)
+	*sa = storedAddress(addr)
 	return nil
 }
 
-func (a *storedAddress) UnmarshalJSON(b []byte) error {
-	return (*address.Address)(a).UnmarshalJSON(b)
+func (sa *storedAddress) UnmarshalJSON(b []byte) error {
+	return (*address.Address)(sa).UnmarshalJSON(b)
 }
 
 // MarshalJSON implements the json marshal interface.
-func (a storedAddress) MarshalJSON() ([]byte, error) {
-	return address.Address(a).MarshalJSON()
+func (sa storedAddress) MarshalJSON() ([]byte, error) {
+	return address.Address(sa).MarshalJSON()
 }
 
-func (a storedAddress) Value() (driver.Value, error) {
-	var val = a.String()
-	if a.Address().Empty() {
+func (sa storedAddress) Value() (driver.Value, error) {
+	var val = sa.String()
+	if sa.Address().Empty() {
 		return val, nil
 	}
-	return a.String(), nil
+	return sa.String(), nil
 }
 
 type Miner struct {
@@ -245,20 +246,20 @@ func (*User) TableName() string {
 	return "users"
 }
 
-func (t *User) Bytes() ([]byte, error) {
-	buff, err := json.Marshal(t)
+func (u *User) Bytes() ([]byte, error) {
+	buff, err := json.Marshal(u)
 	if err != nil {
 		return nil, err
 	}
 	return buff, nil
 }
 
-func (t *User) FromBytes(buff []byte) error {
-	return json.Unmarshal(buff, t)
+func (u *User) FromBytes(buff []byte) error {
+	return json.Unmarshal(buff, u)
 }
 
-func (t *User) CreateTimeBytes() ([]byte, error) {
-	val, err := t.CreateTime.MarshalBinary()
+func (u *User) CreateTimeBytes() ([]byte, error) {
+	val, err := u.CreateTime.MarshalBinary()
 	if err != nil {
 		return nil, err
 	}

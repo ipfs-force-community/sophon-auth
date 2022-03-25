@@ -1,13 +1,14 @@
 package main
 
 import (
+	"net/http"
+	"path"
+
 	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/log"
 	"github.com/gin-gonic/gin"
 	"github.com/mitchellh/go-homedir"
-	"net/http"
-	"path"
 )
 
 func main() {

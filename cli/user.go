@@ -2,14 +2,15 @@ package cli
 
 import (
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/storage"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
-	"strconv"
-	"time"
 )
 
 var userSubCommand = &cli.Command{
@@ -182,7 +183,7 @@ var listUsersCmd = &cli.Command{
 			State:      ctx.Int("state"),
 		}
 		if ctx.IsSet("sourceType") {
-			req.KeySum += 1
+			req.KeySum++
 		}
 		if ctx.IsSet("state") {
 			req.KeySum += 2

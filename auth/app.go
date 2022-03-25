@@ -1,9 +1,10 @@
 package auth
 
 import (
+	"net/http"
+
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 type OAuthApp interface {

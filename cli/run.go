@@ -1,6 +1,9 @@
 package cli
 
 import (
+	"net/http"
+	"path"
+
 	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/log"
@@ -9,8 +12,6 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli/v2"
 	"go.opencensus.io/plugin/ochttp"
-	"net/http"
-	"path"
 )
 
 var runCmd = &cli.Command{

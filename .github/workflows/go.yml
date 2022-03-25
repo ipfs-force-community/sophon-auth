@@ -8,7 +8,7 @@ on:
   pull_request:
     branches:
       - '**'
-
+  workflow_dispatch:
 jobs:
 
   check:
@@ -22,22 +22,11 @@ jobs:
           go-version: 1.17
 
       - name: Lint
-        uses: dominikh/staticcheck-action@v1.1.0
-        with:
-          install-go: false
-          version: "2021.1.1"
-
-      - name: Test
-        run: go test -v ./...
-
-      - name: Build
-        env:
-          GOPROXY: "https://proxy.golang.org,direct"
-          GO111MODULE: "on"
         run: |
-          make
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.44.2
+          golangci-lint run --timeout 10m
 
-      - name: Run coverage
+      - name: Run Test
         run:  go test -coverpkg=./... -race -coverprofile=coverage.txt -covermode=atomic ./...
 
       - name: Upload

@@ -2,6 +2,7 @@ package jwtclient
 
 import (
 	"errors"
+
 	"github.com/ipfs-force-community/metrics/ratelimit"
 )
 

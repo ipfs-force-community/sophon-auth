@@ -95,7 +95,7 @@ func (c *JWTClient) GetUser(req *auth.GetUserRequest) (*auth.OutputUser, error) 
 	return nil, resp.Error().(*errcode.ErrMsg).Err()
 }
 
-func (c *JWTClient) GetMiner(req *auth.GetMinerRequest) (*auth.OutputUser, error) {
+func (c *JWTClient) GetUserByMiner(req *auth.GetUserByMinerRequest) (*auth.OutputUser, error) {
 	resp, err := c.cli.R().SetQueryParams(map[string]string{
 		"miner": req.Miner,
 	}).SetResult(&auth.OutputUser{}).SetError(&errcode.ErrMsg{}).Get("/miner")

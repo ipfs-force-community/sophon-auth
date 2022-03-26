@@ -158,7 +158,7 @@ func TestUserBusiness(t *testing.T) {
 	_, err = cli.UpsertMiner(res1.Name, "f02345")
 	assert.NilError(t, err)
 
-	if _, err = cli.GetMiner(&auth.GetMinerRequest{
+	if _, err = cli.GetUserByMiner(&auth.GetUserByMinerRequest{
 		Miner: "f02345",
 	}); err != nil {
 		t.Fatalf("get miner err:%s", err)

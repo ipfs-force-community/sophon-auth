@@ -45,7 +45,7 @@ type OAuthService interface {
 	CreateUser(ctx context.Context, req *CreateUserRequest) (*CreateUserResponse, error)
 	UpdateUser(ctx context.Context, req *UpdateUserRequest) error
 	ListUsers(ctx context.Context, req *ListUsersRequest) (ListUsersResponse, error)
-	GetMiner(ctx context.Context, req *GetMinerRequest) (*OutputUser, error)
+	GetUserByMiner(ctx context.Context, req *GetUserByMinerRequest) (*OutputUser, error)
 	HasMiner(ctx context.Context, req *HasMinerRequest) (bool, error)
 	GetUser(ctx context.Context, req *GetUserRequest) (*OutputUser, error)
 
@@ -248,7 +248,7 @@ func (o *jwtOAuth) ListUsers(ctx context.Context, req *ListUsersRequest) (ListUs
 
 }
 
-func (o *jwtOAuth) GetMiner(ctx context.Context, req *GetMinerRequest) (*OutputUser, error) {
+func (o *jwtOAuth) GetUserByMiner(ctx context.Context, req *GetUserByMinerRequest) (*OutputUser, error) {
 	mAddr, err := address.NewFromString(req.Miner)
 	if err != nil {
 		return nil, err

@@ -105,7 +105,7 @@ type HasMinerRequest struct {
 	Miner string `form:"miner"`
 }
 
-type GetMinerRequest struct {
+type GetUserByMinerRequest struct {
 	// todo make miner tobe address
 	Miner string `form:"miner"`
 }

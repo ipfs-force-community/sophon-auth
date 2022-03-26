@@ -154,7 +154,7 @@ func (s *mysqlStore) GetUser(name string) (*User, error) {
 
 func (s mysqlStore) HasMiner(maddr address.Address) (bool, error) {
 	var count int64
-	if err := s.db.Table("miners").Where("miner = ?", maddr.String()).Count(&count).Error; err != nil {
+	if err := s.db.Table("miners").Where("miner = ?", storedAddress(maddr)).Count(&count).Error; err != nil {
 		return false, nil
 	}
 	return count > 0, nil
@@ -185,7 +185,7 @@ func (s *mysqlStore) DelRateLimit(name, id string) error {
 func (s *mysqlStore) GetUserByMiner(miner address.Address) (*User, error) {
 	var user User
 	if err := s.db.Model(&Miner{}).Select("miner").
-		Joins("inner join users on miner.miner = ? and user.miner = miner.miner", miner.String()).
+		Joins("inner join users on miner.miner = ? and user.miner = miner.miner", storedAddress(miner)).
 		Scan(&user).Error; err != nil {
 		return nil, err
 	}

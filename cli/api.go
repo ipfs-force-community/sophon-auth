@@ -151,7 +151,7 @@ func (lc *localClient) GetUser(req *auth.GetUserRequest) (*auth.OutputUser, erro
 	return nil, resp.Error().(*errcode.ErrMsg).Err()
 }
 
-func (lc *localClient) GetMiner(req *auth.GetMinerRequest) (*auth.OutputUser, error) {
+func (lc *localClient) GetUserByMiner(req *auth.GetUserByMinerRequest) (*auth.OutputUser, error) {
 	resp, err := lc.cli.R().SetQueryParams(map[string]string{
 		"miner": req.Miner,
 	}).SetResult(&auth.OutputUser{}).SetError(&errcode.ErrMsg{}).Get("/miner")

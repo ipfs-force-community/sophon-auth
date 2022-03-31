@@ -96,6 +96,10 @@ func TestAddMiner(t *testing.T) {
 }
 
 func TestListMiners(t *testing.T) {
+	addr, _ := address.NewFromString("f01222345678999")
+	// should be a 'not found error'
+	_, err := theStore.GetUserByMiner(addr)
+	require.Error(t, err)
 	// make sure all miners(we just inserted) exist.
 	for u, miners := range userMiners {
 		ms, err := theStore.ListMiners(u)
@@ -107,8 +111,11 @@ func TestListMiners(t *testing.T) {
 		}
 
 		for m := range miners {
-			_, isok := minerMap[m]
+			tmpMiner, isok := minerMap[m]
 			require.Equal(t, isok, true)
+			tmpUser, err := theStore.GetUserByMiner(tmpMiner.Miner.Address())
+			require.NoError(t, err)
+			require.Equal(t, tmpUser.Name, u)
 		}
 	}
 }

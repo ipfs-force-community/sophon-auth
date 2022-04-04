@@ -183,13 +183,16 @@ func (s *mysqlStore) DelRateLimit(name, id string) error {
 }
 
 func (s *mysqlStore) GetUserByMiner(miner address.Address) (*User, error) {
-	var user User
-	if err := s.db.Model(&Miner{}).Select("miner").
-		Joins("inner join users on miner.miner = ? and user.miner = miner.miner", storedAddress(miner)).
-		Scan(&user).Error; err != nil {
+	var users []*User
+	if err := s.db.Model(&Miner{}).Select("users.*").
+		Joins("inner join users on miners.miner = ? and users.name = miners.user", storedAddress(miner)).
+		Scan(&users).Error; err != nil {
 		return nil, err
 	}
-	return &user, nil
+	if len(users) == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+	return users[0], nil
 }
 
 func (s *mysqlStore) UpsertMiner(miner address.Address, userName string) (bool, error) {

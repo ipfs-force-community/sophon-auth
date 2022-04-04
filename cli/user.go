@@ -188,27 +188,20 @@ var listUsersCmd = &cli.Command{
 		if ctx.IsSet("state") {
 			req.KeySum += 2
 		}
-		users, err := client.ListUsers(req)
+		users, err := client.ListUsersWithMiners(req)
 		if err != nil {
 			return err
 		}
-
 		for k, v := range users {
-			var minerStr interface{}
-			if miners, err := client.ListMiners(v.Name); err != nil {
-				minerStr = err.Error()
-			} else if len(miners) > 0 {
-				ms := make([]string, len(miners))
-				for idx, m := range miners {
-					ms[idx] = m.Miner
-				}
-				minerStr = ms
-			}
 			fmt.Println("number:", k+1)
 			fmt.Println("name:", v.Name)
 			fmt.Println("state:", v.State.String())
-			if minerStr != nil {
-				fmt.Println("miners:", minerStr)
+			if len(v.Miners) != 0 {
+				var miners = make([]string, len(v.Miners))
+				for idx, m := range v.Miners {
+					miners[idx] = m.Miner
+				}
+				fmt.Println("miners:", miners)
 			}
 			if len(v.Comment) != 0 {
 				fmt.Println("comment:", v.Comment)

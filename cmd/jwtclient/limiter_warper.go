@@ -7,23 +7,23 @@ import (
 )
 
 type limitFinder struct {
-	*JWTClient
+	*AuthClient
 }
 
 var _ ratelimit.ILimitFinder = (*limitFinder)(nil)
 
 var errNilJwtClient = errors.New("jwt client is nil")
 
-func WarpLimitFinder(client *JWTClient) ratelimit.ILimitFinder {
-	return &limitFinder{JWTClient: client}
+func WarpLimitFinder(client *AuthClient) ratelimit.ILimitFinder {
+	return &limitFinder{AuthClient: client}
 }
 
 func (l *limitFinder) GetUserLimit(name, service, api string) (*ratelimit.Limit, error) {
-	if l.JWTClient == nil {
+	if l.AuthClient == nil {
 		return nil, errNilJwtClient
 	}
 
-	res, err := l.GetUserRateLimit(name)
+	res, err := l.GetUserRateLimit(name, "")
 	if err != nil {
 		return nil, err
 	}

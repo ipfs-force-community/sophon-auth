@@ -47,7 +47,7 @@ func NewListUsersRequest(skip, limit int64, sourceType core.SourceType, state in
 
 type ListUsersRequest struct {
 	*core.Page
-	SourceType core.SourceType `form:"sourceType" json:"sourceType"` // keyCode:1
+	SourceType core.SourceType `form:"sourceType" json:"sourceType"` // keyCode: 1
 	State      int             `form:"state" json:"state"`           // keyCode: 2
 	KeySum     core.KeyCode    `form:"keySum"`                       // keyCode sum
 }
@@ -94,6 +94,9 @@ type OutputUser struct {
 	State      core.UserState  `json:"state"`
 	CreateTime int64           `json:"createTime"`
 	UpdateTime int64           `json:"updateTime"`
+	// the field `Miners` is used for compound api `ListUserWithMiners`
+	// which calls 'listuser' and for each 'user' calls 'listminers'
+	Miners []*OutputMiner `json:"-"`
 }
 
 type GetUserRequest struct {

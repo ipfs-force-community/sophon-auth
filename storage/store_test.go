@@ -22,7 +22,7 @@ var cfg config.DBConfig
 // badgerstore: go test -v ./storage/ -test.run TestStore --args -db=badger
 // mysqlstore : go test -v ./storage/ -test.run TestStore --args -db=mysql -dns='root:ko2005@tcp(127.0.0.1:3306)/venus_auth?charset=utf8mb4&parseTime=True&loc=Local&timeout=10s'
 func TestMain(m *testing.M) {
-	flag.StringVar(&cfg.Type, "db", "", "mysql or badger")
+	flag.StringVar(&cfg.Type, "db", "badger", "mysql or badger")
 	flag.StringVar(&cfg.DSN, "dns", "", "sql connection string or badger data path")
 
 	flag.Parse()

@@ -13,13 +13,13 @@ type IJwtAuthClient interface {
 }
 
 type jwtAuthClient struct {
-	*JWTClient
+	*AuthClient
 }
 
 var _ IJwtAuthClient = &jwtAuthClient{}
 
 func (c *jwtAuthClient) Verify(ctx context.Context, token string) ([]auth.Permission, error) {
-	res, err := c.JWTClient.Verify(ctx, token)
+	res, err := c.AuthClient.Verify(ctx, token)
 	if err != nil {
 		return nil, err
 	}
@@ -29,8 +29,8 @@ func (c *jwtAuthClient) Verify(ctx context.Context, token string) ([]auth.Permis
 	return perms, nil
 }
 
-func WarpIJwtAuthClient(cli *JWTClient) IJwtAuthClient {
-	return &jwtAuthClient{JWTClient: cli}
+func WarpIJwtAuthClient(cli *AuthClient) IJwtAuthClient {
+	return &jwtAuthClient{AuthClient: cli}
 }
 
 type Logger interface {

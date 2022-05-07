@@ -214,7 +214,7 @@ func (s *mysqlStore) DeleteUser(userName string) error {
 
 func (s mysqlStore) HasMiner(maddr address.Address) (bool, error) {
 	var count int64
-	if err := s.db.Table("miners").Where("miner = ?", storedAddress(maddr)).Count(&count).Error; err != nil {
+	if err := s.db.Table("miners").Debug().Where("miner = ? and deleted_at is NULL", storedAddress(maddr)).Count(&count).Error; err != nil {
 		return false, nil
 	}
 	return count > 0, nil

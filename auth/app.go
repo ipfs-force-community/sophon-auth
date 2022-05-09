@@ -26,7 +26,6 @@ type OAuthApp interface {
 	DeleteUser(c *gin.Context)
 
 	AddUserRateLimit(c *gin.Context)
-	UpdateUserRateLimit(c *gin.Context)
 	UpsertUserRateLimit(c *gin.Context)
 	GetUserRateLimit(c *gin.Context)
 	DelUserRateLimit(c *gin.Context)
@@ -290,9 +289,7 @@ func (o *oauthApp) AddUserRateLimit(c *gin.Context) {
 	}
 	SuccessResponse(c, res)
 }
-func (o *oauthApp) UpdateUserRateLimit(c *gin.Context) {
 
-}
 func (o *oauthApp) UpsertUserRateLimit(c *gin.Context) {
 	req := new(UpsertUserRateLimitReq)
 	if err := c.ShouldBind(req); err != nil {

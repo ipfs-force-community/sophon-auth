@@ -40,17 +40,40 @@ func minerKey(miner string) []byte {
 // if key not exists, will get a badger.ErrKeyNotFound error.
 func (s *badgerStore) delObj(key []byte) error {
 	return s.db.Update(func(txn *badger.Txn) error {
-		if _, err := txn.Get(key); err != nil {
+		_, err := txn.Get(key)
+		if err != nil {
 			return err
 		}
 		return txn.Delete(key)
 	})
 }
 
-func (s *badgerStore) isExist(key []byte) (bool, error) {
+func (s *badgerStore) softDelObj(obj softDelete) error {
+	return s.db.Update(func(txn *badger.Txn) error {
+		key := obj.key()
+		val, err := txn.Get(key)
+		if err != nil {
+			return err
+		}
+		if err := val.Value(func(val []byte) error {
+			return obj.FromBytes(val)
+		}); err != nil {
+			return err
+		}
+		obj.setDeleted()
+		data, err := obj.Bytes()
+		if err != nil {
+			return xerrors.Errorf("failed to marshal time :%s", err)
+		}
+		return txn.Set(key, data)
+	})
+}
+
+func (s *badgerStore) isExist(obj deleteVerify) (bool, error) {
 	var exist bool
 	err := s.db.View(func(txn *badger.Txn) error {
-		_, err := txn.Get(key)
+		key := obj.key()
+		val, err := txn.Get(key)
 		if err != nil {
 			if xerrors.Is(err, badger.ErrKeyNotFound) {
 				exist = false
@@ -58,7 +81,13 @@ func (s *badgerStore) isExist(key []byte) (bool, error) {
 			}
 			return xerrors.Errorf("get key failed:%v", err)
 		}
-		exist = true
+		if err := val.Value(func(val []byte) error {
+			return obj.FromBytes(val)
+		}); err != nil {
+			return err
+		}
+
+		exist = !obj.isDeleted()
 		return nil
 	})
 	return exist, err
@@ -85,9 +114,16 @@ func (s *badgerStore) getObj(key []byte, obj iStreamableObj) error {
 		if err != nil {
 			return err
 		}
-		return val.Value(func(val []byte) error {
+		if err := val.Value(func(val []byte) error {
 			return obj.FromBytes(val)
-		})
+		}); err != nil {
+			return err
+		}
+		deleteVer, ok := obj.(deleteVerify)
+		if ok && deleteVer.isDeleted() {
+			return badger.ErrKeyNotFound
+		}
+		return nil
 	})
 }
 

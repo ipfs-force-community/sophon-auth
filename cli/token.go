@@ -16,6 +16,7 @@ var tokenSubCommand = &cli.Command{
 		getTokenCmd,
 		listTokensCmd,
 		removeTokenCmd,
+		recoverTokenCmd,
 	},
 }
 
@@ -151,6 +152,28 @@ var removeTokenCmd = &cli.Command{
 			return err
 		}
 		fmt.Printf("remove token success: %s\n", tk)
+		return nil
+	},
+}
+
+var recoverTokenCmd = &cli.Command{
+	Name:      "recover",
+	Usage:     "recover deleted token",
+	ArgsUsage: "[token]",
+	Action: func(ctx *cli.Context) error {
+		if ctx.NArg() < 1 {
+			return errors.New("usage: rmToken [token]")
+		}
+		client, err := GetCli(ctx)
+		if err != nil {
+			return err
+		}
+		tk := ctx.Args().First()
+		err = client.RecoverToken(tk)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("recover token success: %s\n", tk)
 		return nil
 	},
 }

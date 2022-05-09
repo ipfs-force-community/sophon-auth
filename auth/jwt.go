@@ -42,6 +42,7 @@ type OAuthService interface {
 	GenerateToken(ctx context.Context, cp *JWTPayload) (string, error)
 	Verify(ctx context.Context, token string) (*JWTPayload, error)
 	RemoveToken(ctx context.Context, token string) error
+	RecoverToken(ctx context.Context, token string) error
 	Tokens(ctx context.Context, skip, limit int64) ([]*TokenInfo, error)
 	GetToken(c context.Context, token string) (*TokenInfo, error)
 	GetTokenByName(c context.Context, name string) ([]*TokenInfo, error)
@@ -54,6 +55,7 @@ type OAuthService interface {
 	HasUser(ctx context.Context, req *HasUserRequest) (bool, error)
 	UpdateUser(ctx context.Context, req *UpdateUserRequest) error
 	DeleteUser(ctx *gin.Context, req *DeleteUserRequest) error
+	RecoverUser(ctx *gin.Context, req *RecoverUserRequest) error
 
 	GetUserRateLimits(ctx context.Context, req *GetUserRateLimitsReq) (GetUserRateLimitResponse, error)
 	UpsertUserRateLimit(ctx context.Context, req *UpsertUserRateLimitReq) (string, error)
@@ -232,6 +234,28 @@ func (o *jwtOAuth) RemoveToken(ctx context.Context, token string) error {
 	return nil
 }
 
+func (o *jwtOAuth) RecoverToken(ctx context.Context, token string) error {
+	tk := storage.Token(token)
+	kp, err := o.store.GetTokenRecord(tk)
+	if err != nil {
+		return err
+	}
+	if kp.IsDeleted == core.NotDelete {
+		return xerrors.Errorf("token is usable")
+	}
+	// todo: add this verify after one token must bind one user
+	//has, err := o.store.HasUser(kp.Name)
+	//if err != nil {
+	//	return xerrors.Errorf("get user %s failed %v", kp.Name, err)
+	//}
+	//if has {
+	//	return xerrors.Errorf("user %s not exist", kp.Name)
+	//}
+	kp.IsDeleted = core.NotDelete
+
+	return o.store.UpdateToken(kp)
+}
+
 func (o *jwtOAuth) CreateUser(ctx context.Context, req *CreateUserRequest) (*CreateUserResponse, error) {
 	exist, err := o.store.HasUser(req.Name)
 	if err != nil {
@@ -293,6 +317,19 @@ func (o *jwtOAuth) HasUser(ctx context.Context, req *HasUserRequest) (bool, erro
 
 func (o *jwtOAuth) DeleteUser(ctx *gin.Context, req *DeleteUserRequest) error {
 	return o.store.DeleteUser(req.Name)
+}
+
+func (o *jwtOAuth) RecoverUser(ctx *gin.Context, req *RecoverUserRequest) error {
+	user, err := o.store.GetUserRecord(req.Name)
+	if err != nil {
+		return err
+	}
+	if user.IsDeleted == core.NotDelete {
+		return xerrors.Errorf("user is usable")
+	}
+	user.IsDeleted = core.NotDelete
+
+	return o.store.UpdateUser(user)
 }
 
 func (o *jwtOAuth) GetUserByMiner(ctx context.Context, req *GetUserByMinerRequest) (*OutputUser, error) {

@@ -24,6 +24,7 @@ var userSubCommand = &cli.Command{
 		getUserCmd,
 		hasMinerCmd,
 		deleteUserCmd,
+		recoverUserCmd,
 		rateLimitSubCmds,
 		minerSubCmds,
 	},
@@ -302,6 +303,33 @@ var deleteUserCmd = &cli.Command{
 			return err
 		}
 		fmt.Println("delete user success")
+		return nil
+	},
+}
+
+var recoverUserCmd = &cli.Command{
+	Name:      "recover",
+	Usage:     "recover deleted user",
+	ArgsUsage: "name",
+	Action: func(ctx *cli.Context) error {
+		client, err := GetCli(ctx)
+		if err != nil {
+			return err
+		}
+
+		if !ctx.Args().Present() {
+			return xerrors.Errorf("must pass user name")
+		}
+
+		req := &auth.RecoverUserRequest{
+			Name: ctx.Args().First(),
+		}
+
+		err = client.RecoverUser(req)
+		if err != nil {
+			return err
+		}
+		fmt.Println("recover user success")
 		return nil
 	},
 }

@@ -57,6 +57,11 @@ func (s *badgerStore) Has(token Token) (bool, error) {
 
 func (s *badgerStore) Get(token Token) (*KeyPair, error) {
 	var kp KeyPair
+	return &kp, s.getUsableObj(tokenKey(token.String()), &kp)
+}
+
+func (s *badgerStore) GetTokenRecord(token Token) (*KeyPair, error) {
+	var kp KeyPair
 	return &kp, s.getObj(tokenKey(token.String()), &kp)
 }
 
@@ -118,15 +123,15 @@ func (s *badgerStore) List(skip, limit int64) ([]*KeyPair, error) {
 
 func (s *badgerStore) GetUser(name string) (*User, error) {
 	user := new(User)
+	return user, s.getUsableObj(userKey(name), user)
+}
+
+func (s *badgerStore) GetUserRecord(name string) (*User, error) {
+	user := new(User)
 	return user, s.getObj(userKey(name), user)
 }
 
 func (s *badgerStore) UpdateUser(user *User) error {
-	old, err := s.GetUser(user.Name)
-	if err != nil {
-		return err
-	}
-	user.Id = old.Id
 	return s.putBadgerObj(user)
 }
 
@@ -312,7 +317,7 @@ func (s *badgerStore) updateUserRateLimit(name string, limits mapedRatelimit) er
 // miner
 func (s *badgerStore) getMiner(maddr address.Address) (*Miner, error) {
 	var miner Miner
-	if err := s.getObj(minerKey(maddr.String()), &miner); err != nil {
+	if err := s.getUsableObj(minerKey(maddr.String()), &miner); err != nil {
 		return nil, err
 	}
 	return &miner, nil

@@ -13,6 +13,7 @@ type OAuthApp interface {
 	Verify(c *gin.Context)
 	GenerateToken(c *gin.Context)
 	RemoveToken(c *gin.Context)
+	RecoverToken(c *gin.Context)
 	Tokens(c *gin.Context)
 	GetToken(c *gin.Context)
 
@@ -24,6 +25,7 @@ type OAuthApp interface {
 	HasUser(c *gin.Context)
 	UpdateUser(c *gin.Context)
 	DeleteUser(c *gin.Context)
+	RecoverUser(c *gin.Context)
 
 	AddUserRateLimit(c *gin.Context)
 	UpsertUserRateLimit(c *gin.Context)
@@ -117,6 +119,16 @@ func (o *oauthApp) RemoveToken(c *gin.Context) {
 	Response(c, err)
 }
 
+func (o *oauthApp) RecoverToken(c *gin.Context) {
+	req := new(RecoverTokenRequest)
+	if err := c.ShouldBind(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+	err := o.srv.RecoverToken(c, req.Token)
+	Response(c, err)
+}
+
 func (o *oauthApp) GetToken(c *gin.Context) {
 	req := new(GetTokenRequest)
 	if err := c.ShouldBindQuery(req); err != nil {
@@ -182,7 +194,6 @@ func (o *oauthApp) UpdateUser(c *gin.Context) {
 		BadResponse(c, err)
 		return
 	}
-	// todo check miner exit
 	err := o.srv.UpdateUser(c, req)
 	if err != nil {
 		BadResponse(c, err)
@@ -268,6 +279,20 @@ func (o *oauthApp) DeleteUser(c *gin.Context) {
 		return
 	}
 	err := o.srv.DeleteUser(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	Response(c, nil)
+}
+
+func (o *oauthApp) RecoverUser(c *gin.Context) {
+	req := new(RecoverUserRequest)
+	if err := c.ShouldBind(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+	err := o.srv.RecoverUser(c, req)
 	if err != nil {
 		BadResponse(c, err)
 		return

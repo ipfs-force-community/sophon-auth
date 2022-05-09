@@ -97,6 +97,13 @@ func (s mysqlStore) Get(token Token) (*KeyPair, error) {
 	return &kp, err
 }
 
+func (s mysqlStore) GetTokenRecord(token Token) (*KeyPair, error) {
+	var kp KeyPair
+	err := s.db.Table("token").Take(&kp, "token = ?", token.String()).Error
+
+	return &kp, err
+}
+
 func (s *mysqlStore) ByName(name string) ([]*KeyPair, error) {
 	var tokens []*KeyPair
 	err := s.db.Find(&tokens, "name = ? and is_deleted=?", name, core.NotDelete).Error
@@ -116,13 +123,6 @@ func (s mysqlStore) List(skip, limit int64) ([]*KeyPair, error) {
 }
 
 func (s *mysqlStore) UpdateToken(kp *KeyPair) error {
-	has, err := s.Has(kp.Token)
-	if err != nil {
-		return err
-	}
-	if !has {
-		return gorm.ErrRecordNotFound
-	}
 	columns := map[string]interface{}{
 		"name":       kp.Name,
 		"perm":       kp.Perm,
@@ -130,8 +130,9 @@ func (s *mysqlStore) UpdateToken(kp *KeyPair) error {
 		"extra":      kp.Extra,
 		"token":      kp.Token,
 		"createTime": kp.CreateTime,
+		"is_deleted": kp.IsDeleted,
 	}
-	return s.db.Table("token").Where("token = ? and is_deleted=?", kp.Token.String(), core.NotDelete).UpdateColumns(columns).Error
+	return s.db.Table("token").Where("token = ?", kp.Token.String()).UpdateColumns(columns).Error
 
 }
 
@@ -143,13 +144,6 @@ func (s mysqlStore) HasUser(name string) (bool, error) {
 }
 
 func (s *mysqlStore) UpdateUser(user *User) error {
-	has, err := s.HasUser(user.Name)
-	if err != nil {
-		return err
-	}
-	if !has {
-		return gorm.ErrRecordNotFound
-	}
 	return s.db.Table("users").Save(user).Error
 }
 
@@ -176,6 +170,13 @@ func (s *mysqlStore) ListUsers(skip, limit int64, state int, sourceType core.Sou
 func (s *mysqlStore) GetUser(name string) (*User, error) {
 	var user User
 	err := s.db.Table("users").Take(&user, "name=? and is_deleted=?", name, core.NotDelete).Error
+
+	return &user, err
+}
+
+func (s *mysqlStore) GetUserRecord(name string) (*User, error) {
+	var user User
+	err := s.db.Table("users").Take(&user, "name=?", name).Error
 
 	return &user, err
 }

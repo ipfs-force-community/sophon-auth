@@ -112,6 +112,19 @@ func (lc *AuthClient) RemoveToken(token string) error {
 	return resp.Error().(*errcode.ErrMsg).Err()
 }
 
+func (lc *AuthClient) RecoverToken(token string) error {
+	resp, err := lc.cli.R().SetBody(auth.RecoverTokenRequest{
+		Token: token,
+	}).SetError(&errcode.ErrMsg{}).Post("/recoverToken")
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode() == http.StatusOK {
+		return nil
+	}
+	return resp.Error().(*errcode.ErrMsg).Err()
+}
+
 func (lc *AuthClient) CreateUser(req *auth.CreateUserRequest) (*auth.CreateUserResponse, error) {
 	resp, err := lc.cli.R().
 		SetHeader("Content-Type", "application/json").
@@ -246,6 +259,17 @@ func (lc *AuthClient) HasMiner(req *auth.HasMinerRequest) (bool, error) {
 
 func (lc *AuthClient) DeleteUser(req *auth.DeleteUserRequest) error {
 	resp, err := lc.cli.R().SetBody(req).SetError(&errcode.ErrMsg{}).Post("/user/del")
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode() == http.StatusOK {
+		return nil
+	}
+	return resp.Error().(*errcode.ErrMsg).Err()
+}
+
+func (lc *AuthClient) RecoverUser(req *auth.RecoverUserRequest) error {
+	resp, err := lc.cli.R().SetBody(req).SetError(&errcode.ErrMsg{}).Post("/user/recover")
 	if err != nil {
 		return err
 	}

@@ -45,6 +45,8 @@ func NewStore(cnf *config.DBConfig, dataPath string) (Store, error) {
 type Store interface {
 	// token
 	Get(token Token) (*KeyPair, error)
+	// GetTokenRecord return a KeyPair, whether deleted or not
+	GetTokenRecord(token Token) (*KeyPair, error)
 	ByName(name string) ([]*KeyPair, error)
 	Put(kp *KeyPair) error
 	Delete(token Token) error
@@ -55,6 +57,8 @@ type Store interface {
 	// user
 	HasUser(name string) (bool, error)
 	GetUser(name string) (*User, error)
+	// GetUserRecord return a user, whether deleted or not
+	GetUserRecord(name string) (*User, error)
 	HasMiner(maddr address.Address) (bool, error)
 	PutUser(*User) error
 	UpdateUser(*User) error

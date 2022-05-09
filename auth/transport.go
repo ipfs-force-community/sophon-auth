@@ -31,6 +31,10 @@ type RemoveTokenRequest struct {
 	Token string `form:"token" json:"token" binding:"required"`
 }
 
+type RecoverTokenRequest struct {
+	Token string `form:"token" json:"token" binding:"required"`
+}
+
 type GetTokensRequest struct {
 	*core.Page
 }
@@ -113,6 +117,10 @@ type HasUserRequest struct {
 }
 
 type DeleteUserRequest struct {
+	Name string `form:"name"`
+}
+
+type RecoverUserRequest struct {
 	Name string `form:"name"`
 }
 

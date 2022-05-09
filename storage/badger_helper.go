@@ -108,7 +108,7 @@ func (s *badgerStore) put(key []byte, val iStreamableObj) error {
 	})
 }
 
-func (s *badgerStore) getObj(key []byte, obj iStreamableObj) error {
+func (s *badgerStore) getUsableObj(key []byte, obj deleteVerify) error {
 	return s.db.View(func(txn *badger.Txn) error {
 		val, err := txn.Get(key)
 		if err != nil {
@@ -119,11 +119,22 @@ func (s *badgerStore) getObj(key []byte, obj iStreamableObj) error {
 		}); err != nil {
 			return err
 		}
-		deleteVer, ok := obj.(deleteVerify)
-		if ok && deleteVer.isDeleted() {
+		if obj.isDeleted() {
 			return badger.ErrKeyNotFound
 		}
 		return nil
+	})
+}
+
+func (s *badgerStore) getObj(key []byte, obj iStreamableObj) error {
+	return s.db.View(func(txn *badger.Txn) error {
+		val, err := txn.Get(key)
+		if err != nil {
+			return err
+		}
+		return val.Value(func(val []byte) error {
+			return obj.FromBytes(val)
+		})
 	})
 }
 

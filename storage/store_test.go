@@ -11,6 +11,7 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/config"
+	"github.com/filecoin-project/venus-auth/core"
 	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -124,12 +125,20 @@ func testDeleteUser(t *testing.T) {
 	userName := "test_user_001"
 	miners := userMiners[userName]
 
+	res, err := theStore.GetUser(userName)
+	require.Nil(t, err)
 	require.Nil(t, theStore.DeleteUser(userName))
 	has, err := theStore.HasUser(userName)
 	require.Nil(t, err)
 	require.False(t, has)
 	_, err = theStore.GetUser(userName)
 	require.Error(t, err)
+
+	userRecord, err := theStore.GetUserRecord(userName)
+	require.Nil(t, err)
+	require.Equal(t, core.Deleted, userRecord.IsDeleted)
+	userRecord.IsDeleted = core.NotDelete
+	require.Equal(t, res, userRecord)
 
 	finalMiner := address.Address{}
 	for miner := range miners {
@@ -144,9 +153,9 @@ func testDeleteUser(t *testing.T) {
 	}
 	_, err = theStore.GetUserByMiner(finalMiner)
 	require.Error(t, err)
-	res, err := theStore.ListMiners(userName)
+	list, err := theStore.ListMiners(userName)
 	require.Nil(t, err)
-	require.Len(t, res, 0)
+	require.Len(t, list, 0)
 }
 
 func testDelMiners(t *testing.T) {
@@ -205,16 +214,18 @@ func testTokens(t *testing.T) {
 		}
 
 		has, err := theStore.Has(token.Token)
-
 		require.NoError(t, err)
 		require.Equal(t, has, true)
 
 		require.NoError(t, theStore.Delete(token.Token))
-
 		has, err = theStore.Has(token.Token)
-
 		require.NoError(t, err)
 		require.Equal(t, has, false)
+
+		tokenRecord, err := theStore.GetTokenRecord(token.Token)
+		require.Nil(t, err)
+		require.Equal(t, core.Deleted, tokenRecord.IsDeleted)
+		require.Equal(t, otk.Name, tokenRecord.Name)
 	}
 }
 

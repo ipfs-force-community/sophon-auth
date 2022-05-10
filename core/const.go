@@ -7,7 +7,7 @@ import (
 
 var CurrentCommit string
 
-const BuildVersion = "1.3.1"
+const BuildVersion = "1.4.0"
 
 var Version = BuildVersion + CurrentCommit
 

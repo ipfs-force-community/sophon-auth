@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -63,7 +62,7 @@ func TestMain(m *testing.M) {
 	}
 
 	go func() {
-		log.Printf("server start and listen on %s", cnf.Port)
+		log.Infof("server start and listen on %s", cnf.Port)
 		_ = server.ListenAndServe()
 	}() //nolint
 
@@ -73,7 +72,7 @@ func TestMain(m *testing.M) {
 	}
 
 	defer func() {
-		log.Println("close auth service")
+		log.Info("close auth service")
 		_ = server.Close()
 	}()
 

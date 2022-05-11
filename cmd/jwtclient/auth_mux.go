@@ -2,14 +2,17 @@ package jwtclient
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"reflect"
 	"strings"
 
 	"github.com/filecoin-project/go-jsonrpc/auth"
 	auth2 "github.com/filecoin-project/venus-auth/auth"
+
+	logging "github.com/ipfs/go-log/v2"
 )
+
+var log = logging.Logger("auth_client")
 
 type CtxKey int
 
@@ -20,20 +23,18 @@ const (
 
 // AuthMux used with jsonrpc library to verify whether the request is legal
 type AuthMux struct {
-	Logger
 	handler       http.Handler
 	local, remote IJwtAuthClient
 
 	trustHandle map[string]http.Handler
 }
 
-func NewAuthMux(local, remote IJwtAuthClient, handler http.Handler, logger Logger) *AuthMux {
+func NewAuthMux(local, remote IJwtAuthClient, handler http.Handler) *AuthMux {
 	return &AuthMux{
 		handler:     handler,
 		local:       local,
 		remote:      remote,
 		trustHandle: make(map[string]http.Handler),
-		Logger:      logger,
 	}
 }
 
@@ -74,7 +75,7 @@ func (authMux *AuthMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !strings.HasPrefix(token, "Bearer ") {
-		authMux.Warnf("missing Bearer prefix in venusauth header")
+		log.Warnf("missing Bearer prefix in venusauth header")
 		w.WriteHeader(401)
 		return
 	}
@@ -91,12 +92,12 @@ func (authMux *AuthMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if perms, err = authMux.local.Verify(ctx, token); err != nil {
 			if !isNil(authMux.remote) {
 				if perms, err = authMux.remote.Verify(ctx, token); err != nil {
-					authMux.Warnf("JWT Verification failed (originating from %s): %s", r.RemoteAddr, err)
+					log.Warnf("JWT Verification failed (originating from %s): %s", r.RemoteAddr, err)
 					w.WriteHeader(401)
 					return
 				}
 			} else {
-				authMux.Warnf("JWT Verification failed (originating from %s): %s", r.RemoteAddr, err)
+				log.Warnf("JWT Verification failed (originating from %s): %s", r.RemoteAddr, err)
 				w.WriteHeader(401)
 				return
 			}
@@ -104,7 +105,7 @@ func (authMux *AuthMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	} else {
 		if !isNil(authMux.remote) {
 			if perms, err = authMux.remote.Verify(ctx, token); err != nil {
-				authMux.Warnf("JWT Verification failed (originating from %s): %s", r.RemoteAddr, err)
+				log.Warnf("JWT Verification failed (originating from %s): %s", r.RemoteAddr, err)
 				w.WriteHeader(401)
 				return
 			}
@@ -127,30 +128,6 @@ func isNil(ac IJwtAuthClient) bool {
 		return false
 	}
 	return true
-}
-
-func (authMux *AuthMux) Warnf(template string, args ...interface{}) {
-	if authMux.Logger == nil {
-		fmt.Printf("auth-middware warning:%s\n", fmt.Sprintf(template, args...))
-		return
-	}
-	authMux.Logger.Warnf(template, args...)
-}
-
-func (authMux *AuthMux) Infof(template string, args ...interface{}) {
-	if authMux.Logger == nil {
-		fmt.Printf("auth-midware info:%s\n", fmt.Sprintf(template, args...))
-		return
-	}
-	authMux.Logger.Infof(template, args...)
-}
-
-func (authMux *AuthMux) Errorf(template string, args ...interface{}) {
-	if authMux.Logger == nil {
-		fmt.Printf("auth-midware error:%s\n", fmt.Sprintf(template, args...))
-		return
-	}
-	authMux.Logger.Errorf(template, args...)
 }
 
 func ctxWithString(ctx context.Context, k CtxKey, v string) context.Context {

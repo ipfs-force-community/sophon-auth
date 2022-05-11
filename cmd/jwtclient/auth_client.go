@@ -11,7 +11,6 @@ import (
 	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/errcode"
-	"github.com/filecoin-project/venus-auth/log"
 	"github.com/go-resty/resty/v2"
 	"go.opencensus.io/trace"
 	"golang.org/x/xerrors"

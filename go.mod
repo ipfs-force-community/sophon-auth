@@ -16,12 +16,12 @@ require (
 	github.com/google/uuid v1.2.0
 	github.com/influxdata/influxdb-client-go/v2 v2.2.2
 	github.com/ipfs-force-community/metrics v1.0.0
+	github.com/ipfs/go-log/v2 v2.0.8
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/magefile/mage v1.11.0 // indirect
 	github.com/magiconair/properties v1.8.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/sirupsen/logrus v1.6.0
-	github.com/spf13/cast v1.3.0
 	github.com/spf13/viper v1.3.2
 	github.com/stretchr/testify v1.6.1
 	github.com/urfave/cli/v2 v2.3.0

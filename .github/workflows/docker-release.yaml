@@ -1,6 +1,9 @@
 name: Docker Image CI
 
 on:
+  create:
+    tags:
+      - '**'
   push:
     branches: [ docker ]
   pull_request:
@@ -17,12 +20,19 @@ jobs:
       with:
         ref: docker
     - name: Build the Docker image 
+      if: ${{ github.ref_type == 'tag' && github.event_name == 'create' }}
       run: |
         docker build . --file dockerfile --tag filvenus/venus-auth:latest
         # docker tag filvenus/venus-auth:latest filvenus/venus-auth:${{steps.vars.outputs.tag}}
+
+
     - name: Login to registry
+      if: ${{ github.ref_type == 'tag' && github.event_name == 'create' }}
       run: docker login --username=filvenus --password ${{ secrets.DOCKER_PASSWORD }} 
+
+
     - name: Push Image
+      if: ${{ github.ref_type == 'tag' && github.event_name == 'create' }}
       run: |
         # docker push filvenus/venus-auth:${{steps.vars.outputs.tag}}
         docker push filvenus/venus-auth:latest

@@ -60,6 +60,9 @@ func (s *badgerStore) softDelObj(obj softDelete) error {
 		}); err != nil {
 			return err
 		}
+		if obj.isDeleted() {
+			return xerrors.Errorf("not exist")
+		}
 		obj.setDeleted()
 		data, err := obj.Bytes()
 		if err != nil {

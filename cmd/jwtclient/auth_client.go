@@ -239,7 +239,7 @@ func (lc *AuthClient) HasUser(req *auth.HasUserRequest) (bool, error) {
 	if resp.StatusCode() == http.StatusOK {
 		return *(resp.Result().(*bool)), nil
 	}
-	return false, nil
+	return false, resp.Error().(*errcode.ErrMsg).Err()
 }
 
 func (lc *AuthClient) HasMiner(req *auth.HasMinerRequest) (bool, error) {

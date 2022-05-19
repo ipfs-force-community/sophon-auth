@@ -354,8 +354,7 @@ type deleteVerify interface {
 }
 
 type softDelete interface {
-	iKableObj
-	iStreamableObj
+	deleteVerify
 	// SetDeleted set data to deleted
 	setDeleted()
 }

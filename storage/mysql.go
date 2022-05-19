@@ -183,25 +183,25 @@ func (s *mysqlStore) GetUserRecord(name string) (*User, error) {
 
 func (s *mysqlStore) DeleteUser(userName string) error {
 	err := s.db.Transaction(func(tx *gorm.DB) error {
-		user, err := s.GetUser(userName)
+		var user User
+		err := tx.Table("users").Take(&user, "name=?", userName).Error
 		if err != nil {
 			return err
 		}
 		user.IsDeleted = core.Deleted
 		user.UpdateTime = time.Now()
-		if err := s.db.Table("users").Save(user).Error; err != nil {
+		if err := tx.Table("users").Save(user).Error; err != nil {
 			return err
 		}
 
-		miners, err := s.ListMiners(userName)
-		if err != nil {
+		var miners []*Miner
+		if err := tx.Table("miners").Find(&miners, "user = ?", user.Name).Error; err != nil {
 			return err
 		}
 
 		addrs := make([]address.Address, 0, len(miners))
 		for _, miner := range miners {
-			_, err := s.DelMiner(miner.Miner.Address())
-			if err != nil {
+			if err := tx.Table("miners").Delete(&Miner{}, "miner = ?", miner.Miner).Error; err != nil {
 				return err
 			}
 			addrs = append(addrs, miner.Miner.Address())
@@ -215,7 +215,7 @@ func (s *mysqlStore) DeleteUser(userName string) error {
 
 func (s mysqlStore) HasMiner(maddr address.Address) (bool, error) {
 	var count int64
-	if err := s.db.Table("miners").Debug().Where("miner = ? and deleted_at is NULL", storedAddress(maddr)).Count(&count).Error; err != nil {
+	if err := s.db.Table("miners").Where("miner = ? and deleted_at is NULL", storedAddress(maddr)).Count(&count).Error; err != nil {
 		return false, nil
 	}
 	return count > 0, nil

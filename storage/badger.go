@@ -195,6 +195,9 @@ func (s *badgerStore) DeleteUser(name string) error {
 		}); err != nil {
 			return err
 		}
+		if user.isDeleted() {
+			return xerrors.Errorf("user not exist")
+		}
 		user.setDeleted()
 		data, err := user.Bytes()
 		if err != nil {

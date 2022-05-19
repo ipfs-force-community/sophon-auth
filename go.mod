@@ -21,7 +21,6 @@ require (
 	github.com/magiconair/properties v1.8.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/sirupsen/logrus v1.6.0
-	github.com/spf13/cast v1.3.0
 	github.com/spf13/viper v1.3.2
 	github.com/stretchr/testify v1.6.1
 	github.com/urfave/cli/v2 v2.3.0

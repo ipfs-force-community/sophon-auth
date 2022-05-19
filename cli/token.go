@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/filecoin-project/venus-auth/core"
@@ -42,7 +41,7 @@ var genTokenCmd = &cli.Command{
 			return err
 		}
 		if ctx.NArg() < 1 {
-			return errors.New("usage: genToken name")
+			return fmt.Errorf("usage: genToken name")
 		}
 		name := ctx.Args().Get(0)
 		perm := ctx.String("perm")
@@ -140,7 +139,7 @@ var removeTokenCmd = &cli.Command{
 	ArgsUsage: "[token]",
 	Action: func(ctx *cli.Context) error {
 		if ctx.NArg() < 1 {
-			return errors.New("usage: rmToken [token]")
+			return fmt.Errorf("usage: rmToken [token]")
 		}
 		client, err := GetCli(ctx)
 		if err != nil {
@@ -162,7 +161,7 @@ var recoverTokenCmd = &cli.Command{
 	ArgsUsage: "[token]",
 	Action: func(ctx *cli.Context) error {
 		if ctx.NArg() < 1 {
-			return errors.New("usage: rmToken [token]")
+			return fmt.Errorf("usage: recover [token]")
 		}
 		client, err := GetCli(ctx)
 		if err != nil {

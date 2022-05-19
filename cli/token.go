@@ -1,11 +1,11 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 
-	"github.com/filecoin-project/venus-auth/core"
 	"github.com/urfave/cli/v2"
+
+	"github.com/filecoin-project/venus-auth/core"
 )
 
 var tokenSubCommand = &cli.Command{
@@ -22,11 +22,11 @@ var genTokenCmd = &cli.Command{
 	Name:      "gen",
 	Usage:     "generate token",
 	ArgsUsage: "[name]",
+	UsageText: "./venus-auth token gen --perm=<auth> [name]",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:  "perm",
 			Usage: "permission for API auth (read, write, sign, admin)",
-			Value: core.PermRead,
 		},
 		&cli.StringFlag{
 			Name:  "extra",
@@ -40,12 +40,17 @@ var genTokenCmd = &cli.Command{
 			return err
 		}
 		if ctx.NArg() < 1 {
-			return errors.New("usage: genToken name")
+			return fmt.Errorf("usage: genToken name")
 		}
 		name := ctx.Args().Get(0)
+
+		if !ctx.IsSet("perm") {
+			return fmt.Errorf("`perm` flag not set")
+		}
+
 		perm := ctx.String("perm")
 		if err = core.ContainsPerm(perm); err != nil {
-			return err
+			return fmt.Errorf("`perm` flag: %w", err)
 		}
 
 		extra := ctx.String("extra")
@@ -53,6 +58,7 @@ var genTokenCmd = &cli.Command{
 		if err != nil {
 			return err
 		}
+
 		fmt.Printf("generate token success: %s\n", tk)
 		return nil
 	},
@@ -104,7 +110,7 @@ var removeTokenCmd = &cli.Command{
 	ArgsUsage: "[token]",
 	Action: func(ctx *cli.Context) error {
 		if ctx.NArg() < 1 {
-			return errors.New("usage: rmToken [token]")
+			return fmt.Errorf("usage: rmToken [token]")
 		}
 		client, err := GetCli(ctx)
 		if err != nil {

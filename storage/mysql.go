@@ -144,7 +144,11 @@ func (s mysqlStore) HasUser(name string) (bool, error) {
 }
 
 func (s *mysqlStore) UpdateUser(user *User) error {
-	return s.db.Table("users").Save(user).Error
+	return s.innerUpdateUser(s.db, user)
+}
+
+func (s *mysqlStore) innerUpdateUser(tx *gorm.DB, user *User) error {
+	return tx.Table("users").Save(user).Error
 }
 
 func (s *mysqlStore) PutUser(user *User) error {
@@ -168,8 +172,12 @@ func (s *mysqlStore) ListUsers(skip, limit int64, state int, sourceType core.Sou
 }
 
 func (s *mysqlStore) GetUser(name string) (*User, error) {
+	return s.innerGetUser(s.db, name)
+}
+
+func (s *mysqlStore) innerGetUser(tx *gorm.DB, name string) (*User, error) {
 	var user User
-	err := s.db.Table("users").Take(&user, "name=? and is_deleted=?", name, core.NotDelete).Error
+	err := tx.Table("users").Take(&user, "name=? and is_deleted=?", name, core.NotDelete).Error
 
 	return &user, err
 }
@@ -183,29 +191,32 @@ func (s *mysqlStore) GetUserRecord(name string) (*User, error) {
 
 func (s *mysqlStore) DeleteUser(userName string) error {
 	err := s.db.Transaction(func(tx *gorm.DB) error {
-		var user User
-		err := tx.Table("users").Take(&user, "name=?", userName).Error
+		user, err := s.innerGetUser(tx, userName)
 		if err != nil {
 			return err
 		}
+
 		user.IsDeleted = core.Deleted
 		user.UpdateTime = time.Now()
-		if err := tx.Table("users").Save(user).Error; err != nil {
-			return err
-		}
 
-		var miners []*Miner
-		if err := tx.Table("miners").Find(&miners, "user = ?", user.Name).Error; err != nil {
+		miners, err := s.innerListMiners(tx, userName)
+		if err != nil {
 			return err
 		}
 
 		addrs := make([]address.Address, 0, len(miners))
 		for _, miner := range miners {
-			if err := tx.Table("miners").Delete(&Miner{}, "miner = ?", miner.Miner).Error; err != nil {
+			_, err := s.innerDelMiner(tx, miner.Miner.Address())
+			if err != nil {
 				return err
 			}
 			addrs = append(addrs, miner.Miner.Address())
 		}
+
+		if err := s.innerUpdateUser(tx, user); err != nil {
+			return err
+		}
+
 		log.Infof("delete user %s, delete miners %v", userName, addrs)
 		return nil
 	})
@@ -279,13 +290,21 @@ func (s *mysqlStore) UpsertMiner(miner address.Address, userName string) (bool, 
 }
 
 func (s *mysqlStore) DelMiner(miner address.Address) (bool, error) {
-	db := s.db.Model((*Miner)(nil)).Delete(&Miner{}, "miner = ?", storedAddress(miner))
+	return s.innerDelMiner(s.db, miner)
+}
+
+func (s *mysqlStore) innerDelMiner(tx *gorm.DB, miner address.Address) (bool, error) {
+	db := tx.Model((*Miner)(nil)).Delete(&Miner{}, "miner = ?", storedAddress(miner))
 	return db.RowsAffected > 0, db.Error
 }
 
 func (s *mysqlStore) ListMiners(user string) ([]*Miner, error) {
+	return s.innerListMiners(s.db, user)
+}
+
+func (s *mysqlStore) innerListMiners(tx *gorm.DB, user string) ([]*Miner, error) {
 	var miners []*Miner
-	if err := s.db.Model((*Miner)(nil)).Find(&miners, "user = ?", user).Error; err != nil {
+	if err := tx.Model((*Miner)(nil)).Find(&miners, "user = ?", user).Error; err != nil {
 		return nil, err
 	}
 	return miners, nil

@@ -45,6 +45,9 @@ func NewStore(cnf *config.DBConfig, dataPath string) (Store, error) {
 type Store interface {
 	// token
 	Get(token Token) (*KeyPair, error)
+	// GetTokenRecord return a KeyPair, whether deleted or not
+	GetTokenRecord(token Token) (*KeyPair, error)
+	ByName(name string) ([]*KeyPair, error)
 	Put(kp *KeyPair) error
 	Delete(token Token) error
 	Has(token Token) (bool, error)
@@ -54,10 +57,13 @@ type Store interface {
 	// user
 	HasUser(name string) (bool, error)
 	GetUser(name string) (*User, error)
+	// GetUserRecord return a user, whether deleted or not
+	GetUserRecord(name string) (*User, error)
 	HasMiner(maddr address.Address) (bool, error)
 	PutUser(*User) error
 	UpdateUser(*User) error
 	ListUsers(skip, limit int64, state int, sourceType core.SourceType, code core.KeyCode) ([]*User, error)
+	DeleteUser(name string) error
 
 	// rate limit
 	GetRateLimits(name, id string) ([]*UserRateLimit, error)
@@ -83,6 +89,7 @@ type KeyPair struct {
 	Extra      string    `gorm:"column:extra;type:varchar(255);"`
 	Token      Token     `gorm:"column:token;type:varchar(512);uniqueIndex:token_token_IDX,type:hash;not null"`
 	CreateTime time.Time `gorm:"column:createTime;type:datetime;NOT NULL"`
+	IsDeleted  int       `gorm:"column:is_deleted;index;default:0;NOT NULL"`
 }
 
 func (*KeyPair) TableName() string {
@@ -119,6 +126,18 @@ func (kp *KeyPair) FromBytes(val []byte) error {
 	return json.Unmarshal(val, kp)
 }
 
+func (kp *KeyPair) key() []byte {
+	return tokenKey(kp.Token.String())
+}
+
+func (kp *KeyPair) isDeleted() bool {
+	return kp.IsDeleted == core.Deleted
+}
+
+func (kp *KeyPair) setDeleted() {
+	kp.IsDeleted = core.Deleted
+}
+
 type User struct {
 	Id         string          `gorm:"column:id;type:varchar(64);primary_key"`
 	Name       string          `gorm:"column:name;type:varchar(50);uniqueIndex:users_name_IDX,type:btree;not null"`
@@ -127,12 +146,49 @@ type User struct {
 	State      core.UserState  `gorm:"column:state;type:tinyint(4);default:0;NOT NULL"`
 	CreateTime time.Time       `gorm:"column:createTime;type:datetime;NOT NULL"`
 	UpdateTime time.Time       `gorm:"column:updateTime;type:datetime;NOT NULL"`
+	IsDeleted  int             `gorm:"column:is_deleted;index;default:0;NOT NULL"`
 }
 
 type OrmTimestamp struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
+}
+
+func (*User) TableName() string {
+	return "users"
+}
+
+func (u *User) key() []byte {
+	return userKey(u.Name)
+}
+
+func (u *User) Bytes() ([]byte, error) {
+	buff, err := json.Marshal(u)
+	if err != nil {
+		return nil, err
+	}
+	return buff, nil
+}
+
+func (u *User) FromBytes(buff []byte) error {
+	return json.Unmarshal(buff, u)
+}
+
+func (u *User) CreateTimeBytes() ([]byte, error) {
+	val, err := u.CreateTime.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	return val, nil
+}
+
+func (u *User) isDeleted() bool {
+	return u.IsDeleted == 1
+}
+
+func (u *User) setDeleted() {
+	u.IsDeleted = core.Deleted
 }
 
 type storedAddress address.Address
@@ -192,6 +248,27 @@ type Miner struct {
 	OrmTimestamp
 }
 
+func (m *Miner) Bytes() ([]byte, error) {
+	return json.Marshal(m)
+}
+
+func (m *Miner) FromBytes(buf []byte) error {
+	return json.Unmarshal(buf, m)
+}
+
+func (m *Miner) key() []byte {
+	return minerKey(m.Miner.Address().String())
+}
+
+func (m *Miner) isDeleted() bool {
+	return !m.DeletedAt.Valid
+}
+
+func (m *Miner) setDeleted() {
+	m.DeletedAt.Valid = false
+	m.DeletedAt.Time = time.Now()
+}
+
 type StoreVersion struct {
 	ID      uint64 `grom:"primary_key"`
 	Version uint64 `gorm:"column:version"`
@@ -242,50 +319,6 @@ func (rl ReqLimit) Value() (driver.Value, error) {
 	return json.Marshal(rl)
 }
 
-func (*User) TableName() string {
-	return "users"
-}
-
-func (u *User) Bytes() ([]byte, error) {
-	buff, err := json.Marshal(u)
-	if err != nil {
-		return nil, err
-	}
-	return buff, nil
-}
-
-func (u *User) FromBytes(buff []byte) error {
-	return json.Unmarshal(buff, u)
-}
-
-func (u *User) CreateTimeBytes() ([]byte, error) {
-	val, err := u.CreateTime.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	return val, nil
-}
-
-func (m *Miner) Bytes() ([]byte, error) {
-	return json.Marshal(m)
-}
-
-func (m *Miner) FromBytes(buf []byte) error {
-	return json.Unmarshal(buf, m)
-}
-
-func (m *Miner) key() []byte {
-	return minerKey(m.Miner.Address().String())
-}
-
-func (u *User) key() []byte {
-	return userKey(u.Name)
-}
-
-func (kp *KeyPair) key() []byte {
-	return tokenKey(kp.Token.String())
-}
-
 type mapedRatelimit map[string]*UserRateLimit
 
 // todo: should think about if `mapedRatelimte` is empty?
@@ -311,6 +344,19 @@ type iKableObj interface {
 type iStreamableObj interface {
 	FromBytes([]byte) error
 	Bytes() ([]byte, error)
+}
+
+type deleteVerify interface {
+	iKableObj
+	iStreamableObj
+	// isDeleted return whether data is deleted, true if deleted
+	isDeleted() bool
+}
+
+type softDelete interface {
+	deleteVerify
+	// SetDeleted set data to deleted
+	setDeleted()
 }
 
 type iBadgerObj interface {

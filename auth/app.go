@@ -3,6 +3,8 @@ package auth
 import (
 	"net/http"
 
+	"golang.org/x/xerrors"
+
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/gin-gonic/gin"
 )
@@ -11,17 +13,21 @@ type OAuthApp interface {
 	Verify(c *gin.Context)
 	GenerateToken(c *gin.Context)
 	RemoveToken(c *gin.Context)
+	RecoverToken(c *gin.Context)
 	Tokens(c *gin.Context)
+	GetToken(c *gin.Context)
 
-	UpdateUser(c *gin.Context)
 	CreateUser(c *gin.Context)
-	ListUsers(c *gin.Context)
-	GetUserByMiner(c *gin.Context)
-	HasMiner(c *gin.Context)
 	GetUser(c *gin.Context)
+	GetUserByMiner(c *gin.Context)
+	ListUsers(c *gin.Context)
+	HasMiner(c *gin.Context)
+	HasUser(c *gin.Context)
+	UpdateUser(c *gin.Context)
+	DeleteUser(c *gin.Context)
+	RecoverUser(c *gin.Context)
 
 	AddUserRateLimit(c *gin.Context)
-	UpdateUserRateLimit(c *gin.Context)
 	UpsertUserRateLimit(c *gin.Context)
 	GetUserRateLimit(c *gin.Context)
 	DelUserRateLimit(c *gin.Context)
@@ -113,6 +119,46 @@ func (o *oauthApp) RemoveToken(c *gin.Context) {
 	Response(c, err)
 }
 
+func (o *oauthApp) RecoverToken(c *gin.Context) {
+	req := new(RecoverTokenRequest)
+	if err := c.ShouldBind(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+	err := o.srv.RecoverToken(c, req.Token)
+	Response(c, err)
+}
+
+func (o *oauthApp) GetToken(c *gin.Context) {
+	req := new(GetTokenRequest)
+	if err := c.ShouldBindQuery(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+	if len(req.Name) == 0 && len(req.Token) == 0 {
+		BadResponse(c, xerrors.Errorf("`name` and `token` both empty"))
+		return
+	}
+	var res []*TokenInfo
+	if len(req.Token) > 0 {
+		info, err := o.srv.GetToken(c, req.Token)
+		if err != nil {
+			BadResponse(c, err)
+			return
+		}
+		res = append(res, info)
+	} else {
+		var err error
+		res, err = o.srv.GetTokenByName(c, req.Name)
+		if err != nil {
+			BadResponse(c, err)
+			return
+		}
+	}
+
+	SuccessResponse(c, res)
+}
+
 func (o *oauthApp) Tokens(c *gin.Context) {
 	req := new(GetTokensRequest)
 	if err := c.ShouldBind(req); err != nil {
@@ -148,7 +194,6 @@ func (o *oauthApp) UpdateUser(c *gin.Context) {
 		BadResponse(c, err)
 		return
 	}
-	// todo check miner exit
 	err := o.srv.UpdateUser(c, req)
 	if err != nil {
 		BadResponse(c, err)
@@ -213,6 +258,48 @@ func (o *oauthApp) GetUser(c *gin.Context) {
 	SuccessResponse(c, res)
 }
 
+func (o *oauthApp) HasUser(c *gin.Context) {
+	req := new(HasUserRequest)
+	if err := c.ShouldBindQuery(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+	has, err := o.srv.HasUser(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	SuccessResponse(c, has)
+}
+
+func (o *oauthApp) DeleteUser(c *gin.Context) {
+	req := new(DeleteUserRequest)
+	if err := c.ShouldBind(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+	err := o.srv.DeleteUser(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	Response(c, nil)
+}
+
+func (o *oauthApp) RecoverUser(c *gin.Context) {
+	req := new(RecoverUserRequest)
+	if err := c.ShouldBind(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+	err := o.srv.RecoverUser(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	Response(c, nil)
+}
+
 func (o *oauthApp) AddUserRateLimit(c *gin.Context) {
 	req := new(UpsertUserRateLimitReq)
 	if err := c.ShouldBind(req); err != nil {
@@ -227,9 +314,7 @@ func (o *oauthApp) AddUserRateLimit(c *gin.Context) {
 	}
 	SuccessResponse(c, res)
 }
-func (o *oauthApp) UpdateUserRateLimit(c *gin.Context) {
 
-}
 func (o *oauthApp) UpsertUserRateLimit(c *gin.Context) {
 	req := new(UpsertUserRateLimitReq)
 	if err := c.ShouldBind(req); err != nil {

@@ -40,17 +40,43 @@ func minerKey(miner string) []byte {
 // if key not exists, will get a badger.ErrKeyNotFound error.
 func (s *badgerStore) delObj(key []byte) error {
 	return s.db.Update(func(txn *badger.Txn) error {
-		if _, err := txn.Get(key); err != nil {
+		_, err := txn.Get(key)
+		if err != nil {
 			return err
 		}
 		return txn.Delete(key)
 	})
 }
 
-func (s *badgerStore) isExist(key []byte) (bool, error) {
+func (s *badgerStore) softDelObj(obj softDelete) error {
+	return s.db.Update(func(txn *badger.Txn) error {
+		key := obj.key()
+		val, err := txn.Get(key)
+		if err != nil {
+			return err
+		}
+		if err := val.Value(func(val []byte) error {
+			return obj.FromBytes(val)
+		}); err != nil {
+			return err
+		}
+		if obj.isDeleted() {
+			return xerrors.Errorf("not exist")
+		}
+		obj.setDeleted()
+		data, err := obj.Bytes()
+		if err != nil {
+			return xerrors.Errorf("failed to marshal time :%s", err)
+		}
+		return txn.Set(key, data)
+	})
+}
+
+func (s *badgerStore) isExist(obj deleteVerify) (bool, error) {
 	var exist bool
 	err := s.db.View(func(txn *badger.Txn) error {
-		_, err := txn.Get(key)
+		key := obj.key()
+		val, err := txn.Get(key)
 		if err != nil {
 			if xerrors.Is(err, badger.ErrKeyNotFound) {
 				exist = false
@@ -58,7 +84,13 @@ func (s *badgerStore) isExist(key []byte) (bool, error) {
 			}
 			return xerrors.Errorf("get key failed:%v", err)
 		}
-		exist = true
+		if err := val.Value(func(val []byte) error {
+			return obj.FromBytes(val)
+		}); err != nil {
+			return err
+		}
+
+		exist = !obj.isDeleted()
 		return nil
 	})
 	return exist, err
@@ -76,6 +108,24 @@ func (s *badgerStore) put(key []byte, val iStreamableObj) error {
 	}
 	return s.db.Update(func(txn *badger.Txn) error {
 		return txn.Set(key, data)
+	})
+}
+
+func (s *badgerStore) getUsableObj(key []byte, obj deleteVerify) error {
+	return s.db.View(func(txn *badger.Txn) error {
+		val, err := txn.Get(key)
+		if err != nil {
+			return err
+		}
+		if err := val.Value(func(val []byte) error {
+			return obj.FromBytes(val)
+		}); err != nil {
+			return err
+		}
+		if obj.isDeleted() {
+			return badger.ErrKeyNotFound
+		}
+		return nil
 	})
 }
 

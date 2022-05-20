@@ -22,7 +22,16 @@ type GenTokenResponse struct {
 	Token string `json:"token"`
 }
 
+type GetTokenRequest struct {
+	Token string `form:"token" json:"token"`
+	Name  string `form:"name" json:"name"`
+}
+
 type RemoveTokenRequest struct {
+	Token string `form:"token" json:"token" binding:"required"`
+}
+
+type RecoverTokenRequest struct {
 	Token string `form:"token" json:"token" binding:"required"`
 }
 
@@ -100,6 +109,18 @@ type OutputUser struct {
 }
 
 type GetUserRequest struct {
+	Name string `form:"name"`
+}
+
+type HasUserRequest struct {
+	Name string `form:"name"`
+}
+
+type DeleteUserRequest struct {
+	Name string `form:"name"`
+}
+
+type RecoverUserRequest struct {
 	Name string `form:"name"`
 }
 

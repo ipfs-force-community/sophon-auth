@@ -4,6 +4,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/filecoin-project/venus-auth/log"
+
 	"github.com/google/uuid"
 
 	"github.com/dgraph-io/badger/v3"
@@ -44,16 +46,46 @@ func (s *badgerStore) Put(kp *KeyPair) error {
 }
 
 func (s *badgerStore) Delete(token Token) error {
-	return s.delObj(tokenKey(token.String()))
+	kp := &KeyPair{Token: token}
+	return s.softDelObj(kp)
 }
 
 func (s *badgerStore) Has(token Token) (bool, error) {
-	return s.isExist(tokenKey(token.String()))
+	kp := &KeyPair{Token: token}
+	return s.isExist(kp)
 }
 
 func (s *badgerStore) Get(token Token) (*KeyPair, error) {
 	var kp KeyPair
+	return &kp, s.getUsableObj(tokenKey(token.String()), &kp)
+}
+
+func (s *badgerStore) GetTokenRecord(token Token) (*KeyPair, error) {
+	var kp KeyPair
 	return &kp, s.getObj(tokenKey(token.String()), &kp)
+}
+
+func (s *badgerStore) ByName(name string) ([]*KeyPair, error) {
+	var kps []*KeyPair
+	if err := s.walkThroughPrefix([]byte(PrefixToken), func(item *badger.Item) (bool, error) {
+		if err := item.Value(func(val []byte) error {
+			kp := new(KeyPair)
+			if err := kp.FromBytes(val); err != nil {
+				return err
+			}
+			if kp.Name == name && !kp.isDeleted() {
+				kps = append(kps, kp)
+			}
+			return nil
+		}); err != nil {
+			return false, err
+		}
+		return true, nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return kps, nil
 }
 
 func (s *badgerStore) UpdateToken(kp *KeyPair) error {
@@ -64,14 +96,17 @@ func (s *badgerStore) List(skip, limit int64) ([]*KeyPair, error) {
 	var offset int64
 	var kps []*KeyPair
 	if err := s.walkThroughPrefix([]byte(PrefixToken), func(item *badger.Item) (bool, error) {
-		offset++
-		if offset <= skip {
-			return true, nil
-		}
 		if err := item.Value(func(val []byte) error {
 			kp := new(KeyPair)
 			if err := kp.FromBytes(val); err != nil {
 				return err
+			}
+			if kp.isDeleted() {
+				return nil
+			}
+			offset++
+			if offset <= skip {
+				return nil
 			}
 			kps = append(kps, kp)
 			return nil
@@ -88,20 +123,21 @@ func (s *badgerStore) List(skip, limit int64) ([]*KeyPair, error) {
 
 func (s *badgerStore) GetUser(name string) (*User, error) {
 	user := new(User)
+	return user, s.getUsableObj(userKey(name), user)
+}
+
+func (s *badgerStore) GetUserRecord(name string) (*User, error) {
+	user := new(User)
 	return user, s.getObj(userKey(name), user)
 }
 
 func (s *badgerStore) UpdateUser(user *User) error {
-	old, err := s.GetUser(user.Name)
-	if err != nil {
-		return err
-	}
-	user.Id = old.Id
 	return s.putBadgerObj(user)
 }
 
 func (s *badgerStore) HasUser(name string) (bool, error) {
-	return s.isExist(userKey(name))
+	user := &User{Name: name}
+	return s.isExist(user)
 }
 
 func (s *badgerStore) PutUser(user *User) error {
@@ -123,6 +159,9 @@ func (s *badgerStore) ListUsers(skip, limit int64, state int, sourceType core.So
 			if code&2 == 2 && int(user.State) != state {
 				return nil
 			}
+			if user.isDeleted() {
+				return nil
+			}
 			satisfiedItemCount++
 			if satisfiedItemCount <= skip {
 				return nil
@@ -139,7 +178,67 @@ func (s *badgerStore) ListUsers(skip, limit int64, state int, sourceType core.So
 }
 
 func (s *badgerStore) HasMiner(maddr address.Address) (bool, error) {
-	return s.isExist(minerKey(maddr.String()))
+	miner := &Miner{Miner: storedAddress(maddr)}
+	return s.isExist(miner)
+}
+
+func (s *badgerStore) DeleteUser(name string) error {
+	return s.db.Update(func(txn *badger.Txn) error {
+		user := &User{}
+		key := userKey(name)
+		val, err := txn.Get(key)
+		if err != nil {
+			return err
+		}
+		if err := val.Value(func(val []byte) error {
+			return user.FromBytes(val)
+		}); err != nil {
+			return err
+		}
+		if user.isDeleted() {
+			return xerrors.Errorf("user not exist")
+		}
+		user.setDeleted()
+		data, err := user.Bytes()
+		if err != nil {
+			return err
+		}
+		if err := txn.Set(key, data); err != nil {
+			return err
+		}
+
+		// delete miners
+		miners, err := s.ListMiners(name)
+		if err != nil {
+			return err
+		}
+		addrs := make([]address.Address, 0, len(miners))
+		for _, miner := range miners {
+			mKey := minerKey(miner.Miner.Address().String())
+			val, err := txn.Get(mKey)
+			if err != nil {
+				return err
+			}
+			m := &Miner{}
+			if err := val.Value(func(val []byte) error {
+				return m.FromBytes(val)
+			}); err != nil {
+				return err
+			}
+			m.setDeleted()
+			data, err := m.Bytes()
+			if err != nil {
+				return err
+			}
+			if err := txn.Set(mKey, data); err != nil {
+				return err
+			}
+			addrs = append(addrs, miner.Miner.Address())
+		}
+		log.Infof("delete user %s, delete miners %v", name, addrs)
+
+		return nil
+	})
 }
 
 func (s *badgerStore) GetRateLimits(name, id string) ([]*UserRateLimit, error) {
@@ -221,7 +320,7 @@ func (s *badgerStore) updateUserRateLimit(name string, limits mapedRatelimit) er
 // miner
 func (s *badgerStore) getMiner(maddr address.Address) (*Miner, error) {
 	var miner Miner
-	if err := s.getObj(minerKey(maddr.String()), &miner); err != nil {
+	if err := s.getUsableObj(minerKey(maddr.String()), &miner); err != nil {
 		return nil, err
 	}
 	return &miner, nil
@@ -236,7 +335,8 @@ func (s *badgerStore) GetUserByMiner(mAddr address.Address) (*User, error) {
 }
 
 func (s *badgerStore) DelMiner(miner address.Address) (bool, error) {
-	err := s.delObj(minerKey(miner.String()))
+	m := &Miner{Miner: storedAddress(miner)}
+	err := s.softDelObj(m)
 	if err != nil {
 		if xerrors.Is(err, badger.ErrKeyNotFound) {
 			return false, nil
@@ -278,6 +378,9 @@ func (s *badgerStore) UpsertMiner(maddr address.Address, userName string) (bool,
 		}
 		miner.User = userName
 		miner.UpdatedAt = now
+		// update miner to valid
+		miner.DeletedAt.Valid = true
+		miner.DeletedAt.Time = time.Time{}
 
 		val, err := miner.Bytes()
 		if err != nil {
@@ -295,7 +398,7 @@ func (s *badgerStore) ListMiners(user string) ([]*Miner, error) {
 			if err := m.FromBytes(val); err != nil {
 				return err
 			}
-			if m.User == user {
+			if m.User == user && !m.isDeleted() {
 				miners = append(miners, &m)
 			}
 			return nil

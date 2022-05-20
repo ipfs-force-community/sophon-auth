@@ -13,8 +13,10 @@ var tokenSubCommand = &cli.Command{
 	Usage: "token command",
 	Subcommands: []*cli.Command{
 		genTokenCmd,
+		getTokenCmd,
 		listTokensCmd,
 		removeTokenCmd,
+		recoverTokenCmd,
 	},
 }
 
@@ -60,6 +62,40 @@ var genTokenCmd = &cli.Command{
 		}
 
 		fmt.Printf("generate token success: %s\n", tk)
+		return nil
+	},
+}
+
+var getTokenCmd = &cli.Command{
+	Name:  "get",
+	Usage: "get token",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name: "name",
+		},
+		&cli.StringFlag{
+			Name: "token",
+		},
+	},
+	Action: func(ctx *cli.Context) error {
+		name := ctx.String("name")
+		token := ctx.String("token")
+		client, err := GetCli(ctx)
+		if err != nil {
+			return err
+		}
+		tokens, err := client.GetToken(name, token)
+		if err != nil {
+			return err
+		}
+		for _, token := range tokens {
+			fmt.Println("name:       ", token.Name)
+			fmt.Println("perm:       ", token.Perm)
+			fmt.Println("create time:", token.CreateTime)
+			fmt.Println("token:      ", token.Token)
+			fmt.Println()
+		}
+
 		return nil
 	},
 }
@@ -122,6 +158,28 @@ var removeTokenCmd = &cli.Command{
 			return err
 		}
 		fmt.Printf("remove token success: %s\n", tk)
+		return nil
+	},
+}
+
+var recoverTokenCmd = &cli.Command{
+	Name:      "recover",
+	Usage:     "recover deleted token",
+	ArgsUsage: "[token]",
+	Action: func(ctx *cli.Context) error {
+		if ctx.NArg() < 1 {
+			return fmt.Errorf("usage: recover [token]")
+		}
+		client, err := GetCli(ctx)
+		if err != nil {
+			return err
+		}
+		tk := ctx.Args().First()
+		err = client.RecoverToken(tk)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("recover token success: %s\n", tk)
 		return nil
 	},
 }

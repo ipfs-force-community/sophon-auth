@@ -122,8 +122,8 @@ func (o *Page) GetSkip() int64 {
 	return o.Skip
 }
 func (o *Page) GetLimit() int64 {
-	if o.Limit < 0 || o.Limit > 100 {
-		o.Limit = 100
+	if o.Limit < 0 || o.Limit > 1000 {
+		o.Limit = 1000
 	}
 	return o.Limit
 }
@@ -147,3 +147,8 @@ func (us UserState) String() string {
 	}
 	return "unknown state"
 }
+
+const (
+	NotDelete = 0
+	Deleted   = 1
+)

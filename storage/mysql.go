@@ -71,12 +71,19 @@ func (s *mysqlStore) Put(kp *KeyPair) error {
 }
 
 func (s mysqlStore) Delete(token Token) error {
-	return s.db.Table("token").Delete(&KeyPair{}, "token=?", token).Error
+	has, err := s.Has(token)
+	if err != nil {
+		return err
+	}
+	if !has {
+		return gorm.ErrRecordNotFound
+	}
+	return s.db.Table("token").Where("token=?", token.String()).Update("is_deleted", core.Deleted).Error
 }
 
 func (s mysqlStore) Has(token Token) (bool, error) {
 	var count int64
-	err := s.db.Table("token").Where("token=?", token).Count(&count).Error
+	err := s.db.Table("token").Where("token=? and is_deleted=?", token.String(), core.NotDelete).Count(&count).Error
 	if err != nil {
 		return false, err
 	}
@@ -85,14 +92,30 @@ func (s mysqlStore) Has(token Token) (bool, error) {
 
 func (s mysqlStore) Get(token Token) (*KeyPair, error) {
 	var kp KeyPair
+	err := s.db.Table("token").Take(&kp, "token = ? and is_deleted=?", token.String(), core.NotDelete).Error
+
+	return &kp, err
+}
+
+func (s mysqlStore) GetTokenRecord(token Token) (*KeyPair, error) {
+	var kp KeyPair
 	err := s.db.Table("token").Take(&kp, "token = ?", token.String()).Error
 
 	return &kp, err
 }
 
+func (s *mysqlStore) ByName(name string) ([]*KeyPair, error) {
+	var tokens []*KeyPair
+	err := s.db.Find(&tokens, "name = ? and is_deleted=?", name, core.NotDelete).Error
+	if err != nil {
+		return nil, err
+	}
+	return tokens, nil
+}
+
 func (s mysqlStore) List(skip, limit int64) ([]*KeyPair, error) {
 	var tokens []*KeyPair
-	err := s.db.Offset(int(skip)).Limit(int(limit)).Order("name").Find(&tokens).Error
+	err := s.db.Offset(int(skip)).Limit(int(limit)).Order("name").Find(&tokens, "is_deleted=?", core.NotDelete).Error
 	if err != nil {
 		return nil, err
 	}
@@ -107,6 +130,7 @@ func (s *mysqlStore) UpdateToken(kp *KeyPair) error {
 		"extra":      kp.Extra,
 		"token":      kp.Token,
 		"createTime": kp.CreateTime,
+		"is_deleted": kp.IsDeleted,
 	}
 	return s.db.Table("token").Where("token = ?", kp.Token.String()).UpdateColumns(columns).Error
 
@@ -114,19 +138,21 @@ func (s *mysqlStore) UpdateToken(kp *KeyPair) error {
 
 func (s mysqlStore) HasUser(name string) (bool, error) {
 	var count int64
-	err := s.db.Table("users").Where("name=?", name).Count(&count).Error
-	if err != nil {
-		return false, err
-	}
-	return count > 0, nil
+	err := s.db.Table("users").Where("name=? and is_deleted=?", name, core.NotDelete).Count(&count).Error
+
+	return count > 0, err
 }
 
 func (s *mysqlStore) UpdateUser(user *User) error {
-	return s.db.Table("users").Save(user).Error
+	return s.innerUpdateUser(s.db, user)
+}
+
+func (s *mysqlStore) innerUpdateUser(tx *gorm.DB, user *User) error {
+	return tx.Table("users").Save(user).Error
 }
 
 func (s *mysqlStore) PutUser(user *User) error {
-	return s.db.Table("users").Save(user).Error
+	return s.db.Table("users").Create(user).Error
 }
 
 func (s *mysqlStore) ListUsers(skip, limit int64, state int, sourceType core.SourceType, code core.KeyCode) ([]*User, error) {
@@ -138,7 +164,7 @@ func (s *mysqlStore) ListUsers(skip, limit int64, state int, sourceType core.Sou
 		exec = exec.Where("state=?", state)
 	}
 	arr := make([]*User, 0)
-	err := exec.Order("createTime").Offset(int(skip)).Limit(int(limit)).Scan(&arr).Error
+	err := exec.Where("is_deleted=?", core.NotDelete).Order("createTime").Offset(int(skip)).Limit(int(limit)).Scan(&arr).Error
 	if err != nil {
 		return nil, err
 	}
@@ -146,15 +172,61 @@ func (s *mysqlStore) ListUsers(skip, limit int64, state int, sourceType core.Sou
 }
 
 func (s *mysqlStore) GetUser(name string) (*User, error) {
+	return s.innerGetUser(s.db, name)
+}
+
+func (s *mysqlStore) innerGetUser(tx *gorm.DB, name string) (*User, error) {
+	var user User
+	err := tx.Table("users").Take(&user, "name=? and is_deleted=?", name, core.NotDelete).Error
+
+	return &user, err
+}
+
+func (s *mysqlStore) GetUserRecord(name string) (*User, error) {
 	var user User
 	err := s.db.Table("users").Take(&user, "name=?", name).Error
 
 	return &user, err
 }
 
+func (s *mysqlStore) DeleteUser(userName string) error {
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		user, err := s.innerGetUser(tx, userName)
+		if err != nil {
+			return err
+		}
+
+		user.IsDeleted = core.Deleted
+		user.UpdateTime = time.Now()
+
+		miners, err := s.innerListMiners(tx, userName)
+		if err != nil {
+			return err
+		}
+
+		addrs := make([]address.Address, 0, len(miners))
+		for _, miner := range miners {
+			_, err := s.innerDelMiner(tx, miner.Miner.Address())
+			if err != nil {
+				return err
+			}
+			addrs = append(addrs, miner.Miner.Address())
+		}
+
+		if err := s.innerUpdateUser(tx, user); err != nil {
+			return err
+		}
+
+		log.Infof("delete user %s, delete miners %v", userName, addrs)
+		return nil
+	})
+
+	return err
+}
+
 func (s mysqlStore) HasMiner(maddr address.Address) (bool, error) {
 	var count int64
-	if err := s.db.Table("miners").Where("miner = ?", storedAddress(maddr)).Count(&count).Error; err != nil {
+	if err := s.db.Table("miners").Where("miner = ? and deleted_at is NULL", storedAddress(maddr)).Count(&count).Error; err != nil {
 		return false, nil
 	}
 	return count > 0, nil
@@ -218,13 +290,21 @@ func (s *mysqlStore) UpsertMiner(miner address.Address, userName string) (bool, 
 }
 
 func (s *mysqlStore) DelMiner(miner address.Address) (bool, error) {
-	db := s.db.Model((*Miner)(nil)).Delete(&Miner{}, "miner = ?", storedAddress(miner))
+	return s.innerDelMiner(s.db, miner)
+}
+
+func (s *mysqlStore) innerDelMiner(tx *gorm.DB, miner address.Address) (bool, error) {
+	db := tx.Model((*Miner)(nil)).Delete(&Miner{}, "miner = ?", storedAddress(miner))
 	return db.RowsAffected > 0, db.Error
 }
 
 func (s *mysqlStore) ListMiners(user string) ([]*Miner, error) {
+	return s.innerListMiners(s.db, user)
+}
+
+func (s *mysqlStore) innerListMiners(tx *gorm.DB, user string) ([]*Miner, error) {
 	var miners []*Miner
-	if err := s.db.Model((*Miner)(nil)).Find(&miners, "user = ?", user).Error; err != nil {
+	if err := tx.Model((*Miner)(nil)).Find(&miners, "user = ?", user).Error; err != nil {
 		return nil, err
 	}
 	return miners, nil

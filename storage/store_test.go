@@ -11,6 +11,7 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/config"
+	"github.com/filecoin-project/venus-auth/core"
 	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -64,7 +65,7 @@ func init() {
 	}
 }
 
-func TestAddUser(t *testing.T) {
+func testAddUser(t *testing.T) {
 	now := time.Now()
 	for user := range userMiners {
 		err := theStore.PutUser(&User{
@@ -84,7 +85,7 @@ func TestAddUser(t *testing.T) {
 	}
 }
 
-func TestAddMiner(t *testing.T) {
+func testAddMiner(t *testing.T) {
 	for u, ms := range userMiners {
 		for m := range ms {
 			addr, _ := address.NewFromString(m)
@@ -95,7 +96,7 @@ func TestAddMiner(t *testing.T) {
 
 }
 
-func TestListMiners(t *testing.T) {
+func testListMiners(t *testing.T) {
 	addr, _ := address.NewFromString("f01222345678999")
 	// should be a 'not found error'
 	_, err := theStore.GetUserByMiner(addr)
@@ -120,8 +121,49 @@ func TestListMiners(t *testing.T) {
 	}
 }
 
-func TestDelMiners(t *testing.T) {
-	for _, miners := range userMiners {
+func testDeleteUser(t *testing.T) {
+	userName := "test_user_001"
+	miners := userMiners[userName]
+
+	res, err := theStore.GetUser(userName)
+	require.Nil(t, err)
+	require.Nil(t, theStore.DeleteUser(userName))
+	has, err := theStore.HasUser(userName)
+	require.Nil(t, err)
+	require.False(t, has)
+	_, err = theStore.GetUser(userName)
+	require.Error(t, err)
+
+	userRecord, err := theStore.GetUserRecord(userName)
+	require.Nil(t, err)
+	require.Equal(t, core.Deleted, userRecord.IsDeleted)
+	userRecord.IsDeleted = core.NotDelete
+	require.Equal(t, res, userRecord)
+
+	finalMiner := address.Address{}
+	for miner := range miners {
+		addr, err := address.NewFromString(miner)
+		require.Nil(t, err)
+		has, err = theStore.HasMiner(addr)
+		t.Log(addr.String())
+		require.Nil(t, err)
+		require.False(t, has)
+
+		finalMiner = addr
+	}
+	_, err = theStore.GetUserByMiner(finalMiner)
+	require.Error(t, err)
+	list, err := theStore.ListMiners(userName)
+	require.Nil(t, err)
+	require.Len(t, list, 0)
+}
+
+func testDelMiners(t *testing.T) {
+	for userName, miners := range userMiners {
+		// already delete user
+		if userName == "test_user_001" {
+			continue
+		}
 		for m := range miners {
 			addr, _ := address.NewFromString(m)
 			_, err := theStore.DelMiner(addr)
@@ -130,11 +172,16 @@ func TestDelMiners(t *testing.T) {
 	}
 }
 
-func TestTokens(t *testing.T) {
+func testTokens(t *testing.T) {
 	// check put
+	// token name the same
+	nameSameToken := *originTokens["test-token-02"]
+	nameSameToken.Secret = "93975e8ba920c7408fcfee2948b0929a86ba687894478bfcf1efbfa2c0b699bf"
+	nameSameToken.Token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiaGoiLCJwZXJtIjoiYWRtaW4iLCJleHQiOiIifQ.9ZZP-acJY-PwluljFFIZ2ohIXaGoj4QzFrWTThSkAJk"
 	for _, token := range originTokens {
 		require.NoError(t, theStore.Put(token))
 	}
+	require.NoError(t, theStore.Put(&nameSameToken))
 
 	// check get
 	for _, token := range originTokens {
@@ -142,6 +189,14 @@ func TestTokens(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, token, old)
 	}
+	res, err := theStore.Get(nameSameToken.Token)
+	require.NoError(t, err)
+	require.Equal(t, &nameSameToken, res)
+
+	// check get buy name
+	kps, err := theStore.ByName("test-token-02")
+	require.Nil(t, err)
+	require.Len(t, kps, 2)
 
 	// check list token, has, del
 	tokens, err := theStore.List(0, 0)
@@ -152,23 +207,29 @@ func TestTokens(t *testing.T) {
 		if !exist {
 			continue
 		}
-		require.Equal(t, token, otk)
+		if token.Secret == nameSameToken.Secret {
+			require.Equal(t, &nameSameToken, token)
+		} else {
+			require.Equal(t, token, otk)
+		}
 
 		has, err := theStore.Has(token.Token)
-
 		require.NoError(t, err)
 		require.Equal(t, has, true)
 
 		require.NoError(t, theStore.Delete(token.Token))
-
 		has, err = theStore.Has(token.Token)
-
 		require.NoError(t, err)
 		require.Equal(t, has, false)
+
+		tokenRecord, err := theStore.GetTokenRecord(token.Token)
+		require.Nil(t, err)
+		require.Equal(t, core.Deleted, tokenRecord.IsDeleted)
+		require.Equal(t, otk.Name, tokenRecord.Name)
 	}
 }
 
-func TestRatelimit(t *testing.T) {
+func testRatelimit(t *testing.T) {
 	for _, l := range originLimits {
 		_, err := theStore.PutRateLimit(l)
 		require.NoError(t, err)
@@ -183,12 +244,13 @@ func TestRatelimit(t *testing.T) {
 }
 
 func TestStore(t *testing.T) {
-	t.Run("add  users", TestAddUser)
-	t.Run("add miners", TestAddMiner)
-	t.Run("get miners", TestListMiners)
-	t.Run("del miners", TestDelMiners)
-	t.Run("test token", TestTokens)
-	t.Run("test ratelimit", TestRatelimit)
+	t.Run("add  users", testAddUser)
+	t.Run("add miners", testAddMiner)
+	t.Run("get miners", testListMiners)
+	t.Run("del user", testDeleteUser)
+	t.Run("del miners", testDelMiners)
+	t.Run("test token", testTokens)
+	t.Run("test ratelimit", testRatelimit)
 }
 
 func setup(cfg *config.DBConfig) error {

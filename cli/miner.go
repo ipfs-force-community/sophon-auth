@@ -94,7 +94,7 @@ var cmdListMiners = &cli.Command{
 var cmdRemoveMiner = &cli.Command{
 	Name:      "rm",
 	Usage:     "remove miner",
-	ArgsUsage: "[miner]",
+	ArgsUsage: "<miner>",
 	Action: func(ctx *cli.Context) error {
 		client, err := GetCli(ctx)
 		if err != nil {

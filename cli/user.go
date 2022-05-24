@@ -275,7 +275,7 @@ var hasMinerCmd = &cli.Command{
 var removeUserCmd = &cli.Command{
 	Name:      "rm",
 	Usage:     "remove user",
-	ArgsUsage: "[name]",
+	ArgsUsage: "<name>",
 	Action: func(ctx *cli.Context) error {
 		client, err := GetCli(ctx)
 		if err != nil {

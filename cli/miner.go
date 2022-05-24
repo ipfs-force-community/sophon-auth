@@ -17,7 +17,7 @@ var minerSubCmds = &cli.Command{
 	Subcommands: []*cli.Command{
 		cmdAddMiner,
 		cmdListMiners,
-		cmdDelMiner,
+		cmdRemoveMiner,
 	},
 }
 
@@ -91,10 +91,10 @@ var cmdListMiners = &cli.Command{
 	},
 }
 
-var cmdDelMiner = &cli.Command{
-	Name:      "del",
-	Usage:     "delete miner",
-	ArgsUsage: "del <miner>",
+var cmdRemoveMiner = &cli.Command{
+	Name:      "rm",
+	Usage:     "remove miner",
+	ArgsUsage: "[miner]",
 	Action: func(ctx *cli.Context) error {
 		client, err := GetCli(ctx)
 		if err != nil {
@@ -112,7 +112,7 @@ var cmdDelMiner = &cli.Command{
 		}
 
 		if exists {
-			fmt.Printf("delete miner:%s success.\n", miner)
+			fmt.Printf("remove miner:%s success.\n", miner)
 		} else {
 			fmt.Printf("miner:%s not exists.\n", miner)
 		}

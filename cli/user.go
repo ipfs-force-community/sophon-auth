@@ -23,7 +23,7 @@ var userSubCommand = &cli.Command{
 		activeUserCmd,
 		getUserCmd,
 		hasMinerCmd,
-		deleteUserCmd,
+		removeUserCmd,
 		recoverUserCmd,
 		rateLimitSubCmds,
 		minerSubCmds,
@@ -272,10 +272,10 @@ var hasMinerCmd = &cli.Command{
 	},
 }
 
-var deleteUserCmd = &cli.Command{
-	Name:      "delete",
-	Usage:     "delete user",
-	ArgsUsage: "name",
+var removeUserCmd = &cli.Command{
+	Name:      "rm",
+	Usage:     "remove user",
+	ArgsUsage: "[name]",
 	Action: func(ctx *cli.Context) error {
 		client, err := GetCli(ctx)
 		if err != nil {
@@ -302,7 +302,7 @@ var deleteUserCmd = &cli.Command{
 		if err != nil {
 			return err
 		}
-		fmt.Println("delete user success")
+		fmt.Println("remove user success")
 		return nil
 	},
 }

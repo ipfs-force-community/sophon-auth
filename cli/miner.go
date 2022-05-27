@@ -23,8 +23,8 @@ var minerSubCmds = &cli.Command{
 
 var cmdAddMiner = &cli.Command{
 	Name:      "add",
-	Usage:     "add user miner",
-	ArgsUsage: "add <user> <miner>",
+	Usage:     "Add miner for specified user",
+	ArgsUsage: "<user> <miner>",
 	Action: func(ctx *cli.Context) error {
 		if ctx.Args().Len() != 2 {
 			return cli.ShowAppHelp(ctx)

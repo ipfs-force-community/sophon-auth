@@ -31,19 +31,17 @@ var userSubCommand = &cli.Command{
 }
 
 var addUserCmd = &cli.Command{
-	Name:  "add",
-	Usage: "add user",
+	Name:      "add",
+	Usage:     "Add user",
+	ArgsUsage: "<user>",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
-			Name:     "name",
-			Required: true,
-			Usage:    "required",
-		},
-		&cli.StringFlag{
-			Name: "miner",
-		},
-		&cli.StringFlag{
 			Name: "comment",
+		},
+		&cli.IntFlag{
+			Name:  "state",
+			Usage: "1-enabled,0-disabled. if set to 0, the user cannot access the chain service normally",
+			Value: 1,
 		},
 		&cli.IntFlag{
 			Name:  "sourceType",
@@ -51,24 +49,32 @@ var addUserCmd = &cli.Command{
 		},
 	},
 	Action: func(ctx *cli.Context) error {
+		if ctx.NArg() != 1 {
+			cli.ShowSubcommandHelpAndExit(ctx, 1)
+			return nil
+		}
+
 		client, err := GetCli(ctx)
 		if err != nil {
 			return err
 		}
-		name := ctx.String("name")
+
+		name := ctx.Args().Get(0)
 		comment := ctx.String("comment")
 		sourceType := ctx.Int("sourceType")
+		state := ctx.Int("state")
 		user := &auth.CreateUserRequest{
 			Name:       name,
 			Comment:    comment,
-			State:      0,
+			State:      core.UserState(state),
 			SourceType: sourceType,
 		}
 		res, err := client.CreateUser(user)
 		if err != nil {
 			return err
 		}
-		fmt.Printf("add user success: %s\n", res.Id)
+
+		fmt.Printf("Add user success: %s, next can add miner for this user\n", res.Id)
 		return nil
 	},
 }

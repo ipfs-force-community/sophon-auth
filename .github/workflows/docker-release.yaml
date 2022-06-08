@@ -36,3 +36,4 @@ jobs:
       run: |
         # docker push filvenus/venus-auth:${{steps.vars.outputs.tag}}
         docker push filvenus/venus-auth:latest
+        

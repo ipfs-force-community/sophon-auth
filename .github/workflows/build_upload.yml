@@ -184,3 +184,4 @@ jobs:
           docker login --username=filvenus --password ${{ secrets.DOCKER_PASSWORD }} 
           docker push filvenus/venus-auth:${{steps.vars.outputs.github_tag }}
           docker push filvenus/venus-auth:latest
+          

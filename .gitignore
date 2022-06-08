@@ -1,3 +1,4 @@
 .idea
 venus-auth
 coverage.*
+.vscode

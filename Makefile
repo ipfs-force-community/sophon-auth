@@ -30,4 +30,22 @@ linux: clean
 clean:
 	rm -rf venus-auth
 
-.PHONY: clean
+.PHONY: clean 
+
+
+.PHONY: docker
+
+BUILD_DOCKER_PROXY=
+
+static:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(GOFLAGS) -o venus-auth ./cmd/server/*.go
+
+docker-buildenv:
+	docker build --build-arg https_proxy=$(BUILD_DOCKER_PROXY) -t filvenus/venus-buildenv -f docker/venus-buildenv.dockerfile .
+
+docker-runtime:
+	docker build --build-arg https_proxy=$(BUILD_DOCKER_PROXY) -t filvenus/venus-runtime -f docker/venus-runtime.dockerfile .
+
+
+docker:
+	docker build --build-arg https_proxy=$(BUILD_DOCKER_PROXY) -t venus-auth .

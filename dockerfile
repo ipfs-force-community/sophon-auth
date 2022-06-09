@@ -16,5 +16,3 @@ COPY ./docker/script  /script
 EXPOSE 8989
 
 ENTRYPOINT ["/app/venus-auth","run"]
-
-

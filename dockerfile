@@ -2,7 +2,7 @@ FROM filvenus/venus-buildenv AS buildenv
 
 
 COPY . ./venus-auth
-RUN export GOPROXY=https://goproxy.cn && cd venus-auth  && make linux
+RUN export GOPROXY=https://goproxy.cn && cd venus-auth  && make static
 
 
 FROM filvenus/venus-runtime

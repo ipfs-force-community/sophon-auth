@@ -1,6 +1,7 @@
 FROM filvenus/venus-buildenv AS buildenv
 
-RUN git clone https://github.com/filecoin-project/venus-auth.git --depth 1 
+
+COPY . ./venus-auth
 RUN export GOPROXY=https://goproxy.cn && cd venus-auth  && make linux
 
 

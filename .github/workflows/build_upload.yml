@@ -104,6 +104,7 @@ jobs:
 
       - name: Zip Release
         uses: TheDoctor0/zip-release@0.6.0
+        continue-on-error: true
         with:
           filename: ${{steps.vars.outputs.artifact_name}}
           path: ./${{steps.vars.outputs.bin}}
@@ -113,6 +114,7 @@ jobs:
         id: release
         uses: ncipollo/release-action@v1
         if: ${{ steps.vars.outputs.pub_method=='pushRelease' }}
+        continue-on-error: true
         with:
           artifacts: ${{steps.vars.outputs.artifact_name}}
           tag: ${{ steps.vars.outputs.github_tag }}

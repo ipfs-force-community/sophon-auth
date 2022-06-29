@@ -18,8 +18,17 @@ var runCmd = &cli.Command{
 	Name:      "run",
 	Usage:     "run venus-auth daemon",
 	ArgsUsage: "[name]",
-	Flags:     []cli.Flag{},
-	Action:    run,
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:  "mysql-dsn",
+			Usage: "mysql connection string",
+		},
+		&cli.StringFlag{
+			Name:  "db-type",
+			Usage: "which db to use. sqlite/mysql",
+		},
+	},
+	Action: run,
 }
 
 func MakeDir(path string) {
@@ -73,6 +82,19 @@ func run(cliCtx *cli.Context) error {
 	MakeDir(dataPath)
 	cnf := configScan(cnfPath)
 	log.InitLog(cnf.Log)
+
+	if cliCtx.IsSet("mysql-dsn") {
+		cnf.DB.DSN = cliCtx.String("mysql-dsn")
+	}
+	if cliCtx.IsSet("db-type") {
+		cnf.DB.Type = cliCtx.String("db-type")
+	}
+
+	err = config.Cover(cnfPath, cnf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	app, err := auth.NewOAuthApp(cnf.Secret, dataPath, cnf.DB)
 	if err != nil {
 		log.Fatalf("Failed to init venus-auth: %s", err)

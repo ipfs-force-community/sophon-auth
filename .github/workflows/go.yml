@@ -2,9 +2,7 @@ name: Go
 
 on:
   push:
-    branches:
-      - master
-      - main
+    branches: [master, main]
   pull_request:
     branches:
       - '**'
@@ -20,6 +18,18 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: 1.17
+
+      - name: Build
+        env:
+          GOPROXY: "https://proxy.golang.org,direct"
+          GO111MODULE: "on"
+        run: |
+          make
+
+      - name: Change detect
+        run: |
+          git status --porcelain
+          test -z "$(git status --porcelain)"
 
       - name: Lint
         run: |

@@ -24,7 +24,6 @@ jobs:
           GOPROXY: "https://proxy.golang.org,direct"
           GO111MODULE: "on"
         run: |
-          go mod tidy
           make
 
       - name: Change detect

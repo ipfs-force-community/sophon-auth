@@ -3,7 +3,7 @@ SHELL=/usr/bin/env bash
 git=$(subst -,.,$(shell git describe --always --match=NeVeRmAtCh --dirty 2>/dev/null || git rev-parse --short HEAD 2>/dev/null))
 
 
-ldflags=-X=github.com/filecoin-project/venus-auth/core.CurrentCommit='+$(git)'
+ldflags=-X=github.com/filecoin-project/venus-auth/core.CurrentCommit=+git.$(git)
 ifneq ($(strip $(LDFLAGS)),)
 	ldflags+=-extldflags=$(LDFLAGS)
 endif

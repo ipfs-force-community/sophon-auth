@@ -13,6 +13,14 @@ import (
 func InitRouter(app OAuthApp) http.Handler {
 	router := gin.New()
 	router.Use(CorsMiddleWare())
+
+	router.GET("/version", func (c *gin.Context){
+		type version struct {
+			Version string
+		}
+		c.JSON(http.StatusOK, version{Version: core.Version})
+	})
+
 	router.POST("/verify", verifyInterceptor(), app.Verify)
 	router.POST("/genToken", app.GenerateToken)
 	router.GET("/token", app.GetToken)

@@ -21,7 +21,6 @@ venus-auth:show-env $(BUILD_DEPS)
 	go build $(GOFLAGS) -o venus-auth ./cmd/server/*.go
 
 lint:
-	gofmt -s -w ./
 	golangci-lint run
 
 linux: clean

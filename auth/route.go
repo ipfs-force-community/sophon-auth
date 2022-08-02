@@ -14,7 +14,7 @@ func InitRouter(app OAuthApp) http.Handler {
 	router := gin.New()
 	router.Use(CorsMiddleWare())
 
-	router.GET("/version", func (c *gin.Context){
+	router.GET("/version", func(c *gin.Context) {
 		type version struct {
 			Version string
 		}

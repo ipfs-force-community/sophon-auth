@@ -2,49 +2,14 @@ name: Go
 
 on:
   push:
-    branches: [master, main]
+    branches: [master]
   pull_request:
     branches:
       - '**'
-  workflow_dispatch:
+
 jobs:
 
   check:
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.17
-
-      - name: Build
-        env:
-          GOPROXY: "https://proxy.golang.org,direct"
-          GO111MODULE: "on"
-        run: |
-          make
-
-      - name: Change detect
-        run: |
-          git status --porcelain
-          test -z "$(git status --porcelain)"
-
-      - name: Lint
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.44.2
-          golangci-lint run --timeout 10m
-
-      - name: Run Test
-        run:  go test -coverpkg=./... -race -coverprofile=coverage.txt -covermode=atomic ./...
-
-      - name: Upload
-        uses: codecov/codecov-action@v2
-        with:
-          token:
-          files: ./coverage.txt
-          flags: unittests
-          name: venus-auth
-          fail_ci_if_error: true
-          verbose: true
+    uses: filecoin-project/venus/.github/workflows/common_go.yml@master
+    with:
+      has_ffi: false

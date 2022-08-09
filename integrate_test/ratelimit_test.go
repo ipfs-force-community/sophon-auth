@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/filecoin-project/venus-auth/auth"
-	"github.com/filecoin-project/venus-auth/cmd/jwtclient"
+	"github.com/filecoin-project/venus-auth/jwtclient"
 	"github.com/filecoin-project/venus-auth/storage"
 	"github.com/stretchr/testify/assert"
 )

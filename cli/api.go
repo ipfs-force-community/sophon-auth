@@ -3,8 +3,8 @@ package cli
 import (
 	"path"
 
-	"github.com/filecoin-project/venus-auth/cmd/jwtclient"
 	"github.com/filecoin-project/venus-auth/config"
+	"github.com/filecoin-project/venus-auth/jwtclient"
 	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"

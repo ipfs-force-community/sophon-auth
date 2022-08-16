@@ -155,12 +155,9 @@ func (s *mysqlStore) PutUser(user *User) error {
 	return s.db.Table("users").Create(user).Error
 }
 
-func (s *mysqlStore) ListUsers(skip, limit int64, state int, sourceType core.SourceType, code core.KeyCode) ([]*User, error) {
+func (s *mysqlStore) ListUsers(skip, limit int64, state int, code core.KeyCode) ([]*User, error) {
 	exec := s.db.Table("users")
-	if code&1 == 1 {
-		exec = exec.Where("stype=?", sourceType)
-	}
-	if code&2 == 2 {
+	if code&4 == 4 {
 		exec = exec.Where("state=?", state)
 	}
 	arr := make([]*User, 0)

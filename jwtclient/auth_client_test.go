@@ -22,7 +22,7 @@ import (
 
 var cli *AuthClient
 
-//nolint
+// nolint
 func TestMain(m *testing.M) {
 	cnf, err := config.DefaultConfig()
 	if err != nil {
@@ -133,17 +133,15 @@ func TestTokenBusiness(t *testing.T) {
 func TestUserBusiness(t *testing.T) {
 	var createReqs = []*auth.CreateUserRequest{
 		{
-			Name:       "name1",
-			Comment:    "this is a comment",
-			State:      1,
-			SourceType: 1,
+			Name:    "name1",
+			Comment: "this is a comment",
+			State:   1,
 		},
 		{
 
-			Name:       "name2",
-			Comment:    "this is a comment",
-			State:      1,
-			SourceType: 1,
+			Name:    "name2",
+			Comment: "this is a comment",
+			State:   1,
 		},
 	}
 	var originUsers = make(map[string]*auth.CreateUserResponse, len(createReqs))
@@ -167,7 +165,6 @@ func TestUserBusiness(t *testing.T) {
 		Page: &core.Page{
 			Limit: 10,
 		},
-		SourceType: 1,
 	})
 	if err != nil {
 		t.Fatalf("get tokens err:%s", err)
@@ -184,15 +181,13 @@ func TestUserBusiness(t *testing.T) {
 		assert.DeepEqual(t, u.Name, tmpU.Name)
 		assert.DeepEqual(t, u.Comment, tmpU.Comment)
 		assert.DeepEqual(t, u.State, tmpU.State)
-		assert.DeepEqual(t, u.SourceType, tmpU.SourceType)
 	}
 
 	for _, res1 := range originUsers {
 		err = cli.UpdateUser(&auth.UpdateUserRequest{
-			Name:       res1.Name,
-			Comment:    "this is a comment?",
-			State:      1,
-			SourceType: 2,
+			Name:    res1.Name,
+			Comment: "this is a comment?",
+			State:   1,
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -262,7 +257,7 @@ func TestJWTClient_ListUsers(t *testing.T) {
 	if os.Getenv("CI") == "test" {
 		t.Skip()
 	}
-	res, err := cli.ListUsers(auth.NewListUsersRequest(0, 20, 0, 1, 2))
+	res, err := cli.ListUsers(auth.NewListUsersRequest(0, 20, 1, 4))
 	if err != nil {
 		t.Fatal(err)
 	}

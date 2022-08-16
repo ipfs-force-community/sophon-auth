@@ -144,7 +144,7 @@ func (s *badgerStore) PutUser(user *User) error {
 	return s.putBadgerObj(user)
 }
 
-func (s *badgerStore) ListUsers(skip, limit int64, state int, sourceType core.SourceType, code core.KeyCode) ([]*User, error) {
+func (s *badgerStore) ListUsers(skip, limit int64, state int, code core.KeyCode) ([]*User, error) {
 	var users []*User
 	var satisfiedItemCount = int64(0)
 	if err := s.walkThroughPrefix([]byte(PrefixUser), func(item *badger.Item) (bool, error) {
@@ -153,10 +153,7 @@ func (s *badgerStore) ListUsers(skip, limit int64, state int, sourceType core.So
 			if err := user.FromBytes(val); err != nil {
 				return err
 			}
-			if code&1 == 1 && user.SourceType != sourceType {
-				return nil
-			}
-			if code&2 == 2 && int(user.State) != state {
+			if code&4 == 4 && int(user.State) != state {
 				return nil
 			}
 			if user.isDeleted() {

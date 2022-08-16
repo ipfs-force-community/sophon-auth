@@ -156,11 +156,10 @@ func (lc *AuthClient) UpdateUser(req *auth.UpdateUserRequest) error {
 
 func (lc *AuthClient) ListUsers(req *auth.ListUsersRequest) (auth.ListUsersResponse, error) {
 	resp, err := lc.cli.R().SetQueryParams(map[string]string{
-		"skip":       strconv.FormatInt(req.Skip, 10),
-		"limit":      strconv.FormatInt(req.Limit, 10),
-		"sourceType": strconv.Itoa(req.SourceType),
-		"state":      strconv.Itoa(req.State),
-		"keySum":     strconv.Itoa(req.KeySum),
+		"skip":   strconv.FormatInt(req.Skip, 10),
+		"limit":  strconv.FormatInt(req.Limit, 10),
+		"state":  strconv.Itoa(req.State),
+		"keySum": strconv.Itoa(req.KeySum),
 	}).SetResult(&auth.ListUsersResponse{}).SetError(&errcode.ErrMsg{}).Get("/user/list")
 	if err != nil {
 		return nil, err

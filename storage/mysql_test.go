@@ -220,8 +220,8 @@ func testMySQLPutUser(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock
 
 	mock.ExpectBegin()
 	mock.ExpectExec(regexp.QuoteMeta(
-		"INSERT INTO `users` (`id`,`name`,`comment`,`stype`,`state`,`createTime`,`updateTime`,`is_deleted`) VALUES (?,?,?,?,?,?,?,?)")).
-		WithArgs(id, user, "", 0, 0, now, now, 0).
+		"INSERT INTO `users` (`id`,`name`,`comment`,`state`,`createTime`,`updateTime`,`is_deleted`) VALUES (?,?,?,?,?,?,?)")).
+		WithArgs(id, user, "", 0, now, now, 0).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
@@ -241,8 +241,8 @@ func testMySQLUpdateUser(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlm
 
 	mock.ExpectBegin()
 	mock.ExpectExec(regexp.QuoteMeta(
-		"UPDATE `users` SET `name`=?,`comment`=?,`stype`=?,`state`=?,`createTime`=?,`updateTime`=?,`is_deleted`=? WHERE `id` = ?")).
-		WithArgs(user, "", 0, 0, now, now, 0, id).
+		"UPDATE `users` SET `name`=?,`comment`=?,`state`=?,`createTime`=?,`updateTime`=?,`is_deleted`=? WHERE `id` = ?")).
+		WithArgs(user, "", 0, now, now, 0, id).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
@@ -301,14 +301,13 @@ func testMySQLGetUserRecord(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.S
 func testMySQLListUsers(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
 	var skip int64 = 2
 	var limit int64 = 10
-	sourceType := 1
 
 	mock.ExpectQuery(regexp.QuoteMeta(
-		fmt.Sprintf("SELECT * FROM `users` WHERE stype=? AND is_deleted=? ORDER BY createTime LIMIT %v OFFSET %v", limit, skip))).
-		WithArgs(sourceType, core.NotDelete).
+		fmt.Sprintf("SELECT * FROM `users` WHERE is_deleted=? ORDER BY createTime LIMIT %v OFFSET %v", limit, skip))).
+		WithArgs(core.NotDelete).
 		WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("user1").AddRow("user2"))
 
-	users, err := mySQLStore.ListUsers(skip, limit, 0, sourceType, 1)
+	users, err := mySQLStore.ListUsers(skip, limit, 0, 1)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(users))
 }
@@ -335,8 +334,8 @@ func testMySQLDeleteUser(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlm
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	mock.ExpectExec(regexp.QuoteMeta(""+
-		"INSERT INTO `users` (`id`,`name`,`comment`,`stype`,`state`,`createTime`,`updateTime`,`is_deleted`) VALUES (?,?,?,?,?,?,?,?)")).
-		WithArgs("", user, "", 0, 0, anyTime{}, anyTime{}, 1).
+		"INSERT INTO `users` (`id`,`name`,`comment`,`state`,`createTime`,`updateTime`,`is_deleted`) VALUES (?,?,?,?,?,?,?)")).
+		WithArgs("", user, "", 0, anyTime{}, anyTime{}, 1).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	mock.ExpectCommit()

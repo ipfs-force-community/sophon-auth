@@ -190,7 +190,6 @@ $ ./venus-auth user get testminer2
 
 # output
 name: testminer2
-sourceType: 0   // miner:1
 state 0         // 0: disable, 1: enable
 comment:
 createTime: Wed, 21 Jul 2021 16:56:50 CST
@@ -212,7 +211,6 @@ OPTIONS:
    --skip value        (default: 0)
    --limit value       (default: 20)
    --state value       (default: 0)
-   --sourceType value  (default: 0)
    --help, -h          show help (default: false)
 
 $ ./venus-auth user list
@@ -220,7 +218,6 @@ $ ./venus-auth user list
 # output
 number: 1
 name: testminer
-sourceType: 0   // miner:1
 state 0         // 0: disable, 1: enable
 comment: test
 createTime: Mon, 31 May 2021 18:41:55 CST
@@ -228,7 +225,6 @@ updateTime: Mon, 31 May 2021 18:41:55 CST
 
 number: 2
 name: li_sealer
-sourceType: 0   // miner:1
 state 0         // 0: disable, 1: enable
 comment: li
 createTime: Tue, 01 Jun 2021 14:35:35 CST
@@ -249,7 +245,6 @@ USAGE:
 OPTIONS:
    --name value
    --comment value
-   --sourceType value  (default: 0)
    --state value       (default: 0)
    --help, -h          show help (default: false)
 

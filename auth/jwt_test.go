@@ -232,10 +232,9 @@ func createUsers(t *testing.T, userMiners map[string]map[string]interface{}) {
 	// Create 3 users
 	for userName := range userMiners {
 		createUserReq := &CreateUserRequest{
-			Name:       userName,
-			Comment:    "",
-			State:      0,
-			SourceType: 0,
+			Name:    userName,
+			Comment: "",
+			State:   0,
 		}
 		resp, err := jwtOAuthInstance.CreateUser(context.Background(), createUserReq)
 		assert.Nil(t, err)
@@ -253,10 +252,9 @@ func testCreateUser(t *testing.T, userMiners map[string]map[string]interface{}) 
 	// Create 3 users
 	for userName := range userMiners {
 		createUserReq := &CreateUserRequest{
-			Name:       userName,
-			Comment:    "",
-			State:      0,
-			SourceType: 0,
+			Name:    userName,
+			Comment: "",
+			State:   0,
 		}
 		resp, err := jwtOAuthInstance.CreateUser(context.Background(), createUserReq)
 		assert.Nil(t, err)
@@ -367,10 +365,9 @@ func addUsersAndMiners(t *testing.T, userMiners map[string]map[string]interface{
 	// Create 3 users and add miners
 	for userName, minerMap := range userMiners {
 		createUserReq := &CreateUserRequest{
-			Name:       userName,
-			Comment:    "",
-			State:      0,
-			SourceType: 0,
+			Name:    userName,
+			Comment: "",
+			State:   0,
 		}
 		// Create users.
 		_, _ = jwtOAuthInstance.CreateUser(context.Background(), createUserReq)
@@ -473,10 +470,9 @@ func addUsersAndRateLimits(t *testing.T, userMiners map[string]map[string]interf
 	// Create 3 users and add rate limits
 	for userName := range userMiners {
 		createUserReq := &CreateUserRequest{
-			Name:       userName,
-			Comment:    "",
-			State:      0,
-			SourceType: 0,
+			Name:    userName,
+			Comment: "",
+			State:   0,
 		}
 		_, _ = jwtOAuthInstance.CreateUser(context.Background(), createUserReq)
 	}

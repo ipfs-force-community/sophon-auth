@@ -104,11 +104,6 @@ var TagFields = []LogField{
 
 // request params code sum,enum 1 2 4 8, to multi-select
 type KeyCode = int
-type SourceType = int
-
-const (
-	Miner SourceType = 1
-)
 
 type Page struct {
 	Skip  int64 `form:"skip" json:"skip"`

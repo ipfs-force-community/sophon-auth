@@ -272,7 +272,6 @@ func (o *jwtOAuth) CreateUser(ctx context.Context, req *CreateUserRequest) (*Cre
 		Id:         uid.String(),
 		Name:       req.Name,
 		Comment:    req.Comment,
-		SourceType: req.SourceType,
 		State:      req.State,
 		CreateTime: time.Now().Local(),
 		UpdateTime: time.Now().Local(),
@@ -297,14 +296,11 @@ func (o *jwtOAuth) UpdateUser(ctx context.Context, req *UpdateUserRequest) error
 	if req.KeySum&4 == 4 {
 		user.State = req.State
 	}
-	if req.KeySum&8 == 8 {
-		user.SourceType = req.SourceType
-	}
 	return o.store.UpdateUser(user)
 }
 
 func (o *jwtOAuth) ListUsers(ctx context.Context, req *ListUsersRequest) (ListUsersResponse, error) {
-	users, err := o.store.ListUsers(req.GetSkip(), req.GetLimit(), req.State, req.SourceType, req.KeySum)
+	users, err := o.store.ListUsers(req.GetSkip(), req.GetLimit(), req.State, req.KeySum)
 	if err != nil {
 		return nil, err
 	}

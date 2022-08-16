@@ -62,7 +62,7 @@ type Store interface {
 	HasMiner(maddr address.Address) (bool, error)
 	PutUser(*User) error
 	UpdateUser(*User) error
-	ListUsers(skip, limit int64, state int, sourceType core.SourceType, code core.KeyCode) ([]*User, error)
+	ListUsers(skip, limit int64, state int, code core.KeyCode) ([]*User, error)
 	DeleteUser(name string) error
 
 	// rate limit
@@ -139,14 +139,13 @@ func (kp *KeyPair) setDeleted() {
 }
 
 type User struct {
-	Id         string          `gorm:"column:id;type:varchar(64);primary_key"`
-	Name       string          `gorm:"column:name;type:varchar(50);uniqueIndex:users_name_IDX,type:btree;not null"`
-	Comment    string          `gorm:"column:comment;type:varchar(255);"`
-	SourceType core.SourceType `gorm:"column:stype;type:tinyint(4);default:0;NOT NULL"`
-	State      core.UserState  `gorm:"column:state;type:tinyint(4);default:0;NOT NULL"`
-	CreateTime time.Time       `gorm:"column:createTime;type:datetime;NOT NULL"`
-	UpdateTime time.Time       `gorm:"column:updateTime;type:datetime;NOT NULL"`
-	IsDeleted  int             `gorm:"column:is_deleted;index;default:0;NOT NULL"`
+	Id         string         `gorm:"column:id;type:varchar(64);primary_key"`
+	Name       string         `gorm:"column:name;type:varchar(50);uniqueIndex:users_name_IDX,type:btree;not null"`
+	Comment    string         `gorm:"column:comment;type:varchar(255);"`
+	State      core.UserState `gorm:"column:state;type:tinyint(4);default:0;NOT NULL"`
+	CreateTime time.Time      `gorm:"column:createTime;type:datetime;NOT NULL"`
+	UpdateTime time.Time      `gorm:"column:updateTime;type:datetime;NOT NULL"`
+	IsDeleted  int            `gorm:"column:is_deleted;index;default:0;NOT NULL"`
 }
 
 type OrmTimestamp struct {

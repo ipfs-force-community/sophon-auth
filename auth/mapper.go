@@ -25,7 +25,6 @@ func (o *mapper) ToOutPutUser(m *storage.User) *OutputUser {
 		Name:       m.Name,
 		Comment:    m.Comment,
 		State:      m.State,
-		SourceType: m.SourceType,
 		CreateTime: m.CreateTime.Unix(),
 		UpdateTime: m.UpdateTime.Unix()}
 }

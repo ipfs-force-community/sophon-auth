@@ -404,11 +404,11 @@ func testMySQLHasMiner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmoc
 	assert.Nil(t, err)
 
 	mock.ExpectQuery(regexp.QuoteMeta(
-		"SELECT count(*) FROM `miners` WHERE miner = ? and deleted_at is NULL")).
+		"SELECT count(*) FROM `miners` WHERE miner = ? AND deleted_at IS NULL")).
 		WithArgs(storedAddress(addr)).
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
 
-	exist, err := mySQLStore.HasMiner(addr)
+	exist, err := mySQLStore.HasMiner(addr, "")
 	assert.Nil(t, err)
 	assert.True(t, exist)
 }
@@ -419,6 +419,7 @@ func testMySQLGetUserByMiner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.
 	userName := "name"
 	userId := "id"
 
+	// SELECT users.* FROM `miners` inner join users on miners.miner = ? and users.name = miners.user WHERE `miners`.`deleted_at` IS NULL
 	mock.ExpectQuery(regexp.QuoteMeta(
 		"SELECT users.* FROM `miners` inner join users on miners.miner = ? and users.name = miners.user WHERE `miners`.`deleted_at` IS NULL")).
 		WithArgs(storedAddress(addr)).

@@ -17,6 +17,7 @@ const (
 	PrefixUser     Prefix = "USER:"
 	PrefixReqLimit Prefix = "ReqLimit:"
 	PrefixMiner    Prefix = "MINERS:"
+	PrefixSigner   Prefix = "SIGNERS:"
 )
 
 var storeVersionKey = []byte("StoreVersion")
@@ -35,6 +36,10 @@ func tokenKey(name string) []byte {
 
 func minerKey(miner string) []byte {
 	return []byte(PrefixMiner + miner)
+}
+
+func signerKey(addr string) []byte {
+	return []byte(PrefixSigner + addr)
 }
 
 // if key not exists, will get a badger.ErrKeyNotFound error.

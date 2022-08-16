@@ -14,21 +14,21 @@ import (
 	"github.com/filecoin-project/venus-auth/auth"
 )
 
-var minerSubCmds = &cli.Command{
-	Name:  "miner",
-	Usage: "Sub commands for managing user miners",
+var signerSubCmds = &cli.Command{
+	Name:  "signer",
+	Usage: "Sub commands for managing user signed accounts",
 	Subcommands: []*cli.Command{
-		minerAddCmd,
-		minerHasCmd,
-		minerListCmd,
-		minerDeleteCmd,
+		signerAddCmd,
+		signerHasCmd,
+		signerListCmd,
+		signerDeleteCmd,
 	},
 }
 
-var minerAddCmd = &cli.Command{
+var signerAddCmd = &cli.Command{
 	Name:      "add",
-	Usage:     "Add miner for specified user",
-	ArgsUsage: "<user> <miner>",
+	Usage:     "Add signer address for specified user",
+	ArgsUsage: "<user> <signer address>",
 	Action: func(ctx *cli.Context) error {
 		if ctx.Args().Len() != 2 {
 			cli.ShowSubcommandHelpAndExit(ctx, 1)
@@ -38,10 +38,10 @@ var minerAddCmd = &cli.Command{
 		if err != nil {
 			return err
 		}
-		user, miner := ctx.Args().Get(0), ctx.Args().Get(1)
+		user, addr := ctx.Args().Get(0), ctx.Args().Get(1)
 
 		var isCreate bool
-		if isCreate, err = client.UpsertMiner(user, miner); err != nil {
+		if isCreate, err = client.UpsertSigner(user, addr); err != nil {
 			return err
 		}
 		var opStr string
@@ -51,15 +51,15 @@ var minerAddCmd = &cli.Command{
 			opStr = "update"
 		}
 
-		fmt.Printf("%s user:%s miner:%s success.\n", opStr, user, miner)
+		fmt.Printf("%s user:%s signer address:%s success.\n", opStr, user, addr)
 		return nil
 	},
 }
 
-var minerHasCmd = &cli.Command{
+var signerHasCmd = &cli.Command{
 	Name:      "has",
-	Usage:     "Check if miner exists",
-	ArgsUsage: "<miner>",
+	Usage:     "Check if signer address exists",
+	ArgsUsage: "<signer address>",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name: "user",
@@ -80,13 +80,13 @@ var minerHasCmd = &cli.Command{
 		if ctx.IsSet("user") {
 			user = ctx.String("user")
 		}
-		miner := ctx.Args().Get(0)
-		addr, err := address.NewFromString(miner)
+		addrStr := ctx.Args().Get(0)
+		addr, err := address.NewFromString(addrStr)
 		if err != nil {
 			return err
 		}
 
-		has, err := client.HasMiner(&auth.HasMinerRequest{Miner: addr.String(), User: user})
+		has, err := client.HasSigner(&auth.HasSignerRequest{Signer: addr.String(), User: user})
 		if err != nil {
 			return err
 		}
@@ -95,9 +95,9 @@ var minerHasCmd = &cli.Command{
 	},
 }
 
-var minerListCmd = &cli.Command{
+var signerListCmd = &cli.Command{
 	Name:      "list",
-	Usage:     "List of miners for the specified user",
+	Usage:     "List of signer address for the specified user",
 	ArgsUsage: "<user>",
 	Action: func(ctx *cli.Context) error {
 		args := ctx.Args()
@@ -113,34 +113,34 @@ var minerListCmd = &cli.Command{
 
 		user := args.First()
 		if _, err := client.GetUser(&auth.GetUserRequest{Name: user}); err != nil {
-			return xerrors.Errorf("list user:%s miner failed: %w", user, err)
+			return xerrors.Errorf("list user:%s signer failed: %w", user, err)
 		}
 
-		miners, err := client.ListMiners(user)
+		signers, err := client.ListSigners(user)
 		if err != nil {
 			return err
 		}
-		fmt.Printf("user: %s, miner count:%d\n", user, len(miners))
+		fmt.Printf("user: %s, signer count:%d\n", user, len(signers))
 
-		if len(miners) == 0 {
+		if len(signers) == 0 {
 			return nil
 		}
 
 		const padding = 2
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, padding, ' ', tabwriter.TabIndent)
-		fmt.Fprintln(w, "idx\tminer\tcreate-time\t")
-		for idx, miner := range miners {
-			fmt.Fprintf(w, "%d\t%s\t%s\t\n", idx, miner.Miner, miner.CreatedAt.Format(time.RFC1123))
+		fmt.Fprintln(w, "idx\tsigner\tcreate-time\t")
+		for idx, signer := range signers {
+			fmt.Fprintf(w, "%d\t%s\t%s\t\n", idx, signer.Signer, signer.CreatedAt.Format(time.RFC1123))
 		}
 		_ = w.Flush()
 		return nil
 	},
 }
 
-var minerDeleteCmd = &cli.Command{
+var signerDeleteCmd = &cli.Command{
 	Name:      "delete",
-	Usage:     "Delete miner",
-	ArgsUsage: "<miner>",
+	Usage:     "Delete signer",
+	ArgsUsage: "<signer address>",
 	Action: func(ctx *cli.Context) error {
 		args := ctx.Args()
 		if args.Len() != 1 {
@@ -153,16 +153,16 @@ var minerDeleteCmd = &cli.Command{
 			return err
 		}
 
-		miner := args.First()
-		exists, err := client.DelMiner(miner)
+		signer := args.First()
+		exists, err := client.DelSigner(signer)
 		if err != nil {
-			return xerrors.Errorf("delete miner:%s failed: %w", miner, err)
+			return xerrors.Errorf("delete signer:%s failed: %w", signer, err)
 		}
 
 		if exists {
-			fmt.Printf("remove miner:%s success.\n", miner)
+			fmt.Printf("delete signer:%s success.\n", signer)
 		} else {
-			fmt.Printf("miner:%s not exists.\n", miner)
+			fmt.Printf("signer:%s not exists.\n", signer)
 		}
 		return nil
 	},

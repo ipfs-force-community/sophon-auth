@@ -59,7 +59,6 @@ type Store interface {
 	GetUser(name string) (*User, error)
 	// GetUserRecord return a user, whether deleted or not
 	GetUserRecord(name string) (*User, error)
-	HasMiner(maddr address.Address) (bool, error)
 	PutUser(*User) error
 	UpdateUser(*User) error
 	ListUsers(skip, limit int64, state int, code core.KeyCode) ([]*User, error)
@@ -72,11 +71,19 @@ type Store interface {
 
 	// miner
 	// first returned bool, 'miner' is created(true) or updated(false)
-	UpsertMiner(miner address.Address, userName string) (bool, error)
-	// first returned bool, if miner exists(true) or false
-	DelMiner(miner address.Address) (bool, error)
-	GetUserByMiner(miner address.Address) (*User, error)
+	UpsertMiner(maddr address.Address, userName string) (bool, error)
+	HasMiner(maddr address.Address, userName string) (bool, error)
+	GetUserByMiner(maddr address.Address) (*User, error)
 	ListMiners(user string) ([]*Miner, error)
+	// first returned bool, if miner exists(true) or false
+	DelMiner(maddr address.Address) (bool, error)
+
+	// signer
+	UpsertSigner(addr address.Address, userName string) (bool, error)
+	HasSigner(addr address.Address, userName string) (bool, error)
+	GetUserBySigner(addr address.Address) (*User, error)
+	ListSigner(user string) ([]*Signer, error)
+	DelSigner(addr address.Address) (bool, error)
 
 	Version() (uint64, error)
 	MigrateToV1() error
@@ -264,6 +271,33 @@ func (m *Miner) isDeleted() bool {
 }
 
 func (m *Miner) setDeleted() {
+	m.DeletedAt.Valid = false
+	m.DeletedAt.Time = time.Now()
+}
+
+type Signer struct {
+	Signer storedAddress `gorm:"column:signer;type:varchar(128);primarykey;index:user_signer_idx,priority:2"`
+	User   string        `gorm:"column:user;type:varchar(50);index:user_signer_idx,priority:1;not null"`
+	OrmTimestamp
+}
+
+func (m *Signer) Bytes() ([]byte, error) {
+	return json.Marshal(m)
+}
+
+func (m *Signer) FromBytes(buf []byte) error {
+	return json.Unmarshal(buf, m)
+}
+
+func (m *Signer) key() []byte {
+	return signerKey(m.Signer.Address().String())
+}
+
+func (m *Signer) isDeleted() bool {
+	return !m.DeletedAt.Valid
+}
+
+func (m *Signer) setDeleted() {
 	m.DeletedAt.Valid = false
 	m.DeletedAt.Time = time.Now()
 }

@@ -117,14 +117,14 @@ type RecoverUserRequest struct {
 	Name string `form:"name"`
 }
 
-type HasMinerRequest struct {
+type GetUserByMinerRequest struct {
 	// todo make miner tobe address
 	Miner string `form:"miner"`
 }
 
-type GetUserByMinerRequest struct {
-	// todo make miner tobe address
-	Miner string `form:"miner"`
+type GetUserBySignerRequest struct {
+	// todo make signer tobe address
+	Signer string `form:"signer"`
 }
 
 func (ls GetUserRateLimitResponse) MatchedLimit(service, api string) *storage.UserRateLimit {
@@ -143,6 +143,11 @@ type UpsertMinerReq struct {
 	OpenMining  bool
 }
 
+type HasMinerRequest struct {
+	Miner string `form:"miner"`
+	User  string `form:"user"`
+}
+
 type ListMinerReq struct {
 	User string `form:"user"`
 }
@@ -152,9 +157,31 @@ type OutputMiner struct {
 	OpenMining           bool
 	CreatedAt, UpdatedAt time.Time
 }
-
 type ListMinerResp []*OutputMiner
 
 type DelMinerReq struct {
 	Miner string `json:"miner"`
+}
+
+type UpsertSignerReq struct {
+	User, Signer string
+}
+
+type HasSignerRequest struct {
+	Signer string `form:"signer"`
+	User   string `form:"user"`
+}
+
+type ListSignerReq struct {
+	User string `form:"user"`
+}
+
+type OutputSigner struct {
+	Signer, User         string
+	CreatedAt, UpdatedAt time.Time
+}
+type ListSignerResp []*OutputSigner
+
+type DelSignerReq struct {
+	Signer string `json:"signer"`
 }

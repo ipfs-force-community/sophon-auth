@@ -3,9 +3,10 @@ package integrate
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/jwtclient"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestMinerApis(t *testing.T) {
@@ -62,13 +63,14 @@ func testHasMiner(t *testing.T) {
 
 	miner2 := "t01002"
 	miner3 := "t01004"
+
 	// Has miner
-	has, err := client.HasMiner(&auth.HasMinerRequest{Miner: miner2})
+	has, err := client.HasMiner(&auth.HasMinerRequest{Miner: miner2, User: ""})
 	assert.Nil(t, err)
 	assert.True(t, has)
 
 	// Has invalid miner
-	has, err = client.HasMiner(&auth.HasMinerRequest{Miner: miner3})
+	has, err = client.HasMiner(&auth.HasMinerRequest{Miner: miner3, User: ""})
 	assert.Nil(t, err)
 	assert.False(t, has)
 }
@@ -97,7 +99,7 @@ func testDeleteMiner(t *testing.T) {
 	assert.True(t, success)
 
 	// Check this miner
-	has, err := client.HasMiner(&auth.HasMinerRequest{Miner: miner1})
+	has, err := client.HasMiner(&auth.HasMinerRequest{Miner: miner1, User: ""})
 	assert.Nil(t, err)
 	assert.False(t, has)
 

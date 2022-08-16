@@ -21,7 +21,6 @@ type OAuthApp interface {
 	GetUser(c *gin.Context)
 	GetUserByMiner(c *gin.Context)
 	ListUsers(c *gin.Context)
-	HasMiner(c *gin.Context)
 	HasUser(c *gin.Context)
 	UpdateUser(c *gin.Context)
 	DeleteUser(c *gin.Context)
@@ -33,8 +32,15 @@ type OAuthApp interface {
 	DelUserRateLimit(c *gin.Context)
 
 	UpsertMiner(c *gin.Context)
+	HasMiner(c *gin.Context)
 	ListMiners(c *gin.Context)
-	DelMiner(c *gin.Context)
+	DeleteMiner(c *gin.Context)
+
+	UpsertSigner(c *gin.Context)
+	ListSigner(c *gin.Context)
+	HasSigner(c *gin.Context)
+	DeleteSigner(c *gin.Context)
+	GetUserBySigner(c *gin.Context)
 }
 
 type oauthApp struct {
@@ -230,20 +236,6 @@ func (o *oauthApp) GetUserByMiner(c *gin.Context) {
 	SuccessResponse(c, res)
 }
 
-func (o *oauthApp) HasMiner(c *gin.Context) {
-	req := new(HasMinerRequest)
-	if err := c.ShouldBindQuery(req); err != nil {
-		BadResponse(c, err)
-		return
-	}
-	res, err := o.srv.HasMiner(c, req)
-	if err != nil {
-		BadResponse(c, err)
-		return
-	}
-	SuccessResponse(c, res)
-}
-
 func (o *oauthApp) GetUser(c *gin.Context) {
 	req := new(GetUserRequest)
 	if err := c.ShouldBind(req); err != nil {
@@ -373,6 +365,20 @@ func (o *oauthApp) UpsertMiner(c *gin.Context) {
 	SuccessResponse(c, isCreate)
 }
 
+func (o *oauthApp) HasMiner(c *gin.Context) {
+	req := new(HasMinerRequest)
+	if err := c.ShouldBindQuery(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+	res, err := o.srv.HasMiner(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	SuccessResponse(c, res)
+}
+
 func (o *oauthApp) ListMiners(c *gin.Context) {
 	req := new(ListMinerReq)
 	if err := c.ShouldBind(req); err != nil {
@@ -387,12 +393,81 @@ func (o *oauthApp) ListMiners(c *gin.Context) {
 	SuccessResponse(c, res)
 }
 
-func (o *oauthApp) DelMiner(c *gin.Context) {
+func (o *oauthApp) DeleteMiner(c *gin.Context) {
 	req := new(DelMinerReq)
 	if err := c.ShouldBind(req); err != nil {
 		BadResponse(c, err)
 	}
 	res, err := o.srv.DelMiner(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	SuccessResponse(c, res)
+}
+
+func (o *oauthApp) UpsertSigner(c *gin.Context) {
+	req := new(UpsertSignerReq)
+	if err := c.ShouldBind(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+	isCreate, err := o.srv.UpsertSigner(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	SuccessResponse(c, isCreate)
+}
+
+func (o *oauthApp) HasSigner(c *gin.Context) {
+	req := new(HasSignerRequest)
+	if err := c.ShouldBindQuery(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+	res, err := o.srv.HasSigner(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	SuccessResponse(c, res)
+}
+
+func (o *oauthApp) ListSigner(c *gin.Context) {
+	req := new(ListSignerReq)
+	if err := c.ShouldBind(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+	res, err := o.srv.ListSigner(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	SuccessResponse(c, res)
+}
+
+func (o *oauthApp) DeleteSigner(c *gin.Context) {
+	req := new(DelSignerReq)
+	if err := c.ShouldBind(req); err != nil {
+		BadResponse(c, err)
+	}
+	res, err := o.srv.DelSigner(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	SuccessResponse(c, res)
+}
+
+func (o *oauthApp) GetUserBySigner(c *gin.Context) {
+	req := new(GetUserBySignerRequest)
+	if err := c.ShouldBindQuery(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+	res, err := o.srv.GetUserBySigner(c, req)
 	if err != nil {
 		BadResponse(c, err)
 		return

@@ -8,8 +8,6 @@ import (
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/go-address"
-
 	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/storage"
@@ -24,11 +22,11 @@ var userSubCommand = &cli.Command{
 		userUpdateCmd,
 		userActiveCmd,
 		userListCmd,
-		hasMinerCmd,
-		removeUserCmd,
-		recoverUserCmd,
+		userDeleteCmd,
+		userRecoverCmd,
 		rateLimitSubCmds,
 		minerSubCmds,
+		signerSubCmds,
 	},
 }
 
@@ -234,36 +232,9 @@ var userListCmd = &cli.Command{
 	},
 }
 
-var hasMinerCmd = &cli.Command{
-	Name:      "has",
-	Usage:     "check miner exit",
-	ArgsUsage: "<miner>",
-	Action: func(ctx *cli.Context) error {
-		client, err := GetCli(ctx)
-		if err != nil {
-			return err
-		}
-		if ctx.NArg() != 1 {
-			return xerrors.Errorf("specify miner address")
-		}
-		miner := ctx.Args().Get(0)
-		addr, err := address.NewFromString(miner)
-		if err != nil {
-			return err
-		}
-
-		has, err := client.HasMiner(&auth.HasMinerRequest{Miner: addr.String()})
-		if err != nil {
-			return err
-		}
-		fmt.Println(has)
-		return nil
-	},
-}
-
-var removeUserCmd = &cli.Command{
-	Name:      "rm",
-	Usage:     "remove user",
+var userDeleteCmd = &cli.Command{
+	Name:      "delete",
+	Usage:     "Delete user",
 	ArgsUsage: "<name>",
 	Action: func(ctx *cli.Context) error {
 		client, err := GetCli(ctx)
@@ -296,7 +267,7 @@ var removeUserCmd = &cli.Command{
 	},
 }
 
-var recoverUserCmd = &cli.Command{
+var userRecoverCmd = &cli.Command{
 	Name:      "recover",
 	Usage:     "recover deleted user",
 	ArgsUsage: "name",
@@ -307,7 +278,7 @@ var recoverUserCmd = &cli.Command{
 		}
 
 		if !ctx.Args().Present() {
-			return xerrors.Errorf("must pass user name")
+			return xerrors.Errorf("expect name")
 		}
 
 		req := &auth.RecoverUserRequest{

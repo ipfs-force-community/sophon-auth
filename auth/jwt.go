@@ -50,8 +50,8 @@ type OAuthService interface {
 	CreateUser(ctx context.Context, req *CreateUserRequest) (*CreateUserResponse, error)
 	GetUser(ctx context.Context, req *GetUserRequest) (*OutputUser, error)
 	GetUserByMiner(ctx context.Context, req *GetUserByMinerRequest) (*OutputUser, error)
+	GetUserBySigner(ctx context.Context, req *GetUserBySignerRequest) (*OutputUser, error)
 	ListUsers(ctx context.Context, req *ListUsersRequest) (ListUsersResponse, error)
-	HasMiner(ctx context.Context, req *HasMinerRequest) (bool, error)
 	HasUser(ctx context.Context, req *HasUserRequest) (bool, error)
 	UpdateUser(ctx context.Context, req *UpdateUserRequest) error
 	DeleteUser(ctx *gin.Context, req *DeleteUserRequest) error
@@ -62,8 +62,14 @@ type OAuthService interface {
 	DelUserRateLimit(ctx context.Context, req *DelUserRateLimitReq) error
 
 	UpsertMiner(ctx context.Context, req *UpsertMinerReq) (bool, error)
+	HasMiner(ctx context.Context, req *HasMinerRequest) (bool, error)
 	ListMiners(ctx context.Context, req *ListMinerReq) (ListMinerResp, error)
 	DelMiner(ctx context.Context, req *DelMinerReq) (bool, error)
+
+	UpsertSigner(ctx context.Context, req *UpsertSignerReq) (bool, error)
+	HasSigner(ctx context.Context, req *HasSignerRequest) (bool, error)
+	ListSigner(ctx context.Context, req *ListSignerReq) (ListSignerResp, error)
+	DelSigner(ctx context.Context, req *DelSignerReq) (bool, error)
 }
 
 type jwtOAuth struct {
@@ -340,16 +346,16 @@ func (o *jwtOAuth) GetUserByMiner(ctx context.Context, req *GetUserByMinerReques
 	return o.mp.ToOutPutUser(user), nil
 }
 
-func (o *jwtOAuth) HasMiner(ctx context.Context, req *HasMinerRequest) (bool, error) {
-	mAddr, err := address.NewFromString(req.Miner)
+func (o *jwtOAuth) GetUserBySigner(ctx context.Context, req *GetUserBySignerRequest) (*OutputUser, error) {
+	addr, err := address.NewFromString(req.Signer)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
-	has, err := o.store.HasMiner(mAddr)
+	user, err := o.store.GetUserBySigner(addr)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
-	return has, nil
+	return o.mp.ToOutPutUser(user), nil
 }
 
 func (o *jwtOAuth) GetUser(ctx context.Context, req *GetUserRequest) (*OutputUser, error) {
@@ -380,6 +386,19 @@ func (o *jwtOAuth) UpsertMiner(ctx context.Context, req *UpsertMinerReq) (bool, 
 	return o.store.UpsertMiner(maddr, req.User, req.OpenMining)
 }
 
+func (o *jwtOAuth) HasMiner(ctx context.Context, req *HasMinerRequest) (bool, error) {
+	mAddr, err := address.NewFromString(req.Miner)
+	if err != nil {
+		return false, err
+	}
+
+	has, err := o.store.HasMiner(mAddr, req.User)
+	if err != nil {
+		return false, err
+	}
+	return has, nil
+}
+
 func (o *jwtOAuth) ListMiners(ctx context.Context, req *ListMinerReq) (ListMinerResp, error) {
 	miners, err := o.store.ListMiners(req.User)
 	if err != nil {
@@ -406,6 +425,54 @@ func (o jwtOAuth) DelMiner(ctx context.Context, req *DelMinerReq) (bool, error) 
 		return false, xerrors.Errorf("invalid miner address:%s, %w", req.Miner, err)
 	}
 	return o.store.DelMiner(miner)
+}
+
+func (o *jwtOAuth) UpsertSigner(ctx context.Context, req *UpsertSignerReq) (bool, error) {
+	addr, err := address.NewFromString(req.Signer)
+	if err != nil || addr.Empty() {
+		return false, xerrors.Errorf("invalid signer address:%s, error: %w", req.Signer, err)
+	}
+	return o.store.UpsertSigner(addr, req.User)
+}
+
+func (o *jwtOAuth) HasSigner(ctx context.Context, req *HasSignerRequest) (bool, error) {
+	addr, err := address.NewFromString(req.Signer)
+	if err != nil {
+		return false, err
+	}
+
+	has, err := o.store.HasSigner(addr, req.User)
+	if err != nil {
+		return false, err
+	}
+	return has, nil
+}
+
+func (o *jwtOAuth) ListSigner(ctx context.Context, req *ListSignerReq) (ListSignerResp, error) {
+	signers, err := o.store.ListSigner(req.User)
+	if err != nil {
+		return nil, xerrors.Errorf("list user:%s signer failed:%w", req.User, err)
+	}
+
+	outs := make([]*OutputSigner, len(signers))
+	for idx, m := range signers {
+		addrStr := m.Signer.Address().String()
+		outs[idx] = &OutputSigner{
+			Signer:    addrStr,
+			User:      m.User,
+			CreatedAt: m.CreatedAt,
+			UpdatedAt: m.UpdatedAt,
+		}
+	}
+	return outs, nil
+}
+
+func (o jwtOAuth) DelSigner(ctx context.Context, req *DelSignerReq) (bool, error) {
+	signer, err := address.NewFromString(req.Signer)
+	if err != nil {
+		return false, xerrors.Errorf("invalid signer address:%s, %w", req.Signer, err)
+	}
+	return o.store.DelSigner(signer)
 }
 
 func DecodeToBytes(enc []byte) ([]byte, error) {

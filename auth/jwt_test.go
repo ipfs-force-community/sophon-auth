@@ -12,12 +12,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/filecoin-project/venus-auth/config"
-	"github.com/filecoin-project/venus-auth/core"
-	"github.com/filecoin-project/venus-auth/storage"
 	"github.com/gbrlsnchs/jwt/v3"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/filecoin-project/venus-auth/config"
+	"github.com/filecoin-project/venus-auth/core"
+	"github.com/filecoin-project/venus-auth/storage"
 )
 
 func TestJwt(t *testing.T) {
@@ -418,10 +419,13 @@ func testHasMiner(t *testing.T, userMiners map[string]map[string]interface{}) {
 	addUsersAndMiners(t, userMiners)
 
 	// Has Miner
-	user1Miners := []string{"t01000", "t01002", "t01003"}
-	has, err := jwtOAuthInstance.HasMiner(context.Background(), &HasMinerRequest{Miner: user1Miners[0]})
+	has, err := jwtOAuthInstance.HasMiner(context.Background(), &HasMinerRequest{Miner: "t01000", User: "test_user_001"})
 	assert.Nil(t, err)
 	assert.True(t, has)
+
+	has, err = jwtOAuthInstance.HasMiner(context.Background(), &HasMinerRequest{Miner: "t01000", User: "test_user_002"})
+	assert.Nil(t, err)
+	assert.False(t, has)
 }
 
 func testGetUserByMiner(t *testing.T, userMiners map[string]map[string]interface{}) {
@@ -453,7 +457,7 @@ func testDeleteMiner(t *testing.T, userMiners map[string]map[string]interface{})
 	assert.Nil(t, err)
 	assert.True(t, deleted)
 	// Then get this miner
-	has, err := jwtOAuthInstance.HasMiner(context.Background(), &HasMinerRequest{Miner: user1Miners[0]})
+	has, err := jwtOAuthInstance.HasMiner(context.Background(), &HasMinerRequest{Miner: user1Miners[0], User: ""})
 	assert.Nil(t, err)
 	assert.False(t, has)
 	// Try to get user by this miner

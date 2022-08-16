@@ -221,14 +221,6 @@ func (s *mysqlStore) DeleteUser(userName string) error {
 	return err
 }
 
-func (s mysqlStore) HasMiner(maddr address.Address) (bool, error) {
-	var count int64
-	if err := s.db.Table("miners").Where("miner = ? and deleted_at is NULL", storedAddress(maddr)).Count(&count).Error; err != nil {
-		return false, nil
-	}
-	return count > 0, nil
-}
-
 func (s *mysqlStore) GetRateLimits(name string, id string) ([]*UserRateLimit, error) {
 	var limits []*UserRateLimit
 	tmp := s.db.Model((*UserRateLimit)(nil)).Where("name = ?", name)
@@ -289,6 +281,22 @@ func (s *mysqlStore) UpsertMiner(maddr address.Address, userName string, openMin
 	}, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false})
 }
 
+func (s mysqlStore) HasMiner(maddr address.Address, userName string) (bool, error) {
+	var count int64
+
+	if len(userName) > 0 {
+		if err := s.db.Table("miners").Where("miner = ? AND user = ? AND deleted_at IS NULL", storedAddress(maddr), userName).Count(&count).Error; err != nil {
+			return false, nil
+		}
+	} else {
+		if err := s.db.Table("miners").Where("miner = ? AND deleted_at IS NULL", storedAddress(maddr)).Count(&count).Error; err != nil {
+			return false, nil
+		}
+	}
+
+	return count > 0, nil
+}
+
 func (s *mysqlStore) DelMiner(miner address.Address) (bool, error) {
 	return s.innerDelMiner(s.db, miner)
 }
@@ -308,6 +316,71 @@ func (s *mysqlStore) innerListMiners(tx *gorm.DB, user string) ([]*Miner, error)
 		return nil, err
 	}
 	return miners, nil
+}
+
+func (s *mysqlStore) UpsertSigner(addr address.Address, userName string) (bool, error) {
+	var isCreate bool
+	storedSigner := storedAddress(addr)
+	return isCreate, s.db.Transaction(func(tx *gorm.DB) error {
+		var user User
+		if err := tx.Model(&user).First(&user, "`name` = ?", userName).Error; err != nil {
+			if xerrors.Is(err, gorm.ErrRecordNotFound) {
+				return xerrors.Errorf("can't bind signer:%s to not exist user:%s", addr.String(), userName)
+			}
+			return xerrors.Errorf("bind signer:%s to user:%s failed:%w", addr.String(), userName, err)
+		}
+		var count int64
+		if err := tx.Model(&Signer{}).Where("`signer` = ?", storedSigner).Count(&count).Error; err != nil {
+			return err
+		}
+		isCreate = count > 0
+		return tx.Model(&Signer{}).
+			Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "signer"}}, UpdateAll: true}).
+			Create(&Signer{Signer: storedSigner, User: user.Name}).Error
+	}, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false})
+}
+
+func (s *mysqlStore) GetUserBySigner(addr address.Address) (*User, error) {
+	var users []*User
+	if err := s.db.Model(&Signer{}).Select("users.*").
+		Joins("inner join users on signers.signer = ? and users.name = signers.user", storedAddress(addr)).
+		Scan(&users).Error; err != nil {
+		return nil, err
+	}
+	if len(users) == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+	return users[0], nil
+}
+
+func (s mysqlStore) HasSigner(addr address.Address, userName string) (bool, error) {
+	var count int64
+
+	if len(userName) > 0 {
+		if err := s.db.Table("signers").Where("`signer` = ? AND `user` = ? AND `deleted_at` IS NULL", storedAddress(addr), userName).Count(&count).Error; err != nil {
+			return false, nil
+		}
+	} else {
+		if err := s.db.Table("signers").Where("`signer` = ? AND `deleted_at` IS NULL", storedAddress(addr)).Count(&count).Error; err != nil {
+			return false, nil
+		}
+	}
+
+	return count > 0, nil
+}
+
+func (s *mysqlStore) DelSigner(addr address.Address) (bool, error) {
+	db := s.db.Model((*Signer)(nil)).Delete(&Signer{}, "`signer` = ?", storedAddress(addr))
+	return db.RowsAffected > 0, db.Error
+}
+
+func (s *mysqlStore) ListSigner(user string) ([]*Signer, error) {
+	var signers []*Signer
+	if err := s.db.Model((*Signer)(nil)).Find(&signers, "user = ?", user).Error; err != nil {
+		return nil, err
+	}
+
+	return signers, nil
 }
 
 func (s *mysqlStore) Version() (uint64, error) {

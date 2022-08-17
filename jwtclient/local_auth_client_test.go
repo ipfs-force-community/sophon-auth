@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestLocalAuthClient(t *testing.T) {
+func TestLocalAuthClientWithSecreat(t *testing.T) {
 	secret, err := config.RandSecret()
 	assert.NoError(t, err)
 
@@ -19,12 +19,23 @@ func TestLocalAuthClient(t *testing.T) {
 		Name: "MarketLocalToken",
 	}
 
-	client, token, err := NewLocalAuthClient(secret, payload)
+	clientFromSecret, token, err := NewLocalAuthClientWithSecret(secret, payload)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	testClientWithAdminPerm(t, clientFromSecret, string(token))
+
+	client, token2, err := NewLocalAuthClient(payload)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testClientWithAdminPerm(t, client, string(token2))
+}
+
+func testClientWithAdminPerm(t *testing.T, client *LocalAuthClient, token string) {
 	ctx := context.Background()
-	permissions, err := client.Verify(ctx, string(token))
+	permissions, err := client.Verify(ctx, token)
 	if err != nil {
 		t.Fatal(err)
 	}

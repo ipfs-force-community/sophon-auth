@@ -24,12 +24,8 @@ func NewLocalAuthClient() (*LocalAuthClient, []byte, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	client := &LocalAuthClient{
-		alg: jwt3.NewHS256(secret),
-	}
 
-	token, err := jwt3.Sign(payload, client.alg)
-	return client, token, err
+	return NewLocalAuthClientWithSecret(secret, payload)
 }
 
 func (c *LocalAuthClient) Verify(ctx context.Context, token string) ([]auth.Permission, error) {

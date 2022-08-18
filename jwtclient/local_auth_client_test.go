@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestLocalAuthClientWithSecreat(t *testing.T) {
+func TestLocalAuthClient(t *testing.T) {
 	secret, err := config.RandSecret()
 	assert.NoError(t, err)
 

@@ -13,7 +13,13 @@ type LocalAuthClient struct {
 	alg *jwt3.HMACSHA
 }
 
-func NewLocalAuthClient(payload venusauth.JWTPayload) (*LocalAuthClient, []byte, error) {
+func NewLocalAuthClient() (*LocalAuthClient, []byte, error) {
+
+	payload := venusauth.JWTPayload{
+		Perm: core.PermAdmin,
+		Name: "defaultLocalToken",
+	}
+
 	secret, err := RandSecret()
 	if err != nil {
 		return nil, nil, err

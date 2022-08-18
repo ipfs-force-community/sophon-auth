@@ -16,15 +16,26 @@ func TestLocalAuthClient(t *testing.T) {
 
 	payload := venusauth.JWTPayload{
 		Perm: core.PermAdmin,
-		Name: "MarketLocalToken",
+		Name: "defaultLocalToken",
 	}
 
-	client, token, err := NewLocalAuthClient(secret, payload)
+	clientFromSecret, token, err := NewLocalAuthClientWithSecret(secret, payload)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	testClientWithAdminPerm(t, clientFromSecret, string(token))
+
+	client, token2, err := NewLocalAuthClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+	testClientWithAdminPerm(t, client, string(token2))
+}
+
+func testClientWithAdminPerm(t *testing.T, client *LocalAuthClient, token string) {
 	ctx := context.Background()
-	permissions, err := client.Verify(ctx, string(token))
+	permissions, err := client.Verify(ctx, token)
 	if err != nil {
 		t.Fatal(err)
 	}

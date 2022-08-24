@@ -383,6 +383,11 @@ func (o *jwtOAuth) UpsertMiner(ctx context.Context, req *UpsertMinerReq) (bool, 
 	if err != nil || maddr.Empty() {
 		return false, xerrors.Errorf("invalid miner address:%s, error: %w", req.Miner, err)
 	}
+
+	if maddr.Protocol() != address.ID {
+		return false, fmt.Errorf("invalid protocol type: %v", maddr.Protocol())
+	}
+
 	return o.store.UpsertMiner(maddr, req.User, req.OpenMining)
 }
 
@@ -432,6 +437,11 @@ func (o *jwtOAuth) UpsertSigner(ctx context.Context, req *UpsertSignerReq) (bool
 	if err != nil || addr.Empty() {
 		return false, xerrors.Errorf("invalid signer address:%s, error: %w", req.Signer, err)
 	}
+
+	if addr.Protocol() != address.SECP256K1 && addr.Protocol() != address.BLS {
+		return false, fmt.Errorf("invalid protocol type: %v", addr.Protocol())
+	}
+
 	return o.store.UpsertSigner(addr, req.User)
 }
 

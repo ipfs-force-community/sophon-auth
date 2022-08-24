@@ -10,11 +10,12 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/venus-auth/core"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+
+	"github.com/filecoin-project/venus-auth/core"
 )
 
 type anyTime struct{}
@@ -67,6 +68,13 @@ func TestMysqlStore(t *testing.T) {
 	t.Run("mysql list miners", wrapper(testMySQLListMiner, mySQLStore, mock))
 	t.Run("mysql delete miner", wrapper(testMySQLDeleteMiner, mySQLStore, mock))
 	t.Run("mysql upsert miner", wrapper(testMySQLUpsertMiner, mySQLStore, mock))
+
+	// Signer
+	t.Run("mysql has signer", wrapper(testMySQLHasSigner, mySQLStore, mock))
+	t.Run("mysql get user by signer", wrapper(testMySQLGetUserBySigner, mySQLStore, mock))
+	t.Run("mysql list signers", wrapper(testMySQLListSigner, mySQLStore, mock))
+	t.Run("mysql delete signer", wrapper(testMySQLDeleteSigner, mySQLStore, mock))
+	t.Run("mysql upsert signer", wrapper(testMySQLUpsertSigner, mySQLStore, mock))
 
 	// Version
 	t.Run("mysql get version", wrapper(testMySQLVersion, mySQLStore, mock))
@@ -400,7 +408,7 @@ func testMySQLDeleteRateLimit(t *testing.T, mySQLStore *mysqlStore, mock sqlmock
 }
 
 func testMySQLHasMiner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
-	addr, err := address.NewIDAddress(1)
+	addr, err := address.NewFromString("f01000")
 	assert.Nil(t, err)
 
 	mock.ExpectQuery(regexp.QuoteMeta(
@@ -414,12 +422,11 @@ func testMySQLHasMiner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmoc
 }
 
 func testMySQLGetUserByMiner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
-	addr, err := address.NewIDAddress(1)
+	addr, err := address.NewFromString("f01000")
 	assert.Nil(t, err)
 	userName := "name"
 	userId := "id"
 
-	// SELECT users.* FROM `miners` inner join users on miners.miner = ? and users.name = miners.user WHERE `miners`.`deleted_at` IS NULL
 	mock.ExpectQuery(regexp.QuoteMeta(
 		"SELECT users.* FROM `miners` inner join users on miners.miner = ? and users.name = miners.user WHERE `miners`.`deleted_at` IS NULL")).
 		WithArgs(storedAddress(addr)).
@@ -447,7 +454,7 @@ func testMySQLListMiner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmo
 }
 
 func testMySQLDeleteMiner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
-	addr, err := address.NewIDAddress(1)
+	addr, err := address.NewFromString("f01000")
 	assert.Nil(t, err)
 
 	mock.ExpectBegin()
@@ -463,7 +470,7 @@ func testMySQLDeleteMiner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sql
 }
 
 func testMySQLUpsertMiner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
-	addr, err := address.NewIDAddress(1)
+	addr, err := address.NewFromString("f01000")
 	assert.Nil(t, err)
 	user := "user"
 
@@ -488,6 +495,98 @@ func testMySQLUpsertMiner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sql
 	mock.ExpectCommit()
 
 	success, err := mySQLStore.UpsertMiner(addr, user)
+	assert.Nil(t, err)
+	assert.True(t, success)
+}
+
+func testMySQLHasSigner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
+	addr, err := address.NewFromString("t3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha")
+	assert.Nil(t, err)
+
+	mock.ExpectQuery(regexp.QuoteMeta(
+		"SELECT count(*) FROM `signers` WHERE `signer` = ? AND `deleted_at` IS NULL")).
+		WithArgs(storedAddress(addr)).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+
+	exist, err := mySQLStore.HasSigner(addr, "")
+	assert.Nil(t, err)
+	assert.True(t, exist)
+}
+
+func testMySQLGetUserBySigner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
+	addr, err := address.NewFromString("t3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha")
+	assert.Nil(t, err)
+	userName := "name"
+	userId := "id"
+
+	mock.ExpectQuery(regexp.QuoteMeta(
+		"SELECT users.* FROM `signers` inner join users on signers.signer = ? and users.name = signers.user WHERE `signers`.`deleted_at` IS NULL")).
+		WithArgs(storedAddress(addr)).
+		WillReturnRows(sqlmock.NewRows([]string{"name", "id"}).AddRow(userName, userId))
+
+	user, err := mySQLStore.GetUserBySigner(addr)
+	assert.Nil(t, err)
+	assert.Equal(t, userName, user.Name)
+	assert.Equal(t, userId, user.Id)
+}
+
+func testMySQLListSigner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
+	userName := "user_name"
+
+	mock.ExpectQuery(regexp.QuoteMeta(
+		"SELECT * FROM `signers` WHERE user = ? AND `signers`.`deleted_at` IS NULL")).
+		WithArgs(userName).
+		WillReturnRows(sqlmock.NewRows([]string{"user"}).
+			AddRow(userName).AddRow(userName))
+
+	signers, err := mySQLStore.ListSigner(userName)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(signers))
+	assert.Equal(t, userName, signers[0].User)
+}
+
+func testMySQLDeleteSigner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
+	addr, err := address.NewFromString("t3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha")
+	assert.Nil(t, err)
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(
+		"UPDATE `signers` SET `deleted_at`=? WHERE `signer` = ? AND `signers`.`deleted_at` IS NULL")).
+		WithArgs(anyTime{}, storedAddress(addr)).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	success, err := mySQLStore.DelSigner(addr)
+	assert.Nil(t, err)
+	assert.True(t, success)
+}
+
+func testMySQLUpsertSigner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
+	addr, err := address.NewFromString("t3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha")
+	assert.Nil(t, err)
+	user := "user"
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(
+		"SELECT * FROM `users` WHERE `name` = ? ORDER BY `users`.`id` LIMIT 1")).
+		WithArgs(user).
+		WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow(user))
+
+	mock.ExpectQuery(regexp.QuoteMeta(
+		"SELECT count(*) FROM `signers` WHERE `signer` = ? AND `signers`.`deleted_at` IS NULL")).
+		WithArgs(storedAddress(addr)).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+
+	mock.ExpectExec(regexp.QuoteMeta(
+		"INSERT INTO `signers` (`signer`,`user`,`created_at`,`updated_at`,`deleted_at`) "+
+			"VALUES (?,?,?,?,?) ON DUPLICATE KEY UPDATE `user`=VALUES(`user`),`updated_at`=VALUES(`updated_at`),"+
+			"`deleted_at`=VALUES(`deleted_at`)")).
+		WithArgs(storedAddress(addr), user, anyTime{}, anyTime{}, nil).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	mock.ExpectCommit()
+
+	success, err := mySQLStore.UpsertSigner(addr, user)
 	assert.Nil(t, err)
 	assert.True(t, success)
 }

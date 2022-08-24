@@ -15,6 +15,7 @@ import (
 	"github.com/gbrlsnchs/jwt/v3"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/core"
@@ -25,14 +26,14 @@ func TestJwt(t *testing.T) {
 	var limitStrs = `[{"Id":"794fc9a4-2b80-4503-835a-7e8e27360b3d","Name":"test_user_01","Service":"","API":"","ReqLimit":{"Cap":10,"ResetDur":120000000000}},{"Id":"252f581e-cbd2-4a61-a517-0b7df65013aa","Name":"test_user_02","Service":"","API":"","ReqLimit":{"Cap":10,"ResetDur":72000000000000}}]`
 	var originLimits []*storage.UserRateLimit
 
-	var userMiners = map[string]map[string]interface{}{
-		"test_user_001": {"t01000": nil, "t01002": nil, "t01003": nil},
-		"test_user_002": {"t01004": nil, "t01005": nil, "t01006": nil},
-		"test_user_003": {"t01007": nil, "t01008": nil, "t01009": nil},
-	}
-
 	if err := json.Unmarshal([]byte(limitStrs), &originLimits); err != nil {
 		t.Fatal(fmt.Sprintf("initialize origin Ratelimit failed:%s", err.Error()))
+	}
+
+	var userMiners = map[string][]string{
+		"test_user_001": {"t01000", "t01002", "t01003"},
+		"test_user_002": {"t01004", "t01005", "t01006"},
+		"test_user_003": {"t01007", "t01008", "t01009"},
 	}
 
 	// Features about tokens
@@ -56,6 +57,18 @@ func TestJwt(t *testing.T) {
 	t.Run("test has miner", func(t *testing.T) { testHasMiner(t, userMiners) })
 	t.Run("test get user by miner", func(t *testing.T) { testGetUserByMiner(t, userMiners) })
 	t.Run("test delete miner", func(t *testing.T) { testDeleteMiner(t, userMiners) })
+
+	// Features about signers
+	var userSigners = map[string][]string{
+		"test_user_001": {"t3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha", "t1mpvdqt2acgihevibd4greavlsfn3dfph5sckc2a"},
+		"test_user_002": {"t3r47fkdzfmtex5ic3jnwlzc7bkpbj7s4d6limyt4f57t3cuqq5nuvhvwv2cu2a6iga2s64vjqcxjqiezyjooq", "t1uqtvvwkkfkkez52ocnqe6vg74qewiwja4t2tiba"},
+		"test_user_003": {"t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua", "t1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q"},
+	}
+	t.Run("test upsert signer", func(t *testing.T) { testUpsertSigner(t, userSigners) })
+	t.Run("test list signer", func(t *testing.T) { testListSigner(t, userSigners) })
+	t.Run("test has signer", func(t *testing.T) { testHasSigner(t, userSigners) })
+	t.Run("test get user by signer", func(t *testing.T) { testGetUserBySigner(t, userSigners) })
+	t.Run("test delete signer", func(t *testing.T) { testDeleteSigner(t, userSigners) })
 
 	// Features about rate limits
 	t.Run("test upsert rate limit", func(t *testing.T) { testUpsertUserRateLimit(t, userMiners, originLimits) })
@@ -229,7 +242,7 @@ func testRemoveAndRecoverToken(t *testing.T) {
 	assert.Equal(t, 1, len(allTokenInfos))
 }
 
-func createUsers(t *testing.T, userMiners map[string]map[string]interface{}) {
+func createUsers(t *testing.T, userMiners map[string][]string) {
 	// Create 3 users
 	for userName := range userMiners {
 		createUserReq := &CreateUserRequest{
@@ -244,7 +257,7 @@ func createUsers(t *testing.T, userMiners map[string]map[string]interface{}) {
 	}
 }
 
-func testCreateUser(t *testing.T, userMiners map[string]map[string]interface{}) {
+func testCreateUser(t *testing.T, userMiners map[string][]string) {
 	cfg := config.DBConfig{Type: "badger"}
 	setup(&cfg, t)
 	defer shutdown(&cfg, t)
@@ -267,7 +280,7 @@ func testCreateUser(t *testing.T, userMiners map[string]map[string]interface{}) 
 	assert.NotNil(t, err)
 }
 
-func testGetUser(t *testing.T, userMiners map[string]map[string]interface{}) {
+func testGetUser(t *testing.T, userMiners map[string][]string) {
 	existUserName := "test_user_001"
 	invalidUserName := "invalid_name"
 
@@ -284,7 +297,7 @@ func testGetUser(t *testing.T, userMiners map[string]map[string]interface{}) {
 	assert.False(t, exist)
 }
 
-func testListUser(t *testing.T, userMiners map[string]map[string]interface{}) {
+func testListUser(t *testing.T, userMiners map[string][]string) {
 	cfg := config.DBConfig{Type: "badger"}
 	setup(&cfg, t)
 	defer shutdown(&cfg, t)
@@ -297,7 +310,7 @@ func testListUser(t *testing.T, userMiners map[string]map[string]interface{}) {
 	assert.Equal(t, 3, len(allUserInfos))
 }
 
-func testUpdateUser(t *testing.T, userMiners map[string]map[string]interface{}) {
+func testUpdateUser(t *testing.T, userMiners map[string][]string) {
 	existUserName := "test_user_001"
 
 	cfg := config.DBConfig{Type: "badger"}
@@ -319,7 +332,7 @@ func testUpdateUser(t *testing.T, userMiners map[string]map[string]interface{}) 
 	assert.Equal(t, "New Comment", outPutUser1.Comment)
 }
 
-func testDeleteAndRecoverUser(t *testing.T, userMiners map[string]map[string]interface{}) {
+func testDeleteAndRecoverUser(t *testing.T, userMiners map[string][]string) {
 	existUserName := "test_user_001"
 	invalidUserName := "invalid_name"
 
@@ -362,9 +375,8 @@ func testDeleteAndRecoverUser(t *testing.T, userMiners map[string]map[string]int
 	assert.NotNil(t, err)
 }
 
-func addUsersAndMiners(t *testing.T, userMiners map[string]map[string]interface{}) {
-	// Create 3 users and add miners
-	for userName, minerMap := range userMiners {
+func addUsersAndMiners(t *testing.T, userMiners map[string][]string) {
+	for userName, miners := range userMiners {
 		createUserReq := &CreateUserRequest{
 			Name:    userName,
 			Comment: "",
@@ -373,10 +385,10 @@ func addUsersAndMiners(t *testing.T, userMiners map[string]map[string]interface{
 		// Create users.
 		_, _ = jwtOAuthInstance.CreateUser(context.Background(), createUserReq)
 		// Add miners
-		for minerName := range minerMap {
+		for _, minerID := range miners {
 			ifCreate, err := jwtOAuthInstance.UpsertMiner(context.Background(), &UpsertMinerReq{
 				User:  userName,
-				Miner: minerName,
+				Miner: minerID,
 			})
 			assert.Nil(t, err)
 			assert.True(t, ifCreate)
@@ -384,14 +396,26 @@ func addUsersAndMiners(t *testing.T, userMiners map[string]map[string]interface{
 	}
 }
 
-func testUpsertMiner(t *testing.T, userMiners map[string]map[string]interface{}) {
+func testUpsertMiner(t *testing.T, userMiners map[string][]string) {
 	cfg := config.DBConfig{Type: "badger"}
 	setup(&cfg, t)
 	defer shutdown(&cfg, t)
 	addUsersAndMiners(t, userMiners)
+
+	// error signer address
+	_, _ = jwtOAuthInstance.CreateUser(context.Background(), &CreateUserRequest{
+		Name:  "user_01",
+		State: 1,
+	})
+	_, err := jwtOAuthInstance.UpsertMiner(context.Background(), &UpsertMinerReq{
+		User:  "user_01",
+		Miner: "f1mpvdqt2acgihevibd4greavlsfn3dfph5sckc2a",
+	})
+	assert.NotNil(t, err)
+	require.Contains(t, err.Error(), "invalid protocol type")
 }
 
-func testListMiner(t *testing.T, userMiners map[string]map[string]interface{}) {
+func testListMiner(t *testing.T, userMiners map[string][]string) {
 	cfg := config.DBConfig{Type: "badger"}
 	setup(&cfg, t)
 	defer shutdown(&cfg, t)
@@ -410,7 +434,7 @@ func testListMiner(t *testing.T, userMiners map[string]map[string]interface{}) {
 	}
 }
 
-func testHasMiner(t *testing.T, userMiners map[string]map[string]interface{}) {
+func testHasMiner(t *testing.T, userMiners map[string][]string) {
 	cfg := config.DBConfig{Type: "badger"}
 	setup(&cfg, t)
 	defer shutdown(&cfg, t)
@@ -426,7 +450,7 @@ func testHasMiner(t *testing.T, userMiners map[string]map[string]interface{}) {
 	assert.False(t, has)
 }
 
-func testGetUserByMiner(t *testing.T, userMiners map[string]map[string]interface{}) {
+func testGetUserByMiner(t *testing.T, userMiners map[string][]string) {
 	cfg := config.DBConfig{Type: "badger"}
 	setup(&cfg, t)
 	defer shutdown(&cfg, t)
@@ -442,7 +466,7 @@ func testGetUserByMiner(t *testing.T, userMiners map[string]map[string]interface
 	assert.Equal(t, validUser1, userInfo.Name)
 }
 
-func testDeleteMiner(t *testing.T, userMiners map[string]map[string]interface{}) {
+func testDeleteMiner(t *testing.T, userMiners map[string][]string) {
 	cfg := config.DBConfig{Type: "badger"}
 	setup(&cfg, t)
 	defer shutdown(&cfg, t)
@@ -470,7 +494,122 @@ func testDeleteMiner(t *testing.T, userMiners map[string]map[string]interface{})
 	assert.False(t, deleted)
 }
 
-func addUsersAndRateLimits(t *testing.T, userMiners map[string]map[string]interface{}, originLimits []*storage.UserRateLimit) {
+func addUsersAndSigners(t *testing.T, userSigners map[string][]string) {
+	for userName, signers := range userSigners {
+		createUserReq := &CreateUserRequest{
+			Name:  userName,
+			State: 1,
+		}
+
+		// Create users.
+		_, _ = jwtOAuthInstance.CreateUser(context.Background(), createUserReq)
+		// Add Signer
+		for _, signer := range signers {
+			ifCreate, err := jwtOAuthInstance.UpsertSigner(context.Background(), &UpsertSignerReq{
+				User:   userName,
+				Signer: signer,
+			})
+			assert.Nil(t, err)
+			assert.True(t, ifCreate)
+		}
+	}
+}
+
+func testUpsertSigner(t *testing.T, userSigners map[string][]string) {
+	cfg := config.DBConfig{Type: "badger"}
+	setup(&cfg, t)
+	defer shutdown(&cfg, t)
+
+	addUsersAndSigners(t, userSigners)
+
+	// error signer address
+	_, _ = jwtOAuthInstance.CreateUser(context.Background(), &CreateUserRequest{
+		Name:  "user_01",
+		State: 1,
+	})
+	_, err := jwtOAuthInstance.UpsertSigner(context.Background(), &UpsertSignerReq{
+		User:   "user_01",
+		Signer: "f0128788",
+	})
+	assert.NotNil(t, err)
+	require.Contains(t, err.Error(), "invalid protocol type")
+}
+
+func testListSigner(t *testing.T, userSigners map[string][]string) {
+	cfg := config.DBConfig{Type: "badger"}
+	setup(&cfg, t)
+	defer shutdown(&cfg, t)
+	addUsersAndSigners(t, userSigners)
+
+	validUser1 := "test_user_001"
+	user1Signers := userSigners[validUser1]
+	// List miners
+	resp, err := jwtOAuthInstance.ListSigner(context.Background(), &ListSignerReq{User: validUser1})
+	assert.Nil(t, err)
+	assert.Equal(t, len(user1Signers), len(resp))
+	for _, signer := range resp {
+		require.Contains(t, user1Signers, signer.Signer)
+	}
+}
+
+func testHasSigner(t *testing.T, userSigners map[string][]string) {
+	cfg := config.DBConfig{Type: "badger"}
+	setup(&cfg, t)
+	defer shutdown(&cfg, t)
+	addUsersAndSigners(t, userSigners)
+
+	validUser1 := "test_user_001"
+	user1Signers := userSigners[validUser1]
+	has, err := jwtOAuthInstance.HasSigner(context.Background(), &HasSignerRequest{Signer: user1Signers[0], User: validUser1})
+	assert.Nil(t, err)
+	assert.True(t, has)
+
+	has, err = jwtOAuthInstance.HasSigner(context.Background(), &HasSignerRequest{Signer: "t01000", User: validUser1})
+	assert.Nil(t, err)
+	assert.False(t, has)
+}
+
+func testGetUserBySigner(t *testing.T, userSigners map[string][]string) {
+	cfg := config.DBConfig{Type: "badger"}
+	setup(&cfg, t)
+	defer shutdown(&cfg, t)
+	addUsersAndSigners(t, userSigners)
+
+	// Get User By Signer
+	validUser1 := "test_user_001"
+	user1Signers := userSigners[validUser1]
+	userInfo, err := jwtOAuthInstance.GetUserBySigner(context.Background(), &GetUserBySignerRequest{
+		Signer: user1Signers[0],
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, validUser1, userInfo.Name)
+}
+
+func testDeleteSigner(t *testing.T, userSigners map[string][]string) {
+	cfg := config.DBConfig{Type: "badger"}
+	setup(&cfg, t)
+	defer shutdown(&cfg, t)
+	addUsersAndSigners(t, userSigners)
+
+	validUser1 := "test_user_001"
+	user1Signers := userSigners[validUser1]
+	// Delete signer
+	deleted, err := jwtOAuthInstance.DelSigner(context.Background(), &DelSignerReq{Signer: user1Signers[0]})
+	assert.Nil(t, err)
+	assert.True(t, deleted)
+	// Then get this signer
+	has, err := jwtOAuthInstance.HasSigner(context.Background(), &HasSignerRequest{Signer: user1Signers[0], User: ""})
+	assert.Nil(t, err)
+	assert.False(t, has)
+	// Try to get user by this miner
+	_, err = jwtOAuthInstance.GetUserBySigner(context.Background(), &GetUserBySignerRequest{
+		Signer: user1Signers[0],
+	})
+	assert.NotNil(t, err)
+	require.Contains(t, err.Error(), "not found")
+}
+
+func addUsersAndRateLimits(t *testing.T, userMiners map[string][]string, originLimits []*storage.UserRateLimit) {
 	// Create 3 users and add rate limits
 	for userName := range userMiners {
 		createUserReq := &CreateUserRequest{
@@ -493,14 +632,14 @@ func addUsersAndRateLimits(t *testing.T, userMiners map[string]map[string]interf
 	}
 }
 
-func testUpsertUserRateLimit(t *testing.T, userMiners map[string]map[string]interface{}, originLimits []*storage.UserRateLimit) {
+func testUpsertUserRateLimit(t *testing.T, userMiners map[string][]string, originLimits []*storage.UserRateLimit) {
 	cfg := config.DBConfig{Type: "badger"}
 	setup(&cfg, t)
 	defer shutdown(&cfg, t)
 	addUsersAndRateLimits(t, userMiners, originLimits)
 }
 
-func testGetUserRateLimits(t *testing.T, userMiners map[string]map[string]interface{}, originLimits []*storage.UserRateLimit) {
+func testGetUserRateLimits(t *testing.T, userMiners map[string][]string, originLimits []*storage.UserRateLimit) {
 	cfg := config.DBConfig{Type: "badger"}
 	setup(&cfg, t)
 	defer shutdown(&cfg, t)
@@ -518,7 +657,7 @@ func testGetUserRateLimits(t *testing.T, userMiners map[string]map[string]interf
 	assert.Equal(t, existId, resp[0].Id)
 }
 
-func testDeleteUserRateLimits(t *testing.T, userMiners map[string]map[string]interface{}, originLimits []*storage.UserRateLimit) {
+func testDeleteUserRateLimits(t *testing.T, userMiners map[string][]string, originLimits []*storage.UserRateLimit) {
 	cfg := config.DBConfig{Type: "badger"}
 	setup(&cfg, t)
 	defer shutdown(&cfg, t)

@@ -10,11 +10,12 @@ import (
 	"time"
 
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/venus-auth/config"
-	"github.com/filecoin-project/venus-auth/core"
 	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+
+	"github.com/filecoin-project/venus-auth/config"
+	"github.com/filecoin-project/venus-auth/core"
 )
 
 var theStore Store
@@ -50,6 +51,12 @@ var userMiners = map[string]map[string]interface{}{
 	"test_user_003": {"t01007": nil, "t01008": nil, "t01009": nil},
 }
 
+var userSigners = map[string][]string{
+	"test_user_001": {"t3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha", "t1mpvdqt2acgihevibd4greavlsfn3dfph5sckc2a"},
+	"test_user_002": {"t3r47fkdzfmtex5ic3jnwlzc7bkpbj7s4d6limyt4f57t3cuqq5nuvhvwv2cu2a6iga2s64vjqcxjqiezyjooq", "t1uqtvvwkkfkkez52ocnqe6vg74qewiwja4t2tiba"},
+	"test_user_003": {"t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua", "t1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q"},
+}
+
 var limitStrs = `[{"Id":"794fc9a4-2b80-4503-835a-7e8e27360b3d","Name":"test_user_01","Service":"","API":"","ReqLimit":{"Cap":10,"ResetDur":120000000000}},{"Id":"252f581e-cbd2-4a61-a517-0b7df65013aa","Name":"test_user_02","Service":"","API":"","ReqLimit":{"Cap":10,"ResetDur":72000000000000}}]`
 var originLimits []*UserRateLimit
 
@@ -81,42 +88,6 @@ func testAddUser(t *testing.T) {
 				}
 			}
 			t.Fatalf("add user failed:%s", err.Error())
-		}
-	}
-}
-
-func testAddMiner(t *testing.T) {
-	for u, ms := range userMiners {
-		for m := range ms {
-			addr, _ := address.NewFromString(m)
-			_, err := theStore.UpsertMiner(addr, u, true)
-			require.NoError(t, err)
-		}
-	}
-
-}
-
-func testListMiners(t *testing.T) {
-	addr, _ := address.NewFromString("f01222345678999")
-	// should be a 'not found error'
-	_, err := theStore.GetUserByMiner(addr)
-	require.Error(t, err)
-	// make sure all miners(we just inserted) exist.
-	for u, miners := range userMiners {
-		ms, err := theStore.ListMiners(u)
-		require.NoError(t, err)
-		var minerMap = make(map[string]*Miner, len(ms))
-
-		for _, m := range ms {
-			minerMap[m.Miner.Address().String()] = m
-		}
-
-		for m := range miners {
-			tmpMiner, isok := minerMap[m]
-			require.Equal(t, isok, true)
-			tmpUser, err := theStore.GetUserByMiner(tmpMiner.Miner.Address())
-			require.NoError(t, err)
-			require.Equal(t, tmpUser.Name, u)
 		}
 	}
 }
@@ -158,6 +129,41 @@ func testDeleteUser(t *testing.T) {
 	require.Len(t, list, 0)
 }
 
+func testAddMiner(t *testing.T) {
+	for u, ms := range userMiners {
+		for m := range ms {
+			addr, _ := address.NewFromString(m)
+			_, err := theStore.UpsertMiner(addr, u, true)
+			require.NoError(t, err)
+		}
+	}
+}
+
+func testListMiners(t *testing.T) {
+	addr, _ := address.NewFromString("f010000")
+	// should be a 'not found error'
+	_, err := theStore.GetUserByMiner(addr)
+	require.Error(t, err)
+	// make sure all miners(we just inserted) exist.
+	for u, miners := range userMiners {
+		ms, err := theStore.ListMiners(u)
+		require.NoError(t, err)
+
+		var minerMap = make(map[string]*Miner, len(ms))
+		for _, m := range ms {
+			minerMap[m.Miner.Address().String()] = m
+		}
+
+		for m := range miners {
+			tmpMiner, isok := minerMap[m]
+			require.Equal(t, isok, true)
+			tmpUser, err := theStore.GetUserByMiner(tmpMiner.Miner.Address())
+			require.NoError(t, err)
+			require.Equal(t, tmpUser.Name, u)
+		}
+	}
+}
+
 func testDelMiners(t *testing.T) {
 	for userName, miners := range userMiners {
 		// already delete user
@@ -167,6 +173,52 @@ func testDelMiners(t *testing.T) {
 		for m := range miners {
 			addr, _ := address.NewFromString(m)
 			_, err := theStore.DelMiner(addr)
+			require.NoError(t, err)
+		}
+	}
+}
+
+func testAddSigner(t *testing.T) {
+	for user, signers := range userSigners {
+		for _, signer := range signers {
+			addr, _ := address.NewFromString(signer)
+			_, err := theStore.UpsertSigner(addr, user)
+			require.NoError(t, err)
+		}
+	}
+}
+
+func testListSigners(t *testing.T) {
+	// make sure all signers(we just inserted) exist.
+	for user, signers := range userSigners {
+		ss, err := theStore.ListSigner(user)
+		require.NoError(t, err)
+
+		var signerMap = make(map[address.Address]*Signer, len(ss))
+		for _, s := range ss {
+			signerMap[s.Signer.Address()] = s
+		}
+
+		for _, signer := range signers {
+			addr, _ := address.NewFromString(signer)
+			tmpSigner, ok := signerMap[addr]
+			require.True(t, ok)
+			tmpUser, err := theStore.GetUserBySigner(tmpSigner.Signer.Address())
+			require.NoError(t, err)
+			require.Equal(t, tmpUser.Name, user)
+		}
+	}
+}
+
+func testDelSigners(t *testing.T) {
+	for userName, signers := range userSigners {
+		// already delete user
+		if userName == "test_user_001" {
+			continue
+		}
+		for _, signer := range signers {
+			addr, _ := address.NewFromString(signer)
+			_, err := theStore.DelSigner(addr)
 			require.NoError(t, err)
 		}
 	}
@@ -244,11 +296,15 @@ func testRatelimit(t *testing.T) {
 }
 
 func TestStore(t *testing.T) {
-	t.Run("add  users", testAddUser)
+	t.Run("add users", testAddUser)
 	t.Run("add miners", testAddMiner)
 	t.Run("get miners", testListMiners)
+	t.Run("add signers", testAddSigner)
+	t.Run("get signers", testListSigners)
 	t.Run("del user", testDeleteUser)
 	t.Run("del miners", testDelMiners)
+	t.Run("del signers", testDelSigners)
+
 	t.Run("test token", testTokens)
 	t.Run("test ratelimit", testRatelimit)
 }

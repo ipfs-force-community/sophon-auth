@@ -19,7 +19,6 @@ type OAuthApp interface {
 
 	CreateUser(c *gin.Context)
 	GetUser(c *gin.Context)
-	GetUserByMiner(c *gin.Context)
 	ListUsers(c *gin.Context)
 	HasUser(c *gin.Context)
 	UpdateUser(c *gin.Context)
@@ -35,6 +34,7 @@ type OAuthApp interface {
 	HasMiner(c *gin.Context)
 	ListMiners(c *gin.Context)
 	DeleteMiner(c *gin.Context)
+	GetUserByMiner(c *gin.Context)
 
 	UpsertSigner(c *gin.Context)
 	ListSigner(c *gin.Context)

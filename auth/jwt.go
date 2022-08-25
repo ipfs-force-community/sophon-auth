@@ -26,8 +26,6 @@ import (
 )
 
 var (
-	ErrorParamsEmpty        = xerrors.New("The mail or password in customParams is empty")
-	ErrorRemoveFailed       = xerrors.New("Remove token failed")
 	ErrorNonRegisteredToken = xerrors.New("A non-registered token")
 	ErrorVerificationFailed = xerrors.New("Verification Failed")
 )
@@ -235,7 +233,7 @@ func (o *jwtOAuth) RemoveToken(ctx context.Context, token string) error {
 	tk := []byte(token)
 	err := o.store.Delete(storage.Token(tk))
 	if err != nil {
-		return ErrorRemoveFailed
+		return fmt.Errorf("remove token %s: %w", token, err)
 	}
 	return nil
 }

@@ -143,7 +143,6 @@ num    name             perm    createTime              token
 
 Get token
 
-> ./venus-auth token get --name [name] or --token [token]
 ```shell script
 ./venus-auth token get --name testminer2
 
@@ -254,15 +253,6 @@ $ ./venus-auth user update --name testminer2 --state 1
 update user success
 ```
 
-Check if miner exists.
-
-```shell script
-$ ./venus-auth user has f01570
-
-# output
-true
-```
-
 Activate user.
 
 ```shell script
@@ -295,30 +285,91 @@ recover user success
 Add miner
 
 ```shell script
-./venus-auth user miner testminer2 f010101
+# show help
+./venus-auth user miner add -h
+NAME:
+   venus-auth user miner add - Add miner for specified user
 
-# output
-create user:testminer2 miner:f010101 success.
+USAGE:
+   venus-auth user miner add [command options] <user> <miner>
+
+OPTIONS:
+   --help, -h  show help (default: false)
+
+./venus-auth user miner add test-user01 f0128788
+
+# res
+create user:test-user01 miner:f0128788 success.
 ```
 
 List miners by user
 
 ```shell script
-./venus-auth user miner list testminer2
+./venus-auth user miner list test-user01
 
-# output
-user: testminer2, miner count:1
-idx  miner    create-time                    
-0    f010101  Tue, 24 May 2022 16:58:49 CST 
+# res
+user: test-user01, miner count:1
+idx  miner     create-time                    
+0    f0128788  Thu, 25 Aug 2022 17:20:11 CST
 ```
 
 Remove miner
 
 ```shell script
-./venus-auth user miner rm f010101
+./venus-auth user miner delete f0128788
 
-# output
-remove miner:f010101 success.
+# res
+remove miner:f0128788 success.
+```
+
+#### Signer related
+
+`signer`  指的是具有签名能力的地址。
+
+Add Signer
+
+```shell script
+# show help
+./venus-auth user signer add -h
+NAME:
+   venus-auth user signer add - Add signer address for specified user
+
+USAGE:
+   venus-auth user signer add [command options] <user> <signer address>
+
+OPTIONS:
+   --help, -h  show help (default: false)
+
+./venus-auth user signer add test-user01 f0128788
+
+# res
+invalid protocol type: 0
+
+./venus-auth user signer add test-user01 f3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha
+
+# res
+create user:test-user01 signer address:f3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha success.
+```
+
+Signer list
+
+```shell script
+./venus-auth user signer list test-user01
+
+# res
+user: test-user01, signer count:2
+idx  signer                                                                                  create-time                    
+0    f1mpvdqt2acgihevibd4greavlsfn3dfph5sckc2a                                               Thu, 25 Aug 2022 17:27:35 CST  
+1    f3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha  Thu, 25 Aug 2022 17:26:39 CST 
+```
+
+Delete Signer
+
+```shell script
+./venus-auth user signer delete f1mpvdqt2acgihevibd4greavlsfn3dfph5sckc2a
+
+# res
+delete signer:f1mpvdqt2acgihevibd4greavlsfn3dfph5sckc2a success.
 ```
 
 #### User request rate limit related

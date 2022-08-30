@@ -40,3 +40,4 @@ static: clean
 
 docker:
 	docker build --build-arg https_proxy=$(BUILD_DOCKER_PROXY) -t venus-auth .
+	docker tag venus-auth filvenus/venus-auth:test

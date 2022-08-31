@@ -271,7 +271,7 @@ func (s *mysqlStore) UpsertMiner(maddr address.Address, userName string, openMin
 		if err := tx.Model(&Miner{}).Where("miner = ?", stoMiner).Count(&count).Error; err != nil {
 			return err
 		}
-		isCreate = count > 0
+		isCreate = count == 0
 		return tx.Model(&Miner{}).
 			Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "miner"}}, UpdateAll: true}).
 			Create(&Miner{Miner: stoMiner, User: user.Name, OpenMining: openMining}).Error

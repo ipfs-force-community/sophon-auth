@@ -2,7 +2,6 @@ package storage
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/filecoin-project/venus-auth/log"
@@ -379,8 +378,6 @@ func (s *badgerStore) HasMiner(maddr address.Address, userName string) (bool, er
 			if err := miner.FromBytes(val); err != nil {
 				return err
 			}
-
-			fmt.Printf("miner: %v\n", miner)
 
 			if len(userName) > 0 {
 				if miner.User == userName && miner.Miner.Address().String() == maddr.String() && !miner.isDeleted() {

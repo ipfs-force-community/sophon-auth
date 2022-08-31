@@ -38,6 +38,8 @@ clean:
 static: clean
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(GOFLAGS) -o venus-auth ./cmd/server/*.go
 
+TAG:=test
 docker:
-	docker build --build-arg https_proxy=$(BUILD_DOCKER_PROXY) -t venus-auth .
-	docker tag venus-auth filvenus/venus-auth:test
+	curl -O https://raw.githubusercontent.com/filecoin-project/venus-docs/feat/tanlang/improve-docker-usage/script/dockerfile
+	docker build --build-arg https_proxy=$(BUILD_DOCKER_PROXY) --build-arg BUILD_TARGET=venus-auth -t venus-auth .
+	docker tag venus-auth filvenus/venus-auth:$(TAG)

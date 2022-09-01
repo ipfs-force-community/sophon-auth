@@ -250,9 +250,15 @@ func (sa storedAddress) Value() (driver.Value, error) {
 }
 
 type Miner struct {
+<<<<<<< HEAD
 	Miner      storedAddress `gorm:"column:miner;type:varchar(128);primarykey;index:user_miner_idx,priority:2"`
 	User       string        `gorm:"column:user;type:varchar(50);index:user_miner_idx,priority:1;not null"`
 	OpenMining bool          `gorm:"column:open_mining;default:1;comment:0-false,1-true"`
+=======
+	ID    uint          `gorm:"column:id;primary_key;unsigned AUTO_INCREMENT;not null"`
+	Miner storedAddress `gorm:"column:miner;type:varchar(128);index:user_miner_idx,priority:2"`
+	User  string        `gorm:"column:user;type:varchar(50);index:user_miner_idx,priority:1;not null"`
+>>>>>>> opt: add ID field for signer & miner table
 	OrmTimestamp
 }
 
@@ -278,7 +284,8 @@ func (m *Miner) setDeleted() {
 }
 
 type Signer struct {
-	Signer storedAddress `gorm:"column:signer;type:varchar(128);primarykey;index:user_signer_idx,priority:2"`
+	ID     uint          `gorm:"column:id;primary_key;unsigned AUTO_INCREMENT;not null"`
+	Signer storedAddress `gorm:"column:signer;type:varchar(128);index:user_signer_idx,priority:2"`
 	User   string        `gorm:"column:user;type:varchar(50);index:user_signer_idx,priority:1;not null"`
 	OrmTimestamp
 }

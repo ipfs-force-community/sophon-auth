@@ -488,7 +488,7 @@ func testMySQLUpsertMiner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sql
 
 	mock.ExpectExec(regexp.QuoteMeta(
 		"INSERT INTO `miners` (`miner`,`user`,`open_mining`,`created_at`,`updated_at`,`deleted_at`) "+
-			"VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE `user`=VALUES(`user`),`open_mining`=VALUES(`open_mining`),"+
+			"VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE `miner`=VALUES(`miner`),`user`=VALUES(`user`),`open_mining`=VALUES(`open_mining`),"+
 			"`updated_at`=VALUES(`updated_at`),`deleted_at`=VALUES(`deleted_at`)")).
 		WithArgs(storedAddress(addr), user, openMining, anyTime{}, anyTime{}, nil).
 		WillReturnResult(sqlmock.NewResult(1, 1))
@@ -580,7 +580,7 @@ func testMySQLUpsertSigner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sq
 
 	mock.ExpectExec(regexp.QuoteMeta(
 		"INSERT INTO `signers` (`signer`,`user`,`created_at`,`updated_at`,`deleted_at`) "+
-			"VALUES (?,?,?,?,?) ON DUPLICATE KEY UPDATE `user`=VALUES(`user`),`updated_at`=VALUES(`updated_at`),"+
+			"VALUES (?,?,?,?,?) ON DUPLICATE KEY UPDATE `signer`=VALUES(`signer`),`user`=VALUES(`user`),`updated_at`=VALUES(`updated_at`),"+
 			"`deleted_at`=VALUES(`deleted_at`)")).
 		WithArgs(storedAddress(addr), user, anyTime{}, anyTime{}, nil).
 		WillReturnResult(sqlmock.NewResult(1, 1))

@@ -3,3 +3,4 @@
 venus-auth
 coverage.*
 .vscode
+dockerfile

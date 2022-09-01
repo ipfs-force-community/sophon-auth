@@ -444,13 +444,18 @@ func testHasMiner(t *testing.T, userMiners map[string][]string) {
 	addUsersAndMiners(t, userMiners)
 
 	// Has Miner
-	has, err := jwtOAuthInstance.HasMiner(context.Background(), &HasMinerRequest{Miner: "t01000", User: "test_user_001"})
+	has, err := jwtOAuthInstance.HasMiner(context.Background(), &HasMinerRequest{Miner: "t01000"})
 	assert.Nil(t, err)
 	assert.True(t, has)
 
-	has, err = jwtOAuthInstance.HasMiner(context.Background(), &HasMinerRequest{Miner: "t01000", User: "test_user_002"})
+	// Miner Exist In Account
+	exist, err := jwtOAuthInstance.MinerExistInUser(context.Background(), &MinerExistInUserRequest{Miner: "t01000", User: "test_user_001"})
 	assert.Nil(t, err)
-	assert.False(t, has)
+	assert.True(t, exist)
+
+	exist, err = jwtOAuthInstance.MinerExistInUser(context.Background(), &MinerExistInUserRequest{Miner: "t01000", User: "test_user_002"})
+	assert.Nil(t, err)
+	assert.False(t, exist)
 }
 
 func testGetUserByMiner(t *testing.T, userMiners map[string][]string) {
@@ -482,7 +487,7 @@ func testDeleteMiner(t *testing.T, userMiners map[string][]string) {
 	assert.Nil(t, err)
 	assert.True(t, deleted)
 	// Then get this miner
-	has, err := jwtOAuthInstance.HasMiner(context.Background(), &HasMinerRequest{Miner: user1Miners[0], User: ""})
+	has, err := jwtOAuthInstance.HasMiner(context.Background(), &HasMinerRequest{Miner: user1Miners[0]})
 	assert.Nil(t, err)
 	assert.False(t, has)
 	// Try to get user by this miner

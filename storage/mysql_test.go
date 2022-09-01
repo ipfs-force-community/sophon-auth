@@ -64,6 +64,7 @@ func TestMysqlStore(t *testing.T) {
 
 	// Miner
 	t.Run("mysql has miner", wrapper(testMySQLHasMiner, mySQLStore, mock))
+	t.Run("mysql miner exist in user", wrapper(testMySQLMinerExistInUser, mySQLStore, mock))
 	t.Run("mysql get user by miner", wrapper(testMySQLGetUserByMiner, mySQLStore, mock))
 	t.Run("mysql list miners", wrapper(testMySQLListMiner, mySQLStore, mock))
 	t.Run("mysql delete miner", wrapper(testMySQLDeleteMiner, mySQLStore, mock))
@@ -416,7 +417,21 @@ func testMySQLHasMiner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmoc
 		WithArgs(storedAddress(addr)).
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
 
-	exist, err := mySQLStore.HasMiner(addr, "")
+	has, err := mySQLStore.HasMiner(addr)
+	assert.Nil(t, err)
+	assert.True(t, has)
+}
+
+func testMySQLMinerExistInUser(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
+	addr, err := address.NewFromString("f01000")
+	assert.Nil(t, err)
+
+	mock.ExpectQuery(regexp.QuoteMeta(
+		"SELECT count(*) FROM `miners` WHERE miner = ? AND user = ? AND deleted_at IS NULL")).
+		WithArgs(storedAddress(addr), "test").
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+
+	exist, err := mySQLStore.MinerExistInUser(addr, "test")
 	assert.Nil(t, err)
 	assert.True(t, exist)
 }

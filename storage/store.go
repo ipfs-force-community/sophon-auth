@@ -72,7 +72,8 @@ type Store interface {
 	// miner
 	// first returned bool, 'miner' is created(true) or updated(false)
 	UpsertMiner(maddr address.Address, userName string, openMining bool) (bool, error)
-	HasMiner(maddr address.Address, userName string) (bool, error)
+	HasMiner(maddr address.Address) (bool, error)
+	MinerExistInUser(maddr address.Address, userName string) (bool, error)
 	GetUserByMiner(maddr address.Address) (*User, error)
 	ListMiners(user string) ([]*Miner, error)
 	// first returned bool, if miner exists(true) or false
@@ -252,7 +253,7 @@ func (sa storedAddress) Value() (driver.Value, error) {
 type Miner struct {
 	ID         uint64        `gorm:"column:id;primaryKey;bigint(20) unsigned AUTO_INCREMENT"`
 	Miner      storedAddress `gorm:"column:miner;type:varchar(128);uniqueIndex:user_miner_idx,priority:2"`
-	User       string        `gorm:"column:user;type:varchar(50);uniqueIndex:user_miner_idx,priority:1;NOT NULL"`
+	User       string        `gorm:"column:user;type:varchar(50);uniqueIndex:user_miner_idx,priority:1;not null"`
 	OpenMining *bool         `gorm:"column:open_mining;default:1;comment:0-false,1-true"`
 	OrmTimestamp
 }

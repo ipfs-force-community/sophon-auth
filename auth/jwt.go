@@ -61,6 +61,7 @@ type OAuthService interface {
 
 	UpsertMiner(ctx context.Context, req *UpsertMinerReq) (bool, error)
 	HasMiner(ctx context.Context, req *HasMinerRequest) (bool, error)
+	MinerExistInUser(ctx context.Context, req *MinerExistInUserRequest) (bool, error)
 	ListMiners(ctx context.Context, req *ListMinerReq) (ListMinerResp, error)
 	DelMiner(ctx context.Context, req *DelMinerReq) (bool, error)
 
@@ -395,11 +396,24 @@ func (o *jwtOAuth) HasMiner(ctx context.Context, req *HasMinerRequest) (bool, er
 		return false, err
 	}
 
-	has, err := o.store.HasMiner(mAddr, req.User)
+	has, err := o.store.HasMiner(mAddr)
 	if err != nil {
 		return false, err
 	}
 	return has, nil
+}
+
+func (o *jwtOAuth) MinerExistInUser(ctx context.Context, req *MinerExistInUserRequest) (bool, error) {
+	mAddr, err := address.NewFromString(req.Miner)
+	if err != nil {
+		return false, err
+	}
+
+	exist, err := o.store.MinerExistInUser(mAddr, req.User)
+	if err != nil {
+		return false, err
+	}
+	return exist, nil
 }
 
 func (o *jwtOAuth) ListMiners(ctx context.Context, req *ListMinerReq) (ListMinerResp, error) {

@@ -19,7 +19,7 @@ var minerSubCmds = &cli.Command{
 	Usage: "Sub commands for managing user miners",
 	Subcommands: []*cli.Command{
 		minerAddCmd,
-		minerHasCmd,
+		minerExistCmd,
 		minerListCmd,
 		minerDeleteCmd,
 	},
@@ -64,13 +64,14 @@ var minerAddCmd = &cli.Command{
 	},
 }
 
-var minerHasCmd = &cli.Command{
-	Name:      "has",
+var minerExistCmd = &cli.Command{
+	Name:      "exist",
 	Usage:     "Check if miner exists",
 	ArgsUsage: "<miner>",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
-			Name: "user",
+			Name:     "user",
+			Required: true,
 		},
 	},
 	Action: func(ctx *cli.Context) error {
@@ -84,21 +85,18 @@ var minerHasCmd = &cli.Command{
 			return err
 		}
 
-		user := ""
-		if ctx.IsSet("user") {
-			user = ctx.String("user")
-		}
+		user := ctx.String("user")
 		miner := ctx.Args().Get(0)
 		addr, err := address.NewFromString(miner)
 		if err != nil {
 			return err
 		}
 
-		has, err := client.HasMiner(&auth.HasMinerRequest{Miner: addr.String(), User: user})
+		exist, err := client.MinerExistInUser(&auth.MinerExistInUserRequest{Miner: addr.String(), User: user})
 		if err != nil {
 			return err
 		}
-		fmt.Println(has)
+		fmt.Println(exist)
 		return nil
 	},
 }

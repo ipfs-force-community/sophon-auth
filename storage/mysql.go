@@ -280,17 +280,19 @@ func (s *mysqlStore) UpsertMiner(maddr address.Address, userName string, openMin
 	}, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false})
 }
 
-func (s mysqlStore) HasMiner(maddr address.Address, userName string) (bool, error) {
+func (s mysqlStore) HasMiner(maddr address.Address) (bool, error) {
 	var count int64
+	if err := s.db.Table("miners").Where("miner = ? AND deleted_at IS NULL", storedAddress(maddr)).Count(&count).Error; err != nil {
+		return false, nil
+	}
 
-	if len(userName) > 0 {
-		if err := s.db.Table("miners").Where("miner = ? AND user = ? AND deleted_at IS NULL", storedAddress(maddr), userName).Count(&count).Error; err != nil {
-			return false, nil
-		}
-	} else {
-		if err := s.db.Table("miners").Where("miner = ? AND deleted_at IS NULL", storedAddress(maddr)).Count(&count).Error; err != nil {
-			return false, nil
-		}
+	return count > 0, nil
+}
+
+func (s mysqlStore) MinerExistInUser(maddr address.Address, userName string) (bool, error) {
+	var count int64
+	if err := s.db.Table("miners").Where("miner = ? AND user = ? AND deleted_at IS NULL", storedAddress(maddr), userName).Count(&count).Error; err != nil {
+		return false, nil
 	}
 
 	return count > 0, nil

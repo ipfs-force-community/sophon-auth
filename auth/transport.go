@@ -140,6 +140,10 @@ type UpsertMinerReq struct {
 
 type HasMinerRequest struct {
 	Miner string `form:"miner"`
+}
+
+type MinerExistInUserRequest struct {
+	Miner string `form:"miner"`
 	User  string `form:"user"`
 }
 

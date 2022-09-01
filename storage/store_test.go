@@ -115,7 +115,7 @@ func testDeleteUser(t *testing.T) {
 	for miner := range miners {
 		addr, err := address.NewFromString(miner)
 		require.Nil(t, err)
-		has, err = theStore.HasMiner(addr, "")
+		has, err = theStore.HasMiner(addr)
 		t.Log(addr.String())
 		require.Nil(t, err)
 		require.False(t, has)

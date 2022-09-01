@@ -42,6 +42,13 @@ func InitRouter(app OAuthApp) http.Handler {
 	rateLimitGroup.POST("/del", app.DelUserRateLimit)
 	rateLimitGroup.GET("", app.GetUserRateLimit)
 
+	// Compatible with older versions(<=v1.6.0)
+	oldMinerGroup := router.Group("/miner")
+	oldMinerGroup.GET("/has-miner", app.HasMiner)
+	oldMinerGroup.GET("/list-by-user", app.ListMiners)
+	oldMinerGroup.POST("/add-miner", app.UpsertMiner)
+	oldMinerGroup.POST("/del", app.DeleteMiner)
+
 	minerGroup := userGroup.Group("/miner")
 	minerGroup.GET("", app.GetUserByMiner)
 	minerGroup.POST("/add", app.UpsertMiner)

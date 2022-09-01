@@ -61,7 +61,7 @@ type Store interface {
 	GetUserRecord(name string) (*User, error)
 	PutUser(*User) error
 	UpdateUser(*User) error
-	ListUsers(skip, limit int64, state int, code core.KeyCode) ([]*User, error)
+	ListUsers(skip, limit int64, state core.UserState) ([]*User, error)
 	DeleteUser(name string) error
 
 	// rate limit

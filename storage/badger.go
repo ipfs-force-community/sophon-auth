@@ -369,7 +369,12 @@ func (s *badgerStore) UpsertMiner(maddr address.Address, userName string) (bool,
 	})
 }
 
-func (s *badgerStore) HasMiner(maddr address.Address, userName string) (bool, error) {
+func (s *badgerStore) HasMiner(maddr address.Address) (bool, error) {
+	miner := &Miner{Miner: storedAddress(maddr)}
+	return s.isExist(miner)
+}
+
+func (s *badgerStore) MinerExistInUser(maddr address.Address, userName string) (bool, error) {
 	bHas := false
 	if err := s.walkThroughPrefix([]byte(PrefixMiner), func(item *badger.Item) (isContinueWalk bool, err error) {
 		var miner Miner
@@ -378,15 +383,10 @@ func (s *badgerStore) HasMiner(maddr address.Address, userName string) (bool, er
 				return err
 			}
 
-			if len(userName) > 0 {
-				if miner.User == userName && miner.Miner.Address().String() == maddr.String() && !miner.isDeleted() {
-					bHas = true
-				}
-			} else {
-				if miner.Miner.Address().String() == maddr.String() && !miner.isDeleted() {
-					bHas = true
-				}
+			if miner.User == userName && miner.Miner.Address().String() == maddr.String() && !miner.isDeleted() {
+				bHas = true
 			}
+
 			return nil
 		}); err != nil {
 			return false, err

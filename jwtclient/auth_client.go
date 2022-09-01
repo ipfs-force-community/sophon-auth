@@ -342,8 +342,23 @@ func (lc *AuthClient) HasMiner(req *auth.HasMinerRequest) (bool, error) {
 	var has bool
 	resp, err := lc.cli.R().SetQueryParams(map[string]string{
 		"miner": req.Miner,
+	}).SetResult(&has).SetError(&errcode.ErrMsg{}).Get("/miner/has")
+	if err != nil {
+		return false, err
+	}
+
+	if resp.StatusCode() == http.StatusOK {
+		return *resp.Result().(*bool), nil
+	}
+	return false, resp.Error().(*errcode.ErrMsg).Err()
+}
+
+func (lc *AuthClient) MinerExistInUser(req *auth.MinerExistInUserRequest) (bool, error) {
+	var has bool
+	resp, err := lc.cli.R().SetQueryParams(map[string]string{
+		"miner": req.Miner,
 		"user":  req.User,
-	}).SetResult(&has).SetError(&errcode.ErrMsg{}).Get("/user/miner/has")
+	}).SetResult(&has).SetError(&errcode.ErrMsg{}).Get("/user/miner/exist")
 	if err != nil {
 		return false, err
 	}

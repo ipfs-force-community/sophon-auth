@@ -13,6 +13,7 @@ func TestMinerApis(t *testing.T) {
 	t.Run("upsert miner", testUpsertMiners)
 	t.Run("list miner by user", testListMinerByUser)
 	t.Run("has miner", testHasMiner)
+	t.Run("miner exist in user", testMinerExistInUser)
 	t.Run("get user by miner", testGetUserByMiner)
 	t.Run("delete miner", testDeleteMiner)
 }
@@ -65,14 +66,33 @@ func testHasMiner(t *testing.T) {
 	miner3 := "t01004"
 
 	// Has miner
-	has, err := client.HasMiner(&auth.HasMinerRequest{Miner: miner2, User: ""})
+	has, err := client.HasMiner(&auth.HasMinerRequest{Miner: miner2})
 	assert.Nil(t, err)
 	assert.True(t, has)
 
 	// Has invalid miner
-	has, err = client.HasMiner(&auth.HasMinerRequest{Miner: miner3, User: ""})
+	has, err = client.HasMiner(&auth.HasMinerRequest{Miner: miner3})
 	assert.Nil(t, err)
 	assert.False(t, has)
+}
+
+func testMinerExistInUser(t *testing.T) {
+	client, tmpDir := setupAndAddMiners(t)
+	defer shutdown(t, tmpDir)
+
+	userName := "Rennbon"
+	miner := "t01002"
+	notExistMiner := "t010010"
+
+	// Has miner
+	exist, err := client.MinerExistInUser(&auth.MinerExistInUserRequest{Miner: miner, User: userName})
+	assert.Nil(t, err)
+	assert.True(t, exist)
+
+	// Has invalid miner
+	exist, err = client.MinerExistInUser(&auth.MinerExistInUserRequest{Miner: notExistMiner, User: userName})
+	assert.Nil(t, err)
+	assert.False(t, exist)
 }
 
 func testGetUserByMiner(t *testing.T) {
@@ -99,7 +119,7 @@ func testDeleteMiner(t *testing.T) {
 	assert.True(t, success)
 
 	// Check this miner
-	has, err := client.HasMiner(&auth.HasMinerRequest{Miner: miner1, User: ""})
+	has, err := client.HasMiner(&auth.HasMinerRequest{Miner: miner1})
 	assert.Nil(t, err)
 	assert.False(t, has)
 

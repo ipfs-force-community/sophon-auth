@@ -5,8 +5,9 @@ import (
 
 	"golang.org/x/xerrors"
 
-	"github.com/filecoin-project/venus-auth/config"
 	"github.com/gin-gonic/gin"
+
+	"github.com/filecoin-project/venus-auth/config"
 )
 
 type OAuthApp interface {
@@ -32,6 +33,7 @@ type OAuthApp interface {
 
 	UpsertMiner(c *gin.Context)
 	HasMiner(c *gin.Context)
+	MinerExistInUser(c *gin.Context)
 	ListMiners(c *gin.Context)
 	DeleteMiner(c *gin.Context)
 	GetUserByMiner(c *gin.Context)
@@ -372,6 +374,20 @@ func (o *oauthApp) HasMiner(c *gin.Context) {
 		return
 	}
 	res, err := o.srv.HasMiner(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	SuccessResponse(c, res)
+}
+
+func (o *oauthApp) MinerExistInUser(c *gin.Context) {
+	req := new(MinerExistInUserRequest)
+	if err := c.ShouldBindQuery(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+	res, err := o.srv.MinerExistInUser(c, req)
 	if err != nil {
 		BadResponse(c, err)
 		return

@@ -44,16 +44,19 @@ func InitRouter(app OAuthApp) http.Handler {
 
 	// Compatible with older versions(<=v1.6.0)
 	oldMinerGroup := router.Group("/miner")
+	oldMinerGroup.GET("", app.GetUserByMiner)
 	oldMinerGroup.GET("/has-miner", app.HasMiner)
 	oldMinerGroup.GET("/list-by-user", app.ListMiners)
 	oldMinerGroup.POST("/add-miner", app.UpsertMiner)
 	oldMinerGroup.POST("/del", app.DeleteMiner)
 
+	oldMinerGroup.GET("/has", app.HasMiner)
+
 	minerGroup := userGroup.Group("/miner")
 	minerGroup.GET("", app.GetUserByMiner)
 	minerGroup.POST("/add", app.UpsertMiner)
 	minerGroup.GET("/list", app.ListMiners)
-	minerGroup.GET("/has", app.HasMiner)
+	minerGroup.GET("/exist", app.MinerExistInUser)
 	minerGroup.POST("/del", app.DeleteMiner)
 
 	signerGroup := userGroup.Group("/signer")

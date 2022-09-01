@@ -3,6 +3,7 @@ package jwtclient
 import (
 	"context"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -208,7 +209,7 @@ func TestUserBusiness(t *testing.T) {
 		Miner: "f02345",
 	})
 	if err != nil {
-		t.Fatalf("has miner err:%s", err)
+		fmt.Printf("err: %s\n", err.Error())
 	}
 	assert.DeepEqual(t, true, has)
 
@@ -219,6 +220,24 @@ func TestUserBusiness(t *testing.T) {
 		t.Fatalf("has miner err:%s", err)
 	}
 	assert.DeepEqual(t, false, has)
+
+	exist, err := cli.MinerExistInUser(&auth.MinerExistInUserRequest{
+		Miner: "f02345",
+		User:  "name1",
+	})
+	if err != nil {
+		t.Fatalf("check miner exist in user err:%s", err)
+	}
+	assert.DeepEqual(t, true, exist)
+
+	exist, err = cli.MinerExistInUser(&auth.MinerExistInUserRequest{
+		Miner: "f023450",
+		User:  "name1",
+	})
+	if err != nil {
+		t.Fatalf("check miner exist in user err:%s", err)
+	}
+	assert.DeepEqual(t, false, exist)
 
 	user, err := cli.GetUser(&auth.GetUserRequest{
 		Name: "name2",

@@ -4,15 +4,17 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/venus-auth/config"
-	"github.com/filecoin-project/venus-auth/core"
-	"github.com/filecoin-project/venus-auth/log"
 	"github.com/google/uuid"
 	"golang.org/x/xerrors"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"github.com/filecoin-project/go-address"
+
+	"github.com/filecoin-project/venus-auth/config"
+	"github.com/filecoin-project/venus-auth/core"
+	"github.com/filecoin-project/venus-auth/log"
 )
 
 type mysqlStore struct {
@@ -155,9 +157,9 @@ func (s *mysqlStore) PutUser(user *User) error {
 	return s.db.Table("users").Create(user).Error
 }
 
-func (s *mysqlStore) ListUsers(skip, limit int64, state int, code core.KeyCode) ([]*User, error) {
+func (s *mysqlStore) ListUsers(skip, limit int64, state core.UserState) ([]*User, error) {
 	exec := s.db.Table("users")
-	if code&4 == 4 {
+	if state != core.UserStateUndefined {
 		exec = exec.Where("state=?", state)
 	}
 	arr := make([]*User, 0)
@@ -333,7 +335,7 @@ func (s *mysqlStore) UpsertSigner(addr address.Address, userName string) (bool, 
 		if err := tx.Model(&Signer{}).Where("`signer` = ?", storedSigner).Count(&count).Error; err != nil {
 			return err
 		}
-		isCreate = count > 0
+		isCreate = count == 0
 		return tx.Model(&Signer{}).
 			Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "signer"}}, UpdateAll: true}).
 			Create(&Signer{Signer: storedSigner, User: user.Name}).Error

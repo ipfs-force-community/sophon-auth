@@ -12,15 +12,15 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/filecoin-project/venus-auth/log"
-
-	"github.com/filecoin-project/go-address"
 	"github.com/gbrlsnchs/jwt/v3"
 	"github.com/google/uuid"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/go-address"
+
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/core"
+	"github.com/filecoin-project/venus-auth/log"
 	"github.com/filecoin-project/venus-auth/storage"
 	"github.com/filecoin-project/venus-auth/util"
 )
@@ -294,17 +294,17 @@ func (o *jwtOAuth) UpdateUser(ctx context.Context, req *UpdateUserRequest) error
 		return err
 	}
 	user.UpdateTime = time.Now().Local()
-	if req.KeySum&2 == 2 {
+	if len(req.Comment) > 0 {
 		user.Comment = req.Comment
 	}
-	if req.KeySum&4 == 4 {
+	if req.State != core.UserStateUndefined {
 		user.State = req.State
 	}
 	return o.store.UpdateUser(user)
 }
 
 func (o *jwtOAuth) ListUsers(ctx context.Context, req *ListUsersRequest) (ListUsersResponse, error) {
-	users, err := o.store.ListUsers(req.GetSkip(), req.GetLimit(), req.State, req.KeySum)
+	users, err := o.store.ListUsers(req.GetSkip(), req.GetLimit(), core.UserState(req.State))
 	if err != nil {
 		return nil, err
 	}

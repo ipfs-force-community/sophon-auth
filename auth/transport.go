@@ -39,23 +39,19 @@ type GetTokensRequest struct {
 	*core.Page
 }
 
-// @state: keyCode 4
-// @keySum: request params code sum, enum 1 2 4 8, to multi-select
-func NewListUsersRequest(skip, limit int64, state int, keySum core.KeyCode) *ListUsersRequest {
+func NewListUsersRequest(skip, limit int64, state int) *ListUsersRequest {
 	return &ListUsersRequest{
 		Page: &core.Page{
 			Skip:  skip,
 			Limit: limit,
 		},
-		State:  state,
-		KeySum: keySum,
+		State: state,
 	}
 }
 
 type ListUsersRequest struct {
 	*core.Page
-	State  int          `form:"state" json:"state"` // keyCode: 4
-	KeySum core.KeyCode `form:"keySum"`             // keyCode sum
+	State int `form:"state" json:"state"`
 }
 
 type ListUsersResponse = []*OutputUser
@@ -83,10 +79,9 @@ type CreateUserRequest struct {
 type CreateUserResponse = OutputUser
 
 type UpdateUserRequest struct {
-	KeySum  core.KeyCode   `form:"keySum"` // keyCode Sum
 	Name    string         `form:"name"`
-	Comment string         `form:"comment"` // keyCode:2
-	State   core.UserState `form:"state"`   // keyCode:4
+	Comment string         `form:"comment"`
+	State   core.UserState `form:"state"`
 }
 
 type OutputUser struct {

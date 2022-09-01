@@ -70,6 +70,7 @@ func testListUser(t *testing.T) {
 			Skip:  0,
 			Limit: 10,
 		},
+		State: int(core.UserStateUndefined),
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, len(listResp), 1)

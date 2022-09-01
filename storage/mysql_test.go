@@ -315,7 +315,7 @@ func testMySQLListUsers(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmo
 		WithArgs(core.NotDelete).
 		WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("user1").AddRow("user2"))
 
-	users, err := mySQLStore.ListUsers(skip, limit, 0, 1)
+	users, err := mySQLStore.ListUsers(skip, limit, core.UserStateUndefined)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(users))
 }
@@ -494,9 +494,9 @@ func testMySQLUpsertMiner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sql
 
 	mock.ExpectCommit()
 
-	success, err := mySQLStore.UpsertMiner(addr, user)
+	isCreate, err := mySQLStore.UpsertMiner(addr, user)
 	assert.Nil(t, err)
-	assert.True(t, success)
+	assert.False(t, isCreate)
 }
 
 func testMySQLHasSigner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
@@ -586,9 +586,9 @@ func testMySQLUpsertSigner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sq
 
 	mock.ExpectCommit()
 
-	success, err := mySQLStore.UpsertSigner(addr, user)
+	isCreate, err := mySQLStore.UpsertSigner(addr, user)
 	assert.Nil(t, err)
-	assert.True(t, success)
+	assert.False(t, isCreate)
 }
 
 func testMySQLVersion(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {

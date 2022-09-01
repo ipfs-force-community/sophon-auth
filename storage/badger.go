@@ -4,15 +4,14 @@ import (
 	"errors"
 	"time"
 
-	"github.com/filecoin-project/venus-auth/log"
-
-	"github.com/google/uuid"
-
 	"github.com/dgraph-io/badger/v3"
-	"github.com/filecoin-project/go-address"
+	"github.com/google/uuid"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/go-address"
+
 	"github.com/filecoin-project/venus-auth/core"
+	"github.com/filecoin-project/venus-auth/log"
 )
 
 var _ Store = &badgerStore{}
@@ -144,7 +143,7 @@ func (s *badgerStore) PutUser(user *User) error {
 	return s.putBadgerObj(user)
 }
 
-func (s *badgerStore) ListUsers(skip, limit int64, state int, code core.KeyCode) ([]*User, error) {
+func (s *badgerStore) ListUsers(skip, limit int64, state core.UserState) ([]*User, error) {
 	var users []*User
 	var satisfiedItemCount = int64(0)
 	if err := s.walkThroughPrefix([]byte(PrefixUser), func(item *badger.Item) (bool, error) {
@@ -153,7 +152,7 @@ func (s *badgerStore) ListUsers(skip, limit int64, state int, code core.KeyCode)
 			if err := user.FromBytes(val); err != nil {
 				return err
 			}
-			if code&4 == 4 && int(user.State) != state {
+			if state != core.UserStateUndefined && user.State != state {
 				return nil
 			}
 			if user.isDeleted() {

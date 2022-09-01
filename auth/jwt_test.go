@@ -304,7 +304,8 @@ func testListUser(t *testing.T, userMiners map[string][]string) {
 	createUsers(t, userMiners)
 
 	allUserInfos, err := jwtOAuthInstance.ListUsers(context.Background(), &ListUsersRequest{
-		Page: &core.Page{},
+		Page:  &core.Page{},
+		State: int(core.UserStateUndefined),
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(allUserInfos))
@@ -320,7 +321,6 @@ func testUpdateUser(t *testing.T, userMiners map[string][]string) {
 
 	// Update a user
 	updateUserReq := &UpdateUserRequest{
-		KeySum:  2,
 		Name:    existUserName,
 		Comment: "New Comment",
 	}
@@ -349,7 +349,8 @@ func testDeleteAndRecoverUser(t *testing.T, userMiners map[string][]string) {
 	assert.NotNil(t, err)
 	// And also list users now
 	allUserInfos, err := jwtOAuthInstance.ListUsers(context.Background(), &ListUsersRequest{
-		Page: &core.Page{},
+		Page:  &core.Page{},
+		State: int(core.UserStateUndefined),
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(allUserInfos))

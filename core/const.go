@@ -14,20 +14,6 @@ var Version = BuildVersion + CurrentCommit
 const EmptyString = ""
 
 type DBPrefix = []byte
-
-var (
-	PrefixNode = DBPrefix("node")
-)
-
-const (
-	ServiceToken = "Authorization"
-)
-
-var (
-	// net work name set by cli
-	NameSpace string
-)
-
 type Permission = string
 
 const (
@@ -102,9 +88,6 @@ var TagFields = []LogField{
 	FieldSvcName,
 }
 
-// request params code sum,enum 1 2 4 8, to multi-select
-type KeyCode = int
-
 type Page struct {
 	Skip  int64 `form:"skip" json:"skip"`
 	Limit int64 `form:"limit" json:"limit"`
@@ -126,8 +109,10 @@ func (o *Page) GetLimit() int64 {
 type UserState int
 
 const (
-	UserStateDisabled UserState = 0
-	UserStateEnabled  UserState = 1
+	UserStateDisabled UserState = iota
+	UserStateEnabled
+
+	UserStateUndefined UserState = -1
 )
 
 var userStateStrs = map[UserState]string{

@@ -128,11 +128,11 @@ var userUpdateCmd = &cli.Command{
 		}
 		if ctx.IsSet("comment") {
 			req.Comment = ctx.String("comment")
-			req.KeySum |= 2
 		}
 		if ctx.IsSet("state") {
 			req.State = core.UserState(ctx.Int("state"))
-			req.KeySum |= 4
+		} else {
+			req.State = core.UserStateUndefined
 		}
 		err = client.UpdateUser(req)
 		if err != nil {
@@ -163,7 +163,6 @@ var userActiveCmd = &cli.Command{
 		}
 
 		req.State = 1
-		req.KeySum |= 4
 
 		err = client.UpdateUser(req)
 		if err != nil {
@@ -200,12 +199,14 @@ var userListCmd = &cli.Command{
 				Limit: ctx.Int64("limit"),
 				Skip:  ctx.Int64("skip"),
 			},
-			State: ctx.Int("state"),
 		}
+
 		if ctx.IsSet("state") {
-			req.KeySum |= 4
 			req.State = ctx.Int("state")
+		} else {
+			req.State = int(core.UserStateUndefined)
 		}
+
 		users, err := client.ListUsersWithMiners(req)
 		if err != nil {
 			return err

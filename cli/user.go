@@ -56,12 +56,14 @@ var userAddCmd = &cli.Command{
 		}
 
 		name := ctx.Args().Get(0)
-		comment := ctx.String("comment")
 		state := ctx.Int("state")
 		user := &auth.CreateUserRequest{
-			Name:    name,
-			Comment: comment,
-			State:   core.UserState(state),
+			Name:  name,
+			State: core.UserState(state),
+		}
+		if ctx.IsSet("comment") {
+			comment := ctx.String("comment")
+			user.Comment = &comment
 		}
 		res, err := client.CreateUser(user)
 		if err != nil {
@@ -127,7 +129,8 @@ var userUpdateCmd = &cli.Command{
 			Name: ctx.String("name"),
 		}
 		if ctx.IsSet("comment") {
-			req.Comment = ctx.String("comment")
+			comment := ctx.String("comment")
+			req.Comment = &comment
 		}
 		if ctx.IsSet("state") {
 			req.State = core.UserState(ctx.Int("state"))
@@ -159,10 +162,9 @@ var userActiveCmd = &cli.Command{
 		}
 
 		req := &auth.UpdateUserRequest{
-			Name: ctx.Args().Get(0),
+			Name:  ctx.Args().Get(0),
+			State: 1,
 		}
-
-		req.State = 1
 
 		err = client.UpdateUser(req)
 		if err != nil {

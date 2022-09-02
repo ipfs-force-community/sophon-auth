@@ -276,11 +276,13 @@ func (o *jwtOAuth) CreateUser(ctx context.Context, req *CreateUserRequest) (*Cre
 	userNew := &storage.User{
 		Id:         uid.String(),
 		Name:       req.Name,
-		Comment:    req.Comment,
 		State:      req.State,
 		CreateTime: time.Now().Local(),
 		UpdateTime: time.Now().Local(),
 		IsDeleted:  core.NotDelete,
+	}
+	if req.Comment != nil {
+		userNew.Comment = *req.Comment
 	}
 	err = o.store.PutUser(userNew)
 	if err != nil {
@@ -295,8 +297,8 @@ func (o *jwtOAuth) UpdateUser(ctx context.Context, req *UpdateUserRequest) error
 		return err
 	}
 	user.UpdateTime = time.Now().Local()
-	if len(req.Comment) > 0 {
-		user.Comment = req.Comment
+	if req.Comment != nil {
+		user.Comment = *req.Comment
 	}
 	if req.State != core.UserStateUndefined {
 		user.State = req.State

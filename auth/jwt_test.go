@@ -246,9 +246,8 @@ func createUsers(t *testing.T, userMiners map[string][]string) {
 	// Create 3 users
 	for userName := range userMiners {
 		createUserReq := &CreateUserRequest{
-			Name:    userName,
-			Comment: "",
-			State:   0,
+			Name:  userName,
+			State: 0,
 		}
 		resp, err := jwtOAuthInstance.CreateUser(context.Background(), createUserReq)
 		assert.Nil(t, err)
@@ -263,17 +262,18 @@ func testCreateUser(t *testing.T, userMiners map[string][]string) {
 	defer shutdown(&cfg, t)
 
 	existUserName := "test_user_001"
+	comment := "test comment"
 	// Create 3 users
 	for userName := range userMiners {
 		createUserReq := &CreateUserRequest{
 			Name:    userName,
-			Comment: "",
+			Comment: &comment,
 			State:   0,
 		}
 		resp, err := jwtOAuthInstance.CreateUser(context.Background(), createUserReq)
 		assert.Nil(t, err)
 		assert.Equal(t, userName, resp.Name)
-		assert.Equal(t, "", resp.Comment)
+		assert.Equal(t, "test comment", resp.Comment)
 	}
 	// Create duplicate user
 	_, err := jwtOAuthInstance.CreateUser(context.Background(), &CreateUserRequest{Name: existUserName})
@@ -320,9 +320,10 @@ func testUpdateUser(t *testing.T, userMiners map[string][]string) {
 	createUsers(t, userMiners)
 
 	// Update a user
+	comment := "New Comment"
 	updateUserReq := &UpdateUserRequest{
 		Name:    existUserName,
-		Comment: "New Comment",
+		Comment: &comment,
 	}
 	err := jwtOAuthInstance.UpdateUser(context.Background(), updateUserReq)
 	assert.Nil(t, err)
@@ -379,9 +380,8 @@ func testDeleteAndRecoverUser(t *testing.T, userMiners map[string][]string) {
 func addUsersAndMiners(t *testing.T, userMiners map[string][]string) {
 	for userName, miners := range userMiners {
 		createUserReq := &CreateUserRequest{
-			Name:    userName,
-			Comment: "",
-			State:   0,
+			Name:  userName,
+			State: 0,
 		}
 		// Create users.
 		_, _ = jwtOAuthInstance.CreateUser(context.Background(), createUserReq)
@@ -619,9 +619,8 @@ func addUsersAndRateLimits(t *testing.T, userMiners map[string][]string, originL
 	// Create 3 users and add rate limits
 	for userName := range userMiners {
 		createUserReq := &CreateUserRequest{
-			Name:    userName,
-			Comment: "",
-			State:   0,
+			Name:  userName,
+			State: 0,
 		}
 		_, _ = jwtOAuthInstance.CreateUser(context.Background(), createUserReq)
 	}

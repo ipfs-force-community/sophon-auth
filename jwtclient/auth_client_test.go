@@ -132,16 +132,17 @@ func TestTokenBusiness(t *testing.T) {
 }
 
 func TestUserBusiness(t *testing.T) {
+	comment := "this is a comment"
 	var createReqs = []*auth.CreateUserRequest{
 		{
 			Name:    "name1",
-			Comment: "this is a comment",
+			Comment: nil,
 			State:   1,
 		},
 		{
 
 			Name:    "name2",
-			Comment: "this is a comment",
+			Comment: &comment,
 			State:   1,
 		},
 	}
@@ -185,10 +186,11 @@ func TestUserBusiness(t *testing.T) {
 		assert.DeepEqual(t, u.State, tmpU.State)
 	}
 
+	newComment := "this is a new comment"
 	for _, res1 := range originUsers {
 		err = cli.UpdateUser(&auth.UpdateUserRequest{
 			Name:    res1.Name,
-			Comment: "this is a comment?",
+			Comment: &newComment,
 			State:   1,
 		})
 		if err != nil {

@@ -73,14 +73,14 @@ type UpsertUserRateLimitReq storage.UserRateLimit
 
 type CreateUserRequest struct {
 	Name    string         `form:"name" binding:"required"`
-	Comment string         `form:"comment"`
+	Comment *string        `form:"comment"`
 	State   core.UserState `form:"state"` // 0: disable, 1: enable
 }
 type CreateUserResponse = OutputUser
 
 type UpdateUserRequest struct {
 	Name    string         `form:"name"`
-	Comment string         `form:"comment"`
+	Comment *string        `form:"comment"`
 	State   core.UserState `form:"state"`
 }
 

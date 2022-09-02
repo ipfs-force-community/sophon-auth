@@ -5,7 +5,8 @@ import (
 )
 
 var Commands = []*cli.Command{
-	runCmd,
+	runCommand,
 	tokenSubCommand,
 	userSubCommand,
+	minerHasCommand,
 }

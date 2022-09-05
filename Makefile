@@ -17,7 +17,7 @@ show-env:
 	@echo '| git commit=$(git)'
 	@echo '-------------------------------------------------'
 
-venus-auth:show-env $(BUILD_DEPS)
+venus-auth:show-env
 	go build $(GOFLAGS) -o venus-auth ./cmd/server/*.go
 
 lint:
@@ -41,5 +41,5 @@ static: clean
 TAG:=test
 docker:
 	curl -O https://raw.githubusercontent.com/filecoin-project/venus-docs/master/script/dockerfile
-	docker build --build-arg https_proxy=$(BUILD_DOCKER_PROXY) --build-arg BUILD_TARGET=venus-auth -t venus-auth .
+	docker build --build-arg https_proxy=$(BUILD_DOCKER_PROXY)  -t venus-auth .
 	docker tag venus-auth filvenus/venus-auth:$(TAG)

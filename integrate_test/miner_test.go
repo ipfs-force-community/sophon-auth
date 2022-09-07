@@ -84,13 +84,11 @@ func testMinerExistInUser(t *testing.T) {
 	miner := "t01002"
 	notExistMiner := "t010010"
 
-	// Has miner
-	exist, err := client.MinerExistInUser(&auth.MinerExistInUserRequest{Miner: miner, User: userName})
+	exist, err := client.MinerExistInUser(userName, miner)
 	assert.Nil(t, err)
 	assert.True(t, exist)
 
-	// Has invalid miner
-	exist, err = client.MinerExistInUser(&auth.MinerExistInUserRequest{Miner: notExistMiner, User: userName})
+	exist, err = client.MinerExistInUser(userName, notExistMiner)
 	assert.Nil(t, err)
 	assert.False(t, exist)
 }

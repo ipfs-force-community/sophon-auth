@@ -69,7 +69,7 @@ type Store interface {
 	PutRateLimit(limit *UserRateLimit) (string, error)
 	DelRateLimit(name, id string) error
 
-	// miner
+	// miner-user(1-1)
 	// first returned bool, 'miner' is created(true) or updated(false)
 	UpsertMiner(maddr address.Address, userName string, openMining bool) (bool, error)
 	HasMiner(maddr address.Address) (bool, error)
@@ -79,12 +79,17 @@ type Store interface {
 	// first returned bool, if miner exists(true) or false
 	DelMiner(maddr address.Address) (bool, error)
 
-	// signer
-	UpsertSigner(addr address.Address, userName string) (bool, error)
-	HasSigner(addr address.Address, userName string) (bool, error)
-	GetUserBySigner(addr address.Address) (*User, error)
-	ListSigner(user string) ([]*Signer, error)
+	// signer-user(n-n)
+	RegisterSigner(addr address.Address, userName string) (bool, error)
+	SignerExistInUser(addr address.Address, userName string) (bool, error)
+	ListSigner(userName string) ([]*Signer, error)
+	UnregisterSigner(addr address.Address, userName string) (bool, error)
+	// has signer in system
+	HasSigner(addr address.Address) (bool, error)
+	// delete all signers
 	DelSigner(addr address.Address) (bool, error)
+	// all users including the specified signer
+	GetUserBySigner(addr address.Address) ([]*User, error)
 
 	Version() (uint64, error)
 	MigrateToV1() error
@@ -160,6 +165,7 @@ type User struct {
 type OrmTimestamp struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	// Implemented soft delete
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
@@ -271,11 +277,11 @@ func (m *Miner) key() []byte {
 }
 
 func (m *Miner) isDeleted() bool {
-	return !m.DeletedAt.Valid
+	return m.DeletedAt.Valid && !m.DeletedAt.Time.IsZero()
 }
 
 func (m *Miner) setDeleted() {
-	m.DeletedAt.Valid = false
+	m.DeletedAt.Valid = true
 	m.DeletedAt.Time = time.Now()
 }
 
@@ -295,15 +301,15 @@ func (m *Signer) FromBytes(buf []byte) error {
 }
 
 func (m *Signer) key() []byte {
-	return signerKey(m.Signer.Address().String())
+	return signerForUserKey(m.Signer.Address().String(), m.User)
 }
 
 func (m *Signer) isDeleted() bool {
-	return !m.DeletedAt.Valid
+	return m.DeletedAt.Valid && !m.DeletedAt.Time.IsZero()
 }
 
 func (m *Signer) setDeleted() {
-	m.DeletedAt.Valid = false
+	m.DeletedAt.Valid = true
 	m.DeletedAt.Time = time.Now()
 }
 

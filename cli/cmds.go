@@ -8,5 +8,6 @@ var Commands = []*cli.Command{
 	runCommand,
 	tokenSubCommand,
 	userSubCommand,
-	minerHasCommand,
+	minerSubCommand,
+	signerSubCommand,
 }

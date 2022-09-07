@@ -18,15 +18,15 @@ var signerSubCmds = &cli.Command{
 	Name:  "signer",
 	Usage: "Sub commands for managing user signed accounts",
 	Subcommands: []*cli.Command{
-		signerAddCmd,
-		signerHasCmd,
+		signerRegisterCmd,
+		signerExistCmd,
 		signerListCmd,
-		signerDeleteCmd,
+		signerUnregisterCmd,
 	},
 }
 
-var signerAddCmd = &cli.Command{
-	Name:      "add",
+var signerRegisterCmd = &cli.Command{
+	Name:      "register",
 	Usage:     "Add signer address for specified user",
 	ArgsUsage: "<user> <signer address>",
 	Action: func(ctx *cli.Context) error {
@@ -41,7 +41,7 @@ var signerAddCmd = &cli.Command{
 		user, addr := ctx.Args().Get(0), ctx.Args().Get(1)
 
 		var isCreate bool
-		if isCreate, err = client.UpsertSigner(user, addr); err != nil {
+		if isCreate, err = client.RegisterSigner(user, addr); err != nil {
 			return err
 		}
 		var opStr string
@@ -56,13 +56,14 @@ var signerAddCmd = &cli.Command{
 	},
 }
 
-var signerHasCmd = &cli.Command{
-	Name:      "has",
+var signerExistCmd = &cli.Command{
+	Name:      "exist",
 	Usage:     "Check if signer address exists",
 	ArgsUsage: "<signer address>",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
-			Name: "user",
+			Name:     "user",
+			Required: true,
 		},
 	},
 	Action: func(ctx *cli.Context) error {
@@ -76,17 +77,14 @@ var signerHasCmd = &cli.Command{
 			return err
 		}
 
-		user := ""
-		if ctx.IsSet("user") {
-			user = ctx.String("user")
-		}
+		user := ctx.String("user")
 		addrStr := ctx.Args().Get(0)
 		addr, err := address.NewFromString(addrStr)
 		if err != nil {
 			return err
 		}
 
-		has, err := client.HasSigner(&auth.HasSignerRequest{Signer: addr.String(), User: user})
+		has, err := client.SignerExistInUser(user, addr.String())
 		if err != nil {
 			return err
 		}
@@ -137,10 +135,16 @@ var signerListCmd = &cli.Command{
 	},
 }
 
-var signerDeleteCmd = &cli.Command{
-	Name:      "delete",
-	Usage:     "Delete signer",
+var signerUnregisterCmd = &cli.Command{
+	Name:      "unregister",
+	Usage:     "Unregister signer",
 	ArgsUsage: "<signer address>",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:     "user",
+			Required: true,
+		},
+	},
 	Action: func(ctx *cli.Context) error {
 		args := ctx.Args()
 		if args.Len() != 1 {
@@ -154,15 +158,16 @@ var signerDeleteCmd = &cli.Command{
 		}
 
 		signer := args.First()
-		exists, err := client.DelSigner(signer)
+		user := ctx.String("user")
+		exists, err := client.UnregisterSigner(user, signer)
 		if err != nil {
-			return xerrors.Errorf("delete signer:%s failed: %w", signer, err)
+			return xerrors.Errorf("unregister signer:%s failed: %w", signer, err)
 		}
 
 		if exists {
-			fmt.Printf("delete signer:%s success.\n", signer)
+			fmt.Printf("unregister signer:%s of %s success.\n", signer, user)
 		} else {
-			fmt.Printf("signer:%s not exists.\n", signer)
+			fmt.Printf("signer: %s not exists in %s.\n", signer, user)
 		}
 		return nil
 	},

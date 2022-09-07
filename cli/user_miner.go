@@ -92,7 +92,7 @@ var minerExistCmd = &cli.Command{
 			return err
 		}
 
-		exist, err := client.MinerExistInUser(&auth.MinerExistInUserRequest{Miner: addr.String(), User: user})
+		exist, err := client.MinerExistInUser(user, addr.String())
 		if err != nil {
 			return err
 		}

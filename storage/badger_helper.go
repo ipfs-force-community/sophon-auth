@@ -2,6 +2,7 @@ package storage
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/dgraph-io/badger/v3"
@@ -38,8 +39,12 @@ func minerKey(miner string) []byte {
 	return []byte(PrefixMiner + miner)
 }
 
-func signerKey(addr string) []byte {
-	return []byte(PrefixSigner + addr)
+func signerKey(signer string) []byte {
+	return []byte(PrefixSigner + signer)
+}
+
+func signerForUserKey(signer, userName string) []byte {
+	return []byte(fmt.Sprintf("%s%s:%s", PrefixSigner, signer, userName))
 }
 
 // if key not exists, will get a badger.ErrKeyNotFound error.

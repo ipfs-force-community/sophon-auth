@@ -38,10 +38,12 @@ type OAuthApp interface {
 	DeleteMiner(c *gin.Context)
 	GetUserByMiner(c *gin.Context)
 
-	UpsertSigner(c *gin.Context)
+	RegisterSigner(c *gin.Context)
+	SignerExistInUser(c *gin.Context)
 	ListSigner(c *gin.Context)
+	UnregisterSigner(c *gin.Context)
 	HasSigner(c *gin.Context)
-	DeleteSigner(c *gin.Context)
+	DelSigner(c *gin.Context)
 	GetUserBySigner(c *gin.Context)
 }
 
@@ -422,13 +424,13 @@ func (o *oauthApp) DeleteMiner(c *gin.Context) {
 	SuccessResponse(c, res)
 }
 
-func (o *oauthApp) UpsertSigner(c *gin.Context) {
-	req := new(UpsertSignerReq)
+func (o *oauthApp) RegisterSigner(c *gin.Context) {
+	req := new(RegisterSignerReq)
 	if err := c.ShouldBind(req); err != nil {
 		BadResponse(c, err)
 		return
 	}
-	isCreate, err := o.srv.UpsertSigner(c, req)
+	isCreate, err := o.srv.RegisterSigner(c, req)
 	if err != nil {
 		BadResponse(c, err)
 		return
@@ -436,13 +438,13 @@ func (o *oauthApp) UpsertSigner(c *gin.Context) {
 	SuccessResponse(c, isCreate)
 }
 
-func (o *oauthApp) HasSigner(c *gin.Context) {
-	req := new(HasSignerRequest)
+func (o *oauthApp) SignerExistInUser(c *gin.Context) {
+	req := new(SignerExistInUserReq)
 	if err := c.ShouldBindQuery(req); err != nil {
 		BadResponse(c, err)
 		return
 	}
-	res, err := o.srv.HasSigner(c, req)
+	res, err := o.srv.SignerExistInUser(c, req)
 	if err != nil {
 		BadResponse(c, err)
 		return
@@ -464,7 +466,34 @@ func (o *oauthApp) ListSigner(c *gin.Context) {
 	SuccessResponse(c, res)
 }
 
-func (o *oauthApp) DeleteSigner(c *gin.Context) {
+func (o *oauthApp) UnregisterSigner(c *gin.Context) {
+	req := new(UnregisterSignerReq)
+	if err := c.ShouldBind(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+	res, err := o.srv.UnregisterSigner(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	SuccessResponse(c, res)
+}
+
+func (o *oauthApp) HasSigner(c *gin.Context) {
+	req := new(HasSignerReq)
+	if err := c.ShouldBind(req); err != nil {
+		BadResponse(c, err)
+	}
+	res, err := o.srv.HasSigner(c, req)
+	if err != nil {
+		BadResponse(c, err)
+		return
+	}
+	SuccessResponse(c, res)
+}
+
+func (o *oauthApp) DelSigner(c *gin.Context) {
 	req := new(DelSignerReq)
 	if err := c.ShouldBind(req); err != nil {
 		BadResponse(c, err)
@@ -478,7 +507,7 @@ func (o *oauthApp) DeleteSigner(c *gin.Context) {
 }
 
 func (o *oauthApp) GetUserBySigner(c *gin.Context) {
-	req := new(GetUserBySignerRequest)
+	req := new(GetUserBySignerReq)
 	if err := c.ShouldBindQuery(req); err != nil {
 		BadResponse(c, err)
 		return

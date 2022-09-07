@@ -223,19 +223,13 @@ func TestUserBusiness(t *testing.T) {
 	}
 	assert.DeepEqual(t, false, has)
 
-	exist, err := cli.MinerExistInUser(&auth.MinerExistInUserRequest{
-		Miner: "f02345",
-		User:  "name1",
-	})
+	exist, err := cli.MinerExistInUser("name1", "f02345")
 	if err != nil {
 		t.Fatalf("check miner exist in user err:%s", err)
 	}
 	assert.DeepEqual(t, true, exist)
 
-	exist, err = cli.MinerExistInUser(&auth.MinerExistInUserRequest{
-		Miner: "f023450",
-		User:  "name1",
-	})
+	exist, err = cli.MinerExistInUser("name1", "f023450")
 	if err != nil {
 		t.Fatalf("check miner exist in user err:%s", err)
 	}

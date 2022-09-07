@@ -2,6 +2,7 @@ package storage
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/dgraph-io/badger/v3"
@@ -203,7 +204,7 @@ func (s *badgerStore) DeleteUser(name string) error {
 		if err != nil {
 			return err
 		}
-		addrs := make([]address.Address, 0, len(miners))
+		minerAddrs := make([]address.Address, 0, len(miners))
 		for _, miner := range miners {
 			mKey := minerKey(miner.Miner.Address().String())
 			val, err := txn.Get(mKey)
@@ -224,10 +225,34 @@ func (s *badgerStore) DeleteUser(name string) error {
 			if err := txn.Set(mKey, data); err != nil {
 				return err
 			}
-			addrs = append(addrs, miner.Miner.Address())
+			minerAddrs = append(minerAddrs, miner.Miner.Address())
 		}
-		log.Infof("delete user %s, delete miners %v", name, addrs)
 
+		// delete signers
+		signerAddrs := make([]address.Address, 0)
+		if err := s.walkThroughPrefix([]byte(PrefixSigner), func(item *badger.Item) (isContinueWalk bool, err error) {
+			var signer Signer
+			if err := item.Value(func(val []byte) error {
+				if err := signer.FromBytes(val); err != nil {
+					return err
+				}
+				if signer.User == name && !signer.isDeleted() {
+					signerAddrs = append(signerAddrs, signer.Signer.Address())
+
+					if _, err := s.innerUnregisterSigner(signer.Signer.Address(), name); err != nil {
+						return err
+					}
+				}
+				return nil
+			}); err != nil {
+				return false, err
+			}
+			return true, nil
+		}); err != nil {
+			return err
+		}
+
+		log.Infof("delete user: %s, miners: %v, signer: %v", name, minerAddrs, signerAddrs)
 		return nil
 	})
 }
@@ -376,7 +401,7 @@ func (s *badgerStore) HasMiner(maddr address.Address) (bool, error) {
 }
 
 func (s *badgerStore) MinerExistInUser(maddr address.Address, userName string) (bool, error) {
-	bHas := false
+	bExist := false
 	if err := s.walkThroughPrefix([]byte(PrefixMiner), func(item *badger.Item) (isContinueWalk bool, err error) {
 		var miner Miner
 		if err := item.Value(func(val []byte) error {
@@ -385,28 +410,19 @@ func (s *badgerStore) MinerExistInUser(maddr address.Address, userName string) (
 			}
 
 			if miner.User == userName && miner.Miner.Address().String() == maddr.String() && !miner.isDeleted() {
-				bHas = true
+				bExist = true
 			}
 
 			return nil
 		}); err != nil {
 			return false, err
 		}
-		return !bHas, nil
+		return !bExist, nil
 	}); err != nil {
 		return false, err
 	}
 
-	return bHas, nil
-}
-
-func (s *badgerStore) GetUserBySigner(addr address.Address) (*User, error) {
-	var signer Signer
-	if err := s.getUsableObj(signerKey(addr.String()), &signer); err != nil {
-		return nil, err
-	}
-
-	return s.GetUser(signer.User)
+	return bExist, nil
 }
 
 func (s *badgerStore) ListMiners(user string) ([]*Miner, error) {
@@ -443,11 +459,11 @@ func (s *badgerStore) DelMiner(miner address.Address) (bool, error) {
 	return true, nil
 }
 
-func (s *badgerStore) UpsertSigner(addr address.Address, userName string) (bool, error) {
+func (s *badgerStore) RegisterSigner(addr address.Address, userName string) (bool, error) {
 	signer := &Signer{}
 	now := time.Now()
 	var isCreate bool
-	userKey, signerKey := userKey(userName), signerKey(addr.String())
+	userKey, signerForUserKey := userKey(userName), signerForUserKey(addr.String(), userName)
 	return isCreate, s.db.Update(func(txn *badger.Txn) error {
 		// this 'get(userKey)' purpose to make sure 'user' exist
 		if _, err := txn.Get(userKey); err != nil {
@@ -459,8 +475,8 @@ func (s *badgerStore) UpsertSigner(addr address.Address, userName string) (bool,
 				addr.String(), userName, err)
 		}
 
-		// if signer already exists, update it
-		if item, err := txn.Get(signerKey); err != nil {
+		// if user-signer key already exists, update it
+		if item, err := txn.Get(signerForUserKey); err != nil {
 			if xerrors.Is(err, badger.ErrKeyNotFound) {
 				signer.Signer = storedAddress(addr)
 				signer.CreatedAt = now
@@ -482,41 +498,16 @@ func (s *badgerStore) UpsertSigner(addr address.Address, userName string) (bool,
 		if err != nil {
 			return xerrors.Errorf("get signer object data failed:%w", err)
 		}
-		return txn.Set(signerKey, val)
+		return txn.Set(signerForUserKey, val)
 	})
 }
 
-func (s *badgerStore) HasSigner(addr address.Address, userName string) (bool, error) {
-	bHas := false
-	if err := s.walkThroughPrefix([]byte(PrefixSigner), func(item *badger.Item) (isContinueWalk bool, err error) {
-		var signer Signer
-		if err := item.Value(func(val []byte) error {
-			if err := signer.FromBytes(val); err != nil {
-				return err
-			}
-
-			if len(userName) > 0 {
-				if signer.User == userName && signer.Signer.Address().String() == addr.String() && !signer.isDeleted() {
-					bHas = true
-				}
-			} else {
-				if signer.Signer.Address().String() == addr.String() && !signer.isDeleted() {
-					bHas = true
-				}
-			}
-			return nil
-		}); err != nil {
-			return false, err
-		}
-		return !bHas, nil
-	}); err != nil {
-		return false, err
-	}
-
-	return bHas, nil
+func (s *badgerStore) SignerExistInUser(addr address.Address, userName string) (bool, error) {
+	signer := &Signer{Signer: storedAddress(addr), User: userName}
+	return s.isExist(signer)
 }
 
-func (s *badgerStore) ListSigner(user string) ([]*Signer, error) {
+func (s *badgerStore) ListSigner(userName string) ([]*Signer, error) {
 	var signers []*Signer
 	if err := s.walkThroughPrefix([]byte(PrefixSigner), func(item *badger.Item) (isContinueWalk bool, err error) {
 		var signer Signer
@@ -524,7 +515,7 @@ func (s *badgerStore) ListSigner(user string) ([]*Signer, error) {
 			if err := signer.FromBytes(val); err != nil {
 				return err
 			}
-			if signer.User == user && !signer.isDeleted() {
+			if signer.User == userName && !signer.isDeleted() {
 				signers = append(signers, &signer)
 			}
 			return nil
@@ -538,8 +529,8 @@ func (s *badgerStore) ListSigner(user string) ([]*Signer, error) {
 	return signers, nil
 }
 
-func (s *badgerStore) DelSigner(addr address.Address) (bool, error) {
-	signer := &Signer{Signer: storedAddress(addr)}
+func (s *badgerStore) innerUnregisterSigner(addr address.Address, userName string) (bool, error) {
+	signer := &Signer{Signer: storedAddress(addr), User: userName}
 	err := s.softDelObj(signer)
 	if err != nil {
 		if xerrors.Is(err, badger.ErrKeyNotFound) {
@@ -548,4 +539,96 @@ func (s *badgerStore) DelSigner(addr address.Address) (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+func (s *badgerStore) UnregisterSigner(addr address.Address, userName string) (bool, error) {
+	return s.innerUnregisterSigner(addr, userName)
+}
+
+func (s *badgerStore) HasSigner(addr address.Address) (bool, error) {
+	var exist bool
+	err := s.walkThroughPrefix(signerKey(addr.String()), func(item *badger.Item) (isContinueWalk bool, err error) {
+		var signer Signer
+		if err := item.Value(func(val []byte) error {
+			if err := signer.FromBytes(val); err != nil {
+				return err
+			}
+
+			if !signer.isDeleted() {
+				exist = true
+			}
+
+			return nil
+		}); err != nil {
+			return false, err
+		}
+		return !exist, nil
+	})
+
+	return exist, err
+}
+
+func (s *badgerStore) DelSigner(addr address.Address) (bool, error) {
+	count := 0
+	if err := s.walkThroughPrefix(signerKey(addr.String()), func(item *badger.Item) (isContinueWalk bool, err error) {
+		var signer Signer
+		if err := item.Value(func(val []byte) error {
+			if err := signer.FromBytes(val); err != nil {
+				return err
+			}
+
+			if signer.isDeleted() {
+				log.Warnf("signer %s for user %s has deleted", signer.Signer, signer.User)
+				return nil
+			}
+
+			count++
+
+			return s.db.Update(func(txn *badger.Txn) error {
+				signer.setDeleted()
+				data, err := signer.Bytes()
+				if err != nil {
+					return xerrors.Errorf("failed to marshal time :%s", err)
+				}
+				return txn.Set(signer.key(), data)
+			})
+		}); err != nil {
+			return false, err
+		}
+		return true, nil
+	}); err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
+func (s *badgerStore) GetUserBySigner(addr address.Address) ([]*User, error) {
+	var users []*User
+	if err := s.walkThroughPrefix(signerKey(addr.String()), func(item *badger.Item) (isContinueWalk bool, err error) {
+		var signer Signer
+		if err := item.Value(func(val []byte) error {
+			if err := signer.FromBytes(val); err != nil {
+				return err
+			}
+
+			user, err := s.GetUser(signer.User)
+			if err != nil {
+				return fmt.Errorf("get user %s: %w", signer.User, err)
+			}
+
+			if !user.isDeleted() {
+				users = append(users, user)
+			}
+
+			return nil
+		}); err != nil {
+			return false, err
+		}
+		return true, nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }

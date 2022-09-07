@@ -117,11 +117,6 @@ type GetUserByMinerRequest struct {
 	Miner string `form:"miner"`
 }
 
-type GetUserBySignerRequest struct {
-	// todo make signer tobe address
-	Signer string `form:"signer"`
-}
-
 func (ls GetUserRateLimitResponse) MatchedLimit(service, api string) *storage.UserRateLimit {
 	// just returns root matched limit currently
 	// todo: returns most matched limit
@@ -160,11 +155,16 @@ type DelMinerReq struct {
 	Miner string `json:"miner"`
 }
 
-type UpsertSignerReq struct {
+// type definitions for signer
+type RegisterSignerReq struct {
 	User, Signer string
 }
 
-type HasSignerRequest struct {
+type UnregisterSignerReq struct {
+	User, Signer string
+}
+
+type SignerExistInUserReq struct {
 	Signer string `form:"signer"`
 	User   string `form:"user"`
 }
@@ -173,12 +173,20 @@ type ListSignerReq struct {
 	User string `form:"user"`
 }
 
+type GetUserBySignerReq struct {
+	Signer string `form:"signer"`
+}
+
+type HasSignerReq struct {
+	Signer string `form:"signer"`
+}
+
+type DelSignerReq struct {
+	Signer string `json:"signer"`
+}
+
 type OutputSigner struct {
 	Signer, User         string
 	CreatedAt, UpdatedAt time.Time
 }
 type ListSignerResp []*OutputSigner
-
-type DelSignerReq struct {
-	Signer string `json:"signer"`
-}

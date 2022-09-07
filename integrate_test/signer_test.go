@@ -4,16 +4,26 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/jwtclient"
 )
 
-func TestSignerApis(t *testing.T) {
-	t.Run("upsert signer", testUpsertSigners)
-	t.Run("list miner by signer", testListSignerByUser)
+var (
+	userSigners = map[string][]string{
+		"test_user01": {"t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua", "t1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q"},
+		"test_user02": {"t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua", "t3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha"},
+	}
+)
+
+func TestSignerAPI(t *testing.T) {
+	t.Run("register signer", testRegisterSigners)
+	t.Run("signer exist in user", testSignerExistInUser)
+	t.Run("list signer of user", testListSignerByUser)
 	t.Run("has signer", testHasSigner)
 	t.Run("get user by signer", testGetUserBySigner)
+	t.Run("unregister signer", testUnregisterSigner)
 	t.Run("delete signer", testDeleteSigner)
 }
 
@@ -23,94 +33,118 @@ func setupAndAddSigners(t *testing.T) (*jwtclient.AuthClient, string) {
 	client, err := jwtclient.NewAuthClient(server.URL)
 	assert.Nil(t, err)
 
-	userName := "test_user"
-	userSigners := map[string][]string{
-		"test_user": {"t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua", "t1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q"},
-	}
+	for username, signers := range userSigners {
+		_, err = client.CreateUser(&auth.CreateUserRequest{Name: username})
+		assert.Nil(t, err)
 
-	_, err = client.CreateUser(&auth.CreateUserRequest{Name: userName})
-	assert.Nil(t, err)
-	success, err := client.UpsertSigner(userName, userSigners[userName][0])
-	assert.Nil(t, err)
-	assert.True(t, success)
-	success, err = client.UpsertSigner(userName, userSigners[userName][1])
-	assert.Nil(t, err)
-	assert.True(t, success)
+		for _, signer := range signers {
+			isCreate, err := client.RegisterSigner(username, signer)
+			assert.Nil(t, err)
+			assert.True(t, isCreate)
+		}
+	}
 
 	return client, tmpDir
 }
 
-func testUpsertSigners(t *testing.T) {
+func testRegisterSigners(t *testing.T) {
 	_, tmpDir := setupAndAddSigners(t)
 	shutdown(t, tmpDir)
+}
+
+func testSignerExistInUser(t *testing.T) {
+	client, tmpDir := setupAndAddSigners(t)
+	defer shutdown(t, tmpDir)
+
+	for user, signers := range userSigners {
+		for _, signer := range signers {
+			bExist, err := client.SignerExistInUser(user, signer)
+			assert.Nil(t, err)
+			assert.True(t, bExist)
+		}
+	}
 }
 
 func testListSignerByUser(t *testing.T) {
 	client, tmpDir := setupAndAddSigners(t)
 	defer shutdown(t, tmpDir)
 
-	userName := "test_user"
-	// List miner by user
-	listResp, err := client.ListSigners(userName)
-	assert.Nil(t, err)
-	assert.Equal(t, 2, len(listResp))
+	for user, signers := range userSigners {
+		ss, err := client.ListSigners(user)
+		assert.Nil(t, err)
+
+		ns := make([]string, len(ss))
+		for idx, s := range ss {
+			ns[idx] = s.Signer
+		}
+
+		for _, signer := range signers {
+			require.Contains(t, ns, signer)
+		}
+	}
 }
 
 func testHasSigner(t *testing.T) {
 	client, tmpDir := setupAndAddSigners(t)
 	defer shutdown(t, tmpDir)
 
-	userName := "test_user"
-	userSigners := map[string][]string{
-		"test_user": {"t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua", "t1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q"},
+	for _, signers := range userSigners {
+		for _, signer := range signers {
+			bExist, err := client.HasSigner(signer)
+			assert.Nil(t, err)
+			assert.True(t, bExist)
+		}
 	}
-
-	has, err := client.HasSigner(&auth.HasSignerRequest{Signer: userSigners[userName][0], User: userName})
-	assert.Nil(t, err)
-	assert.True(t, has)
-
-	has, err = client.HasSigner(&auth.HasSignerRequest{Signer: userSigners[userName][1], User: ""})
-	assert.Nil(t, err)
-	assert.True(t, has)
-
-	has, err = client.HasSigner(&auth.HasSignerRequest{Signer: "t3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha", User: ""})
-	assert.Nil(t, err)
-	assert.False(t, has)
 }
 
 func testGetUserBySigner(t *testing.T) {
 	client, tmpDir := setupAndAddSigners(t)
 	defer shutdown(t, tmpDir)
 
-	userName := "test_user"
-	userSigners := map[string][]string{
-		"test_user": {"t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua", "t1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q"},
-	}
-
-	getUserInfo, err := client.GetUserBySigner(&auth.GetUserBySignerRequest{Signer: userSigners[userName][0]})
+	signer := "t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua"
+	users, err := client.GetUserBySigner(signer)
 	assert.Nil(t, err)
-	assert.Equal(t, userName, getUserInfo.Name)
+
+	names := make([]string, len(users))
+	for idx, user := range users {
+		names[idx] = user.Name
+	}
+	require.Contains(t, names, "test_user01")
+	require.Contains(t, names, "test_user02")
+}
+
+func testUnregisterSigner(t *testing.T) {
+	client, tmpDir := setupAndAddSigners(t)
+	defer shutdown(t, tmpDir)
+
+	userName := "test_user01"
+	signer := "t1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q"
+
+	bDel, err := client.UnregisterSigner(userName, signer)
+	assert.Nil(t, err)
+	assert.True(t, bDel)
+
+	bExist, err := client.SignerExistInUser(userName, signer)
+	assert.Nil(t, err)
+	assert.False(t, bExist)
 }
 
 func testDeleteSigner(t *testing.T) {
 	client, tmpDir := setupAndAddSigners(t)
 	defer shutdown(t, tmpDir)
 
-	userName := "test_user"
-	userSigners := map[string][]string{
-		"test_user": {"t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua", "t1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q"},
-	}
-	success, err := client.DelSigner(userSigners[userName][0])
-	assert.Nil(t, err)
-	assert.True(t, success)
+	signer := "t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua"
 
-	// Check this miner
-	has, err := client.HasSigner(&auth.HasSignerRequest{Signer: userSigners[userName][0], User: ""})
+	bDel, err := client.DelSigner(signer)
+	assert.Nil(t, err)
+	assert.True(t, bDel)
+
+	has, err := client.HasSigner(signer)
 	assert.Nil(t, err)
 	assert.False(t, has)
 
-	// Try to delete invalid miner
-	success, err = client.DelSigner("f0128788")
+	// delete again
+	bDel, err = client.DelSigner(signer)
 	assert.Nil(t, err)
-	assert.False(t, success)
+	assert.False(t, bDel)
 }

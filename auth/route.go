@@ -43,28 +43,32 @@ func InitRouter(app OAuthApp) http.Handler {
 	rateLimitGroup.GET("", app.GetUserRateLimit)
 
 	// Compatible with older versions(<=v1.6.0)
-	oldMinerGroup := router.Group("/miner")
-	oldMinerGroup.GET("", app.GetUserByMiner)
-	oldMinerGroup.GET("/has-miner", app.HasMiner)
-	oldMinerGroup.GET("/list-by-user", app.ListMiners)
-	oldMinerGroup.POST("/add-miner", app.UpsertMiner)
-	oldMinerGroup.POST("/del", app.DeleteMiner)
-
-	oldMinerGroup.GET("/has", app.HasMiner)
-
-	minerGroup := userGroup.Group("/miner")
+	minerGroup := router.Group("/miner")
 	minerGroup.GET("", app.GetUserByMiner)
-	minerGroup.POST("/add", app.UpsertMiner)
-	minerGroup.GET("/list", app.ListMiners)
-	minerGroup.GET("/exist", app.MinerExistInUser)
+	minerGroup.GET("/has-miner", app.HasMiner)
+	minerGroup.GET("/list-by-user", app.ListMiners)
+	minerGroup.POST("/add-miner", app.UpsertMiner)
 	minerGroup.POST("/del", app.DeleteMiner)
 
-	signerGroup := userGroup.Group("/signer")
-	signerGroup.GET("", app.GetUserBySigner)
-	signerGroup.POST("/add", app.UpsertSigner)
-	signerGroup.GET("/list", app.ListSigner)
+	minerGroup.GET("/has", app.HasMiner)
+
+	userMinerGroup := userGroup.Group("/miner")
+	userMinerGroup.GET("", app.GetUserByMiner)
+	userMinerGroup.POST("/add", app.UpsertMiner)
+	userMinerGroup.GET("/exist", app.MinerExistInUser)
+	userMinerGroup.GET("/list", app.ListMiners)
+	userMinerGroup.POST("/del", app.DeleteMiner)
+
+	userSignerGroup := userGroup.Group("/signer")
+	userSignerGroup.GET("", app.GetUserBySigner)
+	userSignerGroup.POST("/register", app.RegisterSigner)
+	userSignerGroup.GET("/exist", app.SignerExistInUser)
+	userSignerGroup.GET("/list", app.ListSigner)
+	userSignerGroup.POST("/unregister", app.UnregisterSigner)
+
+	signerGroup := router.Group("/signer")
 	signerGroup.GET("/has", app.HasSigner)
-	signerGroup.POST("/del", app.DeleteSigner)
+	signerGroup.POST("/del", app.DelSigner)
 
 	return router
 }

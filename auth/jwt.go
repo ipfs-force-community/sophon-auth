@@ -47,8 +47,6 @@ type OAuthService interface {
 
 	CreateUser(ctx context.Context, req *CreateUserRequest) (*CreateUserResponse, error)
 	GetUser(ctx context.Context, req *GetUserRequest) (*OutputUser, error)
-	GetUserByMiner(ctx context.Context, req *GetUserByMinerRequest) (*OutputUser, error)
-	GetUserBySigner(ctx context.Context, req *GetUserBySignerRequest) (*OutputUser, error)
 	ListUsers(ctx context.Context, req *ListUsersRequest) (ListUsersResponse, error)
 	HasUser(ctx context.Context, req *HasUserRequest) (bool, error)
 	UpdateUser(ctx context.Context, req *UpdateUserRequest) error
@@ -64,11 +62,15 @@ type OAuthService interface {
 	MinerExistInUser(ctx context.Context, req *MinerExistInUserRequest) (bool, error)
 	ListMiners(ctx context.Context, req *ListMinerReq) (ListMinerResp, error)
 	DelMiner(ctx context.Context, req *DelMinerReq) (bool, error)
+	GetUserByMiner(ctx context.Context, req *GetUserByMinerRequest) (*OutputUser, error)
 
-	UpsertSigner(ctx context.Context, req *UpsertSignerReq) (bool, error)
-	HasSigner(ctx context.Context, req *HasSignerRequest) (bool, error)
+	RegisterSigner(ctx context.Context, req *RegisterSignerReq) (bool, error)
+	SignerExistInUser(ctx context.Context, req *SignerExistInUserReq) (bool, error)
 	ListSigner(ctx context.Context, req *ListSignerReq) (ListSignerResp, error)
+	UnregisterSigner(ctx context.Context, req *UnregisterSignerReq) (bool, error)
+	HasSigner(ctx context.Context, req *HasSignerReq) (bool, error)
 	DelSigner(ctx context.Context, req *DelSignerReq) (bool, error)
+	GetUserBySigner(ctx context.Context, req *GetUserBySignerReq) ([]*OutputUser, error)
 }
 
 type jwtOAuth struct {
@@ -347,16 +349,22 @@ func (o *jwtOAuth) GetUserByMiner(ctx context.Context, req *GetUserByMinerReques
 	return o.mp.ToOutPutUser(user), nil
 }
 
-func (o *jwtOAuth) GetUserBySigner(ctx context.Context, req *GetUserBySignerRequest) (*OutputUser, error) {
+func (o *jwtOAuth) GetUserBySigner(ctx context.Context, req *GetUserBySignerReq) ([]*OutputUser, error) {
 	addr, err := address.NewFromString(req.Signer)
 	if err != nil {
 		return nil, err
 	}
-	user, err := o.store.GetUserBySigner(addr)
+	users, err := o.store.GetUserBySigner(addr)
 	if err != nil {
 		return nil, err
 	}
-	return o.mp.ToOutPutUser(user), nil
+
+	outUsers := make([]*OutputUser, len(users))
+	for idx, user := range users {
+		outUsers[idx] = o.mp.ToOutPutUser(user)
+	}
+
+	return outUsers, nil
 }
 
 func (o *jwtOAuth) GetUser(ctx context.Context, req *GetUserRequest) (*OutputUser, error) {
@@ -445,26 +453,30 @@ func (o jwtOAuth) DelMiner(ctx context.Context, req *DelMinerReq) (bool, error) 
 	return o.store.DelMiner(miner)
 }
 
-func (o *jwtOAuth) UpsertSigner(ctx context.Context, req *UpsertSignerReq) (bool, error) {
+func (o *jwtOAuth) RegisterSigner(ctx context.Context, req *RegisterSignerReq) (bool, error) {
 	addr, err := address.NewFromString(req.Signer)
 	if err != nil || addr.Empty() {
-		return false, xerrors.Errorf("invalid signer address:%s, error: %w", req.Signer, err)
+		return false, fmt.Errorf("invalid signer address:%s, error: %w", req.Signer, err)
 	}
 
-	if addr.Protocol() != address.SECP256K1 && addr.Protocol() != address.BLS {
+	if !isSignerAddress(addr) {
 		return false, fmt.Errorf("invalid protocol type: %v", addr.Protocol())
 	}
 
-	return o.store.UpsertSigner(addr, req.User)
+	return o.store.RegisterSigner(addr, req.User)
 }
 
-func (o *jwtOAuth) HasSigner(ctx context.Context, req *HasSignerRequest) (bool, error) {
+func (o *jwtOAuth) SignerExistInUser(ctx context.Context, req *SignerExistInUserReq) (bool, error) {
 	addr, err := address.NewFromString(req.Signer)
 	if err != nil {
 		return false, err
 	}
 
-	has, err := o.store.HasSigner(addr, req.User)
+	if !isSignerAddress(addr) {
+		return false, fmt.Errorf("invalid protocol type: %v", addr.Protocol())
+	}
+
+	has, err := o.store.SignerExistInUser(addr, req.User)
 	if err != nil {
 		return false, err
 	}
@@ -474,7 +486,7 @@ func (o *jwtOAuth) HasSigner(ctx context.Context, req *HasSignerRequest) (bool, 
 func (o *jwtOAuth) ListSigner(ctx context.Context, req *ListSignerReq) (ListSignerResp, error) {
 	signers, err := o.store.ListSigner(req.User)
 	if err != nil {
-		return nil, xerrors.Errorf("list user:%s signer failed:%w", req.User, err)
+		return nil, xerrors.Errorf("list user:%s signer failed: %w", req.User, err)
 	}
 
 	outs := make([]*OutputSigner, len(signers))
@@ -490,12 +502,43 @@ func (o *jwtOAuth) ListSigner(ctx context.Context, req *ListSignerReq) (ListSign
 	return outs, nil
 }
 
-func (o jwtOAuth) DelSigner(ctx context.Context, req *DelSignerReq) (bool, error) {
-	signer, err := address.NewFromString(req.Signer)
+func (o *jwtOAuth) UnregisterSigner(ctx context.Context, req *UnregisterSignerReq) (bool, error) {
+	addr, err := address.NewFromString(req.Signer)
+	if err != nil || addr.Empty() {
+		return false, fmt.Errorf("invalid signer address:%s, error: %w", req.Signer, err)
+	}
+
+	if !isSignerAddress(addr) {
+		return false, fmt.Errorf("invalid protocol type: %v", addr.Protocol())
+	}
+
+	return o.store.UnregisterSigner(addr, req.User)
+}
+
+func (o jwtOAuth) HasSigner(ctx context.Context, req *HasSignerReq) (bool, error) {
+	addr, err := address.NewFromString(req.Signer)
 	if err != nil {
 		return false, xerrors.Errorf("invalid signer address:%s, %w", req.Signer, err)
 	}
-	return o.store.DelSigner(signer)
+
+	if !isSignerAddress(addr) {
+		return false, fmt.Errorf("invalid protocol type: %v", addr.Protocol())
+	}
+
+	return o.store.HasSigner(addr)
+}
+
+func (o jwtOAuth) DelSigner(ctx context.Context, req *DelSignerReq) (bool, error) {
+	addr, err := address.NewFromString(req.Signer)
+	if err != nil {
+		return false, xerrors.Errorf("invalid signer address:%s, %w", req.Signer, err)
+	}
+
+	if !isSignerAddress(addr) {
+		return false, fmt.Errorf("invalid protocol type: %v", addr.Protocol())
+	}
+
+	return o.store.DelSigner(addr)
 }
 
 func DecodeToBytes(enc []byte) ([]byte, error) {
@@ -521,4 +564,8 @@ func JwtUserFromToken(token string) (string, error) {
 	err = json.Unmarshal(dec, payload)
 
 	return payload.Name, err
+}
+
+func isSignerAddress(addr address.Address) bool {
+	return addr.Protocol() == address.SECP256K1 || addr.Protocol() == address.BLS
 }

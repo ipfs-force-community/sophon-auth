@@ -54,7 +54,7 @@ var userMiners = map[string]map[string]interface{}{
 var userSigners = map[string][]string{
 	"test_user_001": {"t3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha", "t1mpvdqt2acgihevibd4greavlsfn3dfph5sckc2a"},
 	"test_user_002": {"t3r47fkdzfmtex5ic3jnwlzc7bkpbj7s4d6limyt4f57t3cuqq5nuvhvwv2cu2a6iga2s64vjqcxjqiezyjooq", "t1uqtvvwkkfkkez52ocnqe6vg74qewiwja4t2tiba"},
-	"test_user_003": {"t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua", "t1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q"},
+	"test_user_003": {"t1uqtvvwkkfkkez52ocnqe6vg74qewiwja4t2tiba", "t1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q"},
 }
 
 var limitStrs = `[{"Id":"794fc9a4-2b80-4503-835a-7e8e27360b3d","Name":"test_user_01","Service":"","API":"","ReqLimit":{"Cap":10,"ResetDur":120000000000}},{"Id":"252f581e-cbd2-4a61-a517-0b7df65013aa","Name":"test_user_02","Service":"","API":"","ReqLimit":{"Cap":10,"ResetDur":72000000000000}}]`
@@ -182,10 +182,49 @@ func testAddSigner(t *testing.T) {
 	for user, signers := range userSigners {
 		for _, signer := range signers {
 			addr, _ := address.NewFromString(signer)
-			_, err := theStore.UpsertSigner(addr, user)
+			_, err := theStore.RegisterSigner(addr, user)
 			require.NoError(t, err)
 		}
 	}
+}
+
+func testSignerExistInUser(t *testing.T) {
+	for user, signers := range userSigners {
+		for _, signer := range signers {
+			addr, _ := address.NewFromString(signer)
+			exist, err := theStore.SignerExistInUser(addr, user)
+			require.NoError(t, err)
+			require.True(t, exist)
+		}
+	}
+}
+
+func testHasSigner(t *testing.T) {
+	for _, signers := range userSigners {
+		for _, signer := range signers {
+			addr, _ := address.NewFromString(signer)
+			exist, err := theStore.HasSigner(addr)
+			require.NoError(t, err)
+			require.True(t, exist)
+		}
+	}
+}
+
+func testGetUserBySigner(t *testing.T) {
+	// test signer in multi users
+	signer := "t1uqtvvwkkfkkez52ocnqe6vg74qewiwja4t2tiba"
+	addr, _ := address.NewFromString(signer)
+
+	users, err := theStore.GetUserBySigner(addr)
+	require.NoError(t, err)
+	require.Equal(t, 2, len(users))
+
+	userNames := make([]string, len(users))
+	for idx, user := range users {
+		userNames[idx] = user.Name
+	}
+	require.Contains(t, userNames, "test_user_002")
+	require.Contains(t, userNames, "test_user_003")
 }
 
 func testListSigners(t *testing.T) {
@@ -194,20 +233,26 @@ func testListSigners(t *testing.T) {
 		ss, err := theStore.ListSigner(user)
 		require.NoError(t, err)
 
-		var signerMap = make(map[address.Address]*Signer, len(ss))
-		for _, s := range ss {
-			signerMap[s.Signer.Address()] = s
+		tss := make([]string, len(ss))
+		for idx, s := range ss {
+			tss[idx] = s.Signer.Address().String()
 		}
 
 		for _, signer := range signers {
-			addr, _ := address.NewFromString(signer)
-			tmpSigner, ok := signerMap[addr]
-			require.True(t, ok)
-			tmpUser, err := theStore.GetUserBySigner(tmpSigner.Signer.Address())
-			require.NoError(t, err)
-			require.Equal(t, tmpUser.Name, user)
+			require.Contains(t, tss, signer)
 		}
 	}
+}
+
+func testUnregisterSigner(t *testing.T) {
+	// test signer in multi users
+	signer := "t3r47fkdzfmtex5ic3jnwlzc7bkpbj7s4d6limyt4f57t3cuqq5nuvhvwv2cu2a6iga2s64vjqcxjqiezyjooq"
+	userName := "test_user_002"
+
+	addr, _ := address.NewFromString(signer)
+	bExist, err := theStore.UnregisterSigner(addr, userName)
+	require.NoError(t, err)
+	require.True(t, bExist)
 }
 
 func testDelSigners(t *testing.T) {
@@ -300,9 +345,13 @@ func TestStore(t *testing.T) {
 	t.Run("add miners", testAddMiner)
 	t.Run("get miners", testListMiners)
 	t.Run("add signers", testAddSigner)
-	t.Run("get signers", testListSigners)
+	t.Run("signer exist in user", testSignerExistInUser)
+	t.Run("has signer", testHasSigner)
+	t.Run("list signers", testListSigners)
+	t.Run("get user by signer", testGetUserBySigner)
 	t.Run("del user", testDeleteUser)
 	t.Run("del miners", testDelMiners)
+	t.Run("unregister signer", testUnregisterSigner)
 	t.Run("del signers", testDelSigners)
 
 	t.Run("test token", testTokens)

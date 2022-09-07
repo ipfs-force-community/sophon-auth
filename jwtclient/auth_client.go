@@ -223,7 +223,7 @@ func (lc *AuthClient) HasUser(req *auth.HasUserRequest) (bool, error) {
 		return false, err
 	}
 	if resp.StatusCode() == http.StatusOK {
-		return *(resp.Result().(*bool)), nil
+		return has, nil
 	}
 	return false, resp.Error().(*errcode.ErrMsg).Err()
 }
@@ -251,7 +251,6 @@ func (lc *AuthClient) RecoverUser(req *auth.RecoverUserRequest) error {
 }
 
 func (lc *AuthClient) GetUserRateLimit(name, id string) (auth.GetUserRateLimitResponse, error) {
-	var res auth.GetUserRateLimitResponse
 	param := make(map[string]string)
 	if len(name) != 0 {
 		param["name"] = name
@@ -259,8 +258,9 @@ func (lc *AuthClient) GetUserRateLimit(name, id string) (auth.GetUserRateLimitRe
 	if len(id) != 0 {
 		param["id"] = id
 	}
+
 	resp, err := lc.cli.R().SetQueryParams(param).
-		SetResult(&res).
+		SetResult(&auth.GetUserRateLimitResponse{}).
 		SetError(&errcode.ErrMsg{}).
 		Get("/user/ratelimit")
 	if err != nil {
@@ -279,7 +279,7 @@ func (lc *AuthClient) UpsertUserRateLimit(req *auth.UpsertUserRateLimitReq) (str
 		return "", err
 	}
 	if resp.StatusCode() == http.StatusOK {
-		return *(resp.Result().(*string)), nil
+		return res, nil
 	}
 	return "", resp.Error().(*errcode.ErrMsg).Err()
 }
@@ -291,7 +291,7 @@ func (lc *AuthClient) DelUserRateLimit(req *auth.DelUserRateLimitReq) (string, e
 		return "", err
 	}
 	if resp.StatusCode() == http.StatusOK {
-		return *(resp.Result().(*string)), nil
+		return id, nil
 	}
 	return "", resp.Error().(*errcode.ErrMsg).Err()
 }
@@ -300,6 +300,7 @@ func (lc *AuthClient) UpsertMiner(user, miner string) (bool, error) {
 	if _, err := address.NewFromString(miner); err != nil {
 		return false, xerrors.Errorf("invalid miner address:%s", miner)
 	}
+
 	var isCreate bool
 	resp, err := lc.cli.R().SetBody(&auth.UpsertMinerReq{Miner: miner, User: user}).
 		SetResult(&isCreate).SetError(&errcode.ErrMsg{}).Post("/user/miner/add")
@@ -307,7 +308,7 @@ func (lc *AuthClient) UpsertMiner(user, miner string) (bool, error) {
 		return false, err
 	}
 	if resp.StatusCode() == http.StatusOK {
-		return *(resp.Result().(*bool)), nil
+		return isCreate, nil
 	}
 	return false, resp.Error().(*errcode.ErrMsg).Err()
 }
@@ -322,7 +323,7 @@ func (lc *AuthClient) HasMiner(req *auth.HasMinerRequest) (bool, error) {
 	}
 
 	if resp.StatusCode() == http.StatusOK {
-		return *resp.Result().(*bool), nil
+		return has, nil
 	}
 	return false, resp.Error().(*errcode.ErrMsg).Err()
 }
@@ -338,7 +339,7 @@ func (lc *AuthClient) MinerExistInUser(user, miner string) (bool, error) {
 	}
 
 	if resp.StatusCode() == http.StatusOK {
-		return *resp.Result().(*bool), nil
+		return has, nil
 	}
 	return false, resp.Error().(*errcode.ErrMsg).Err()
 }
@@ -351,7 +352,7 @@ func (lc *AuthClient) ListMiners(user string) (auth.ListMinerResp, error) {
 		return nil, err
 	}
 	if resp.StatusCode() == http.StatusOK {
-		return *(resp.Result().(*auth.ListMinerResp)), nil
+		return res, nil
 	}
 	return nil, resp.Error().(*errcode.ErrMsg).Err()
 }
@@ -368,7 +369,7 @@ func (lc *AuthClient) DelMiner(miner string) (bool, error) {
 		return false, err
 	}
 	if resp.StatusCode() == http.StatusOK {
-		return *(resp.Result().(*bool)), nil
+		return has, nil
 	}
 	return false, resp.Error().(*errcode.ErrMsg).Err()
 }
@@ -398,7 +399,7 @@ func (lc *AuthClient) RegisterSigner(user, addr string) (bool, error) {
 		return false, err
 	}
 	if resp.StatusCode() == http.StatusOK {
-		return *(resp.Result().(*bool)), nil
+		return isCreate, nil
 	}
 	return false, resp.Error().(*errcode.ErrMsg).Err()
 }
@@ -414,15 +415,14 @@ func (lc *AuthClient) SignerExistInUser(user, signer string) (bool, error) {
 	}
 
 	if resp.StatusCode() == http.StatusOK {
-		return *resp.Result().(*bool), nil
+		return has, nil
 	}
 	return false, resp.Error().(*errcode.ErrMsg).Err()
 }
 
 func (lc *AuthClient) ListSigners(user string) (auth.ListSignerResp, error) {
-	var res auth.ListSignerResp
 	resp, err := lc.cli.R().SetQueryParams(map[string]string{"user": user}).
-		SetResult(&res).SetError(&errcode.ErrMsg{}).Get("/user/signer/list")
+		SetResult(&auth.ListSignerResp{}).SetError(&errcode.ErrMsg{}).Get("/user/signer/list")
 	if err != nil {
 		return nil, err
 	}
@@ -441,7 +441,7 @@ func (lc *AuthClient) UnregisterSigner(user, addr string) (bool, error) {
 	}
 
 	if resp.StatusCode() == http.StatusOK {
-		return *(resp.Result().(*bool)), nil
+		return has, nil
 	}
 	return false, resp.Error().(*errcode.ErrMsg).Err()
 }
@@ -456,7 +456,7 @@ func (lc *AuthClient) HasSigner(signer string) (bool, error) {
 	}
 
 	if resp.StatusCode() == http.StatusOK {
-		return *resp.Result().(*bool), nil
+		return has, nil
 	}
 	return false, resp.Error().(*errcode.ErrMsg).Err()
 }
@@ -473,7 +473,7 @@ func (lc *AuthClient) DelSigner(signer string) (bool, error) {
 		return false, err
 	}
 	if resp.StatusCode() == http.StatusOK {
-		return *(resp.Result().(*bool)), nil
+		return has, nil
 	}
 	return false, resp.Error().(*errcode.ErrMsg).Err()
 }

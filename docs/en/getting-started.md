@@ -103,12 +103,91 @@ GLOBAL OPTIONS:
 
 ### Notable commands
 
+#### user related
+
+Add user.
+
+```shell script
+$ ./venus-auth user add test-user01
+
+# res
+Add user success: dc922b61-65ac-4045-8894-f0356879cf7a, next can add miner for this user
+```
+
+Query user.
+
+```shell script
+$ ./venus-auth user get test-user01
+
+# res
+name: test-user01
+state enabled   // 0: disable, 1: enable
+comment: 
+createTime: Thu, 08 Sep 2022 02:50:50 UTC
+updateTime: Thu, 08 Sep 2022 02:50:50 UTC
+```
+
+List users.
+
+```shell script
+$ ./venus-auth user list
+
+# res
+number: 1
+name: test-user01
+state: enabled
+createTime: Thu, 08 Sep 2022 02:50:50 UTC
+updateTime: Thu, 08 Sep 2022 02:50:50 UTC
+
+number: 2
+name: test-user02
+state: enabled
+createTime: Thu, 08 Sep 2022 02:51:09 UTC
+updateTime: Thu, 08 Sep 2022 02:51:09 UTC
+```
+
+Update user.
+
+```shell script
+$ ./venus-auth user update --name=test-user01 --state=0 --comment="this is comment"
+
+# res
+update user success
+```
+
+Activate user.
+
+```shell script
+$ ./venus-auth user active test-user01
+
+# res
+active user success
+```
+
+Remove user
+
+```shell script
+$ ./venus-auth user delete test-user01
+
+# res
+remove user success
+```
+
+Recover user
+
+```shell script
+$ ./venus-auth user recover test-user01
+
+# res
+recover user success
+```
+
 #### token related
 
 Generate tokens.
 
 ```shell script
-$ ./venus-auth token gen --perm admin testminer
+$ ./venus-auth token gen --perm admin test-user01
 
 # output
 generate token success: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidGVzdG1pbmVyIiwicGVybSI6ImFkbWluIiwiZXh0IjoiIn0.8yNodOcALJ8fy4h-Hh5yLfaR27cD4a8ePd9BkmWlfEo
@@ -117,19 +196,6 @@ generate token success: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidGVzdG1
 List all tokens
 
 ```shell script
-# show help
-$ ./venus-auth token list -h
-NAME:
-   venus-auth token list - list token info
-
-USAGE:
-   venus-auth token list [command options] [arguments...]
-
-OPTIONS:
-   --skip value   (default: 0)
-   --limit value  max value:100 (default: 20) (default: 20)
-   --help, -h     show help (default: false)
-
 $ ./venus-auth token list
 
 # output
@@ -144,13 +210,13 @@ num    name             perm    createTime              token
 Get token
 
 ```shell script
-./venus-auth token get --name testminer2
+$ ./venus-auth token get --name=test-user01
 
 # output
-name:        testminer2
-perm:        sign
-create time: 2021-05-27 15:33:15 +0800 CST
-token:       eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidGVzdG1pbmVyIiwicGVybSI6InNpZ24iLCJleHQiOiIifQ.D_IFz2qZjFRkLJEzmv4HkZ3rZxukYoYZXEjlBKZmGOA
+name:        test-user01
+perm:        admin
+create time: 2022-09-08 03:42:50.224629248 +0000 UTC
+token:       eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidGVzdC11c2VyMDEiLCJwZXJtIjoiYWRtaW4iLCJleHQiOiIifQ.qdJ5FNxUAa79X3d0z8TPjw0dWCgQRZBUlVxlOL9-da0
 ```
 
 Remove token.
@@ -171,132 +237,12 @@ Recover token
 recover token success: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidGVzdG1pbmVyIiwicGVybSI6ImFkbWluIiwiZXh0IjoiIn0.8yNodOcALJ8fy4h-Hh5yLfaR27cD4a8ePd9BkmWlfEo
 ```
 
-#### user related
-
-Add user.
-
-```shell script
-$ ./venus-auth user add testminer2
-
-# output
-add user success: f29d524a-1589-4784-b934-5b3432290f79, next can add miner for this user
-```
-
-Query user.
-
-```shell script
-$ ./venus-auth user get testminer2
-
-# output
-name: testminer2
-state 0         // 0: disable, 1: enable
-comment:
-createTime: Wed, 21 Jul 2021 16:56:50 CST
-updateTime: Wed, 21 Jul 2021 16:56:50 CST
-```
-
-List users.
-
-```shell script
-# show help
-$ ./venus-auth user list -h
-NAME:
-   venus-auth user list - list users
-
-USAGE:
-   venus-auth user list [command options] [arguments...]
-
-OPTIONS:
-   --skip value        (default: 0)
-   --limit value       (default: 20)
-   --state value       (default: 0)
-   --help, -h          show help (default: false)
-
-$ ./venus-auth user list
-
-# output
-number: 1
-name: testminer
-state 0         // 0: disable, 1: enable
-comment: test
-createTime: Mon, 31 May 2021 18:41:55 CST
-updateTime: Mon, 31 May 2021 18:41:55 CST
-
-number: 2
-name: li_sealer
-state 0         // 0: disable, 1: enable
-comment: li
-createTime: Tue, 01 Jun 2021 14:35:35 CST
-updateTime: Tue, 01 Jun 2021 14:35:35 CST
-```
-
-Update user.
-
-```shell script
-# show help
-$ ./venus-auth user udpate -h
-NAME:
-   venus-auth user update - update user
-
-USAGE:
-   venus-auth user update [command options] [arguments...]
-
-OPTIONS:
-   --name value
-   --comment value
-   --state value       (default: 0)
-   --help, -h          show help (default: false)
-
-$ ./venus-auth user update --name testminer2 --state 1
-
-# output
-update user success
-```
-
-Activate user.
-
-```shell script
-./venus-auth user active testminer2
-
-# output
-active user success
-```
-
-Remove user
-
-```shell script
-./venus-auth user rm testminer2
-
-# output
-remove user success
-```
-
-Recover user
-
-```shell script
-./venus-auth user recover testminer2
-
-# output
-recover user success
-```
-
 #### Miner related
 
 Add miner
 
 ```shell script
-# show help
-./venus-auth user miner add -h
-NAME:
-   venus-auth user miner add - Add miner for specified user
-
-USAGE:
-   venus-auth user miner add [command options] <user> <miner>
-
-OPTIONS:
-   --help, -h  show help (default: false)
-
-./venus-auth user miner add test-user01 f0128788
+$ ./venus-auth user miner add test-user01 f0128788
 
 # res
 create user:test-user01 miner:f0128788 success.
@@ -305,12 +251,30 @@ create user:test-user01 miner:f0128788 success.
 List miners by user
 
 ```shell script
-./venus-auth user miner list test-user01
+$ ./venus-auth user miner list test-user01
 
 # res
 user: test-user01, miner count:1
 idx  miner     create-time                    
 0    f0128788  Thu, 25 Aug 2022 17:20:11 CST
+```
+
+Miner exist in user
+
+```shell script
+./venus-auth user miner exist --user=test-user01 f0128788
+
+# res
+true
+```
+
+Has miner in system
+
+```shell script
+./venus-auth miner has f0128788
+
+# res
+true
 ```
 
 Remove miner
@@ -324,28 +288,14 @@ remove miner:f0128788 success.
 
 #### Signer related
 
-`signer`  指的是具有签名能力的地址。
+`signer` refers to the address with signature ability, binding with` user`. One `signer` can be bound to multiple` user`.
 
-Add Signer
+The binding of `signer` is automatically bound when `venus-wallet` is connected to the chain service, or it can be bound by the chain service administrator with commands. The latter related commands are introduced here.
+
+Register Signer
 
 ```shell script
-# show help
-./venus-auth user signer add -h
-NAME:
-   venus-auth user signer add - Add signer address for specified user
-
-USAGE:
-   venus-auth user signer add [command options] <user> <signer address>
-
-OPTIONS:
-   --help, -h  show help (default: false)
-
-./venus-auth user signer add test-user01 f0128788
-
-# res
-invalid protocol type: 0
-
-./venus-auth user signer add test-user01 f3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha
+$ ./venus-auth user signer register test-user01 f3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha
 
 # res
 create user:test-user01 signer address:f3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha success.
@@ -354,22 +304,50 @@ create user:test-user01 signer address:f3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7
 Signer list
 
 ```shell script
-./venus-auth user signer list test-user01
+$ ./venus-auth user signer list test-user01
 
 # res
-user: test-user01, signer count:2
+user: test-user01, signer count:3
 idx  signer                                                                                  create-time                    
-0    f1mpvdqt2acgihevibd4greavlsfn3dfph5sckc2a                                               Thu, 25 Aug 2022 17:27:35 CST  
-1    f3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha  Thu, 25 Aug 2022 17:26:39 CST 
+0    f15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua                                               Thu, 08 Sep 2022 05:43:34 UTC  
+1    f3r47fkdzfmtex5ic3jnwlzc7bkpbj7s4d6limyt4f57t3cuqq5nuvhvwv2cu2a6iga2s64vjqcxjqiezyjooq  Thu, 08 Sep 2022 05:43:42 UTC  
+2    f3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha  Thu, 08 Sep 2022 05:41:25 UTC 
+```
+
+Signer exist in User
+
+```shell script
+$ ./venus-auth user signer exist --user=test-user01 f15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua
+
+# res
+true
+```
+
+Has Signer
+
+```shell script
+$ ./venus-auth signer has f15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua
+
+# res
+true
+```
+
+Unregister Signer
+
+```shell script
+$ ./venus-auth user signer unregister --user=test-user03 f1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q
+
+# res
+unregister signer:f1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q of test-user03 success.
 ```
 
 Delete Signer
 
 ```shell script
-./venus-auth user signer delete f1mpvdqt2acgihevibd4greavlsfn3dfph5sckc2a
+$ ./venus-auth signer del --really-do-it f3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha
 
 # res
-delete signer:f1mpvdqt2acgihevibd4greavlsfn3dfph5sckc2a success.
+delete success
 ```
 
 #### User request rate limit related

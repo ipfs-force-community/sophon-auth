@@ -22,19 +22,7 @@ var minerHasCommand = &cli.Command{
 	Name:      "has",
 	Usage:     "Check if miner exists",
 	ArgsUsage: "<miner>",
-	Flags: []cli.Flag{
-		&cli.BoolFlag{
-			Name:  "really-do-it",
-			Usage: "must be specified for the action to take effect",
-		},
-	},
 	Action: func(ctx *cli.Context) error {
-		really := ctx.Bool("really-do-it")
-		if !really {
-			//nolint:golint
-			return fmt.Errorf("--really-do-it must be specified for this action to have an effect; you have been warned")
-		}
-
 		if ctx.NArg() != 1 {
 			cli.ShowSubcommandHelpAndExit(ctx, 1)
 			return nil

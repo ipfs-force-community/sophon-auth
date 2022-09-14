@@ -40,7 +40,7 @@ var userAddCmd = &cli.Command{
 		},
 		&cli.IntFlag{
 			Name:  "state",
-			Usage: "1-enabled,0-disabled. if set to 0, the user cannot access the chain service normally",
+			Usage: "1-enabled,2-disabled. if set to 2, the user cannot access the chain service normally",
 			Value: 1,
 		},
 	},
@@ -95,7 +95,7 @@ var userGetCmd = &cli.Command{
 		}
 
 		fmt.Println("name:", user.Name)
-		fmt.Println("state", user.State, "\t// 0: disable, 1: enable")
+		fmt.Println("state", user.State, "\t// 2: disable, 1: enable")
 		fmt.Println("comment:", user.Comment)
 		fmt.Println("createTime:", time.Unix(user.CreateTime, 0).Format(time.RFC1123))
 		fmt.Println("updateTime:", time.Unix(user.CreateTime, 0).Format(time.RFC1123))
@@ -117,7 +117,7 @@ var userUpdateCmd = &cli.Command{
 		},
 		&cli.IntFlag{
 			Name:  "state",
-			Usage: "0:disabled, 1:enabled",
+			Usage: "2:disabled, 1:enabled",
 		},
 	},
 	Action: func(ctx *cli.Context) error {
@@ -141,6 +141,7 @@ var userUpdateCmd = &cli.Command{
 		if err != nil {
 			return err
 		}
+
 		fmt.Println("update user success")
 		return nil
 	},
@@ -188,7 +189,7 @@ var userListCmd = &cli.Command{
 		},
 		&cli.IntFlag{
 			Name:  "state",
-			Usage: "0:disabled, 1:enabled, not-set:[show all]",
+			Usage: "2:disabled, 1:enabled, not-set:[show all]",
 		},
 	},
 	Action: func(ctx *cli.Context) error {

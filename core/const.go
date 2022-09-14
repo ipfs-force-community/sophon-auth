@@ -108,11 +108,11 @@ func (o *Page) GetLimit() int64 {
 
 type UserState int
 
+// For compatibility with older versions of the API
 const (
-	UserStateDisabled UserState = iota
+	UserStateUndefined UserState = iota
 	UserStateEnabled
-
-	UserStateUndefined UserState = -1
+	UserStateDisabled
 )
 
 var userStateStrs = map[UserState]string{

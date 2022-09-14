@@ -121,7 +121,7 @@ $ ./venus-auth user get test-user01
 
 # res
 name: test-user01
-state enabled   // 0: disable, 1: enable
+state enabled   // 2: disable, 1: enable
 comment: 
 createTime: Thu, 08 Sep 2022 02:50:50 UTC
 updateTime: Thu, 08 Sep 2022 02:50:50 UTC
@@ -149,7 +149,7 @@ updateTime: Thu, 08 Sep 2022 02:51:09 UTC
 Update user.
 
 ```shell script
-$ ./venus-auth user update --name=test-user01 --state=0 --comment="this is comment"
+$ ./venus-auth user update --name=test-user01 --state=2 --comment="this is comment"
 
 # res
 update user success

@@ -1,4 +1,3 @@
-//stm: #integration
 package integrate
 
 import (

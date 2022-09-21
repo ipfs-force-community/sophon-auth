@@ -60,7 +60,7 @@ type GetTokensResponse = []*TokenInfo
 
 type GetUserRateLimitsReq struct {
 	Id   string `form:"id"`
-	Name string `form:"name"`
+	Name string `form:"name" binding:"required"`
 }
 
 type DelUserRateLimitReq struct {
@@ -97,24 +97,24 @@ type OutputUser struct {
 }
 
 type GetUserRequest struct {
-	Name string `form:"name"`
+	Name string `form:"name" binding:"required"`
 }
 
 type HasUserRequest struct {
-	Name string `form:"name"`
+	Name string `form:"name" binding:"required"`
 }
 
 type DeleteUserRequest struct {
-	Name string `form:"name"`
+	Name string `form:"name" binding:"required"`
 }
 
 type RecoverUserRequest struct {
-	Name string `form:"name"`
+	Name string `form:"name" binding:"required"`
 }
 
 type GetUserByMinerRequest struct {
 	// todo make miner tobe address
-	Miner string `form:"miner"`
+	Miner string `form:"miner" binding:"required"`
 }
 
 func (ls GetUserRateLimitResponse) MatchedLimit(service, api string) *storage.UserRateLimit {
@@ -129,11 +129,12 @@ func (ls GetUserRateLimitResponse) MatchedLimit(service, api string) *storage.Us
 }
 
 type UpsertMinerReq struct {
-	User, Miner string
+	User  string `binding:"required"`
+	Miner string `binding:"required"`
 }
 
 type HasMinerRequest struct {
-	Miner string `form:"miner"`
+	Miner string `form:"miner" binding:"required"`
 }
 
 type MinerExistInUserRequest struct {
@@ -142,7 +143,7 @@ type MinerExistInUserRequest struct {
 }
 
 type ListMinerReq struct {
-	User string `form:"user"`
+	User string `form:"user" binding:"required"`
 }
 
 type OutputMiner struct {

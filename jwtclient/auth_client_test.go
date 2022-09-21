@@ -1,3 +1,4 @@
+//stm: #unit
 package jwtclient
 
 import (
@@ -49,6 +50,7 @@ func TestMain(m *testing.M) {
 		defer os.RemoveAll(tmpPath)
 	}
 
+	//stm: @VENUSAUTH_JWT_NEW_OAUTH_SERVICE_001
 	app, err := auth.NewOAuthApp(cnf.Secret, tmpPath, cnf.DB)
 	if err != nil {
 		log.Fatalf("Failed to init oauthApp : %s", err)

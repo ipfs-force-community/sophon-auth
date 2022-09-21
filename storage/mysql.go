@@ -2,6 +2,7 @@ package storage
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -247,6 +248,10 @@ func (s *mysqlStore) PutRateLimit(limit *UserRateLimit) (string, error) {
 }
 
 func (s *mysqlStore) DelRateLimit(name, id string) error {
+	if len(name) == 0 || len(id) == 0 {
+		return errors.New("user and rate-limit id is required for removing rate limit regulation")
+	}
+
 	return s.db.Table("user_rate_limits").
 		Where("id = ? and name= ?", id, name).
 		Delete(nil).Error

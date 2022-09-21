@@ -1,3 +1,4 @@
+// stm: #unit
 package auth
 
 import (
@@ -36,26 +37,39 @@ func TestJwt(t *testing.T) {
 		"test_user_003": {"t01007", "t01008", "t01009"},
 	}
 
-	// Features about tokens
+	//stm: @VENUSAUTH_JWT_GENERATE_TOKEN_001
 	t.Run("generate token", testGenerateToken)
+	//stm: @VENUSAUTH_JWT_VERIFY_TOKEN_001, @VENUSAUTH_JWT_VERIFY_TOKEN_002
 	t.Run("verify token", testVerifyToken)
+	//stm: @VENUSAUTH_JWT_GET_TOKEN_001, @VENUSAUTH_JWT_GET_TOKEN_002
 	t.Run("get token", testGetToken)
+	//stm: @VENUSAUTH_JWT_GET_TOKEN_BY_NAME_001, @VENUSAUTH_JWT_GET_TOKEN_BY_NAME_002
 	t.Run("get token by name", testGetTokenByName)
+	//stm: @VENUSAUTH_JWT_TOKENS_001
 	t.Run("list all tokens", testTokenList)
+	//stm: @VENUSAUTH_JWT_REMOVE_TOKEN_001, @VENUSAUTH_JWT_RECOVER_TOKEN_001, @VENUSAUTH_JWT_RECOVER_TOKEN_003
 	t.Run("remove and recover tokens", testRemoveAndRecoverToken)
-
 	// Features about users
+	//stm: @VENUSAUTH_JWT_CREATE_USER_001, @VENUSAUTH_JWT_CREATE_USER_003
 	t.Run("test create user", func(t *testing.T) { testCreateUser(t, userMiners) })
+	//stm: @VENUSAUTH_JWT_GET_USER_001, @VENUSAUTH_JWT_HAS_USER_001, @VENUSAUTH_JWT_GET_USER_002
 	t.Run("test get user", func(t *testing.T) { testGetUser(t, userMiners) })
+	//stm: @VENUSAUTH_JWT_LIST_USERS_001
 	t.Run("test list user", func(t *testing.T) { testListUser(t, userMiners) })
+	//stm: @VENUSAUTH_JWT_UPDATE_USER_001, @VENUSAUTH_JWT_UPDATE_USER_002
 	t.Run("test update user", func(t *testing.T) { testUpdateUser(t, userMiners) })
+	//stm: @VENUSAUTH_JWT_DELETE_USER_001, @VENUSAUTH_JWT_RECOVER_USER_001, @VENUSAUTH_JWT_RECOVER_USER_002, @VENUSAUTH_JWT_RECOVER_USER_003
 	t.Run("test delete and recover user", func(t *testing.T) { testDeleteAndRecoverUser(t, userMiners) })
-
 	// Features about miners
+	//stm: @VENUSAUTH_JWT_UPSERT_MINER_001, @VENUSAUTH_JWT_UPSERT_MINER_002
 	t.Run("test upsert miner", func(t *testing.T) { testUpsertMiner(t, userMiners) })
+	//stm: @VENUSAUTH_JWT_LIST_MINERS_001
 	t.Run("test list miner", func(t *testing.T) { testListMiner(t, userMiners) })
+	//stm: @VENUSAUTH_JWT_HAS_MINER_001, @VENUSAUTH_JWT_HAS_MINER_002
 	t.Run("test has miner", func(t *testing.T) { testHasMiner(t, userMiners) })
+	//stm: @VENUSAUTH_JWT_GET_USER_BY_MINER_001, @VENUSAUTH_JWT_GET_USER_BY_MINER_002, @VENUSAUTH_JWT_GET_USER_BY_MINER_003
 	t.Run("test get user by miner", func(t *testing.T) { testGetUserByMiner(t, userMiners) })
+	//stm: @VENUSAUTH_JWT_DELETE_MINER_001, @VENUSAUTH_JWT_DELETE_MINER_002
 	t.Run("test delete miner", func(t *testing.T) { testDeleteMiner(t, userMiners) })
 
 	// Features about signers
@@ -73,8 +87,10 @@ func TestJwt(t *testing.T) {
 	t.Run("test delete signer", func(t *testing.T) { testDeleteSigner(t, userSigners) })
 
 	// Features about rate limits
+	//stm: @VENUSAUTH_JWT_UPSERT_USER_RATE_LIMITS_001
 	t.Run("test upsert rate limit", func(t *testing.T) { testUpsertUserRateLimit(t, userMiners, originLimits) })
 	t.Run("test get rate limit", func(t *testing.T) { testGetUserRateLimits(t, userMiners, originLimits) })
+	//stm: @VENUSAUTH_JWT_DELETE_USER_RATE_LIMITS_001
 	t.Run("test delete rate limit", func(t *testing.T) { testDeleteUserRateLimits(t, userMiners, originLimits) })
 
 }
@@ -106,17 +122,18 @@ func testVerifyToken(t *testing.T) {
 		Perm:  "admin",
 		Extra: "",
 	}
-	token1, err := jwtOAuthInstance.GenerateToken(context.Background(), pl1)
+	ctx := context.TODO()
+	token1, err := jwtOAuthInstance.GenerateToken(ctx, pl1)
 	assert.Nil(t, err)
 
 	// Verify a valid token
-	payload1, err := jwtOAuthInstance.Verify(context.Background(), token1)
+	payload1, err := jwtOAuthInstance.Verify(ctx, token1)
 	assert.Nil(t, err)
 	assert.True(t, reflect.DeepEqual(payload1, pl1))
 
 	// Try to verify an invalid token
 	invalidToken := "I'm just an invalid token"
-	_, err = jwtOAuthInstance.Verify(context.Background(), invalidToken)
+	_, err = jwtOAuthInstance.Verify(ctx, invalidToken)
 	assert.NotNil(t, err)
 }
 
@@ -219,8 +236,13 @@ func testRemoveAndRecoverToken(t *testing.T) {
 		Perm:  "admin",
 		Extra: "",
 	}
-	token1, err := jwtOAuthInstance.GenerateToken(context.Background(), pl1)
+	ctx := context.TODO()
+	token1, err := jwtOAuthInstance.GenerateToken(ctx, pl1)
 	assert.Nil(t, err)
+
+	// token is usable.
+	err = jwtOAuthInstance.RecoverToken(ctx, token1)
+	assert.Error(t, err)
 
 	// Remove a token
 	err = jwtOAuthInstance.RemoveToken(context.Background(), token1)
@@ -290,13 +312,19 @@ func testGetUser(t *testing.T, userMiners map[string][]string) {
 	setup(&cfg, t)
 	defer shutdown(&cfg, t)
 	createUsers(t, userMiners)
+
+	ctx := context.TODO()
 	// HasUser
-	exist, err := jwtOAuthInstance.HasUser(context.Background(), &HasUserRequest{Name: existUserName})
+	exist, err := jwtOAuthInstance.HasUser(ctx, &HasUserRequest{Name: existUserName})
 	assert.Nil(t, err)
 	assert.True(t, exist)
-	exist, err = jwtOAuthInstance.HasUser(context.Background(), &HasUserRequest{Name: invalidUserName})
+	exist, err = jwtOAuthInstance.HasUser(ctx, &HasUserRequest{Name: invalidUserName})
 	assert.Nil(t, err)
 	assert.False(t, exist)
+
+	u, err := jwtOAuthInstance.GetUser(ctx, &GetUserRequest{Name: existUserName})
+	assert.Nil(t, err)
+	assert.Equal(t, u.Name, existUserName)
 }
 
 func testListUser(t *testing.T, userMiners map[string][]string) {
@@ -333,6 +361,10 @@ func testUpdateUser(t *testing.T, userMiners map[string][]string) {
 	outPutUser1, err := jwtOAuthInstance.GetUser(context.Background(), &GetUserRequest{Name: existUserName})
 	assert.Nil(t, err)
 	assert.Equal(t, "New Comment", outPutUser1.Comment)
+
+	// invalid user name
+	err = jwtOAuthInstance.UpdateUser(context.Background(), &UpdateUserRequest{})
+	assert.Error(t, err)
 }
 
 func testDeleteAndRecoverUser(t *testing.T, userMiners map[string][]string) {
@@ -406,12 +438,17 @@ func testUpsertMiner(t *testing.T, userMiners map[string][]string) {
 	defer shutdown(&cfg, t)
 	addUsersAndMiners(t, userMiners)
 
+	var ctx = context.TODO()
 	// error signer address
-	_, _ = jwtOAuthInstance.CreateUser(context.Background(), &CreateUserRequest{
+	_, _ = jwtOAuthInstance.CreateUser(ctx, &CreateUserRequest{
 		Name:  "user_01",
 		State: 1,
 	})
-	_, err := jwtOAuthInstance.UpsertMiner(context.Background(), &UpsertMinerReq{
+	isCreate, err := jwtOAuthInstance.UpsertMiner(ctx, &UpsertMinerReq{User: "user_01", Miner: "f01034"})
+	assert.Nil(t, err)
+	assert.True(t, isCreate)
+
+	_, err = jwtOAuthInstance.UpsertMiner(ctx, &UpsertMinerReq{
 		User:  "user_01",
 		Miner: "f1mpvdqt2acgihevibd4greavlsfn3dfph5sckc2a",
 	})
@@ -427,8 +464,9 @@ func testListMiner(t *testing.T, userMiners map[string][]string) {
 
 	validUser1 := "test_user_001"
 	user1Miners := []string{"t01000", "t01002", "t01003"}
+	ctx := context.TODO()
 	// List miners
-	resp, err := jwtOAuthInstance.ListMiners(context.Background(), &ListMinerReq{User: validUser1})
+	resp, err := jwtOAuthInstance.ListMiners(ctx, &ListMinerReq{User: validUser1})
 	assert.Nil(t, err)
 	assert.Equal(t, len(user1Miners), len(resp))
 	sort.Slice(resp, func(i, j int) bool { return resp[i].Miner < resp[j].Miner })
@@ -458,6 +496,9 @@ func testHasMiner(t *testing.T, userMiners map[string][]string) {
 	exist, err = jwtOAuthInstance.MinerExistInUser(context.Background(), &MinerExistInUserRequest{Miner: "t01000", User: "test_user_002"})
 	assert.Nil(t, err)
 	assert.False(t, exist)
+
+	_, err = jwtOAuthInstance.HasMiner(context.Background(), &HasMinerRequest{Miner: "invalid address"})
+	assert.Error(t, err)
 }
 
 func testGetUserByMiner(t *testing.T, userMiners map[string][]string) {
@@ -466,14 +507,27 @@ func testGetUserByMiner(t *testing.T, userMiners map[string][]string) {
 	defer shutdown(&cfg, t)
 	addUsersAndMiners(t, userMiners)
 
+	ctx := context.TODO()
 	// Get User By Miner
 	validUser1 := "test_user_001"
 	user1Miners := []string{"t01000", "t01002", "t01003"}
-	userInfo, err := jwtOAuthInstance.GetUserByMiner(context.Background(), &GetUserByMinerRequest{
+	userInfo, err := jwtOAuthInstance.GetUserByMiner(ctx, &GetUserByMinerRequest{
 		Miner: user1Miners[1],
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, validUser1, userInfo.Name)
+
+	// invalid miner address
+	_, err = jwtOAuthInstance.GetUserByMiner(ctx, &GetUserByMinerRequest{
+		Miner: "invalid address",
+	})
+	assert.Error(t, err)
+
+	// miner address not exist
+	_, err = jwtOAuthInstance.GetUserByMiner(ctx, &GetUserByMinerRequest{
+		Miner: "f01989787",
+	})
+	assert.Error(t, err)
 }
 
 func testDeleteMiner(t *testing.T, userMiners map[string][]string) {
@@ -484,22 +538,23 @@ func testDeleteMiner(t *testing.T, userMiners map[string][]string) {
 
 	user1Miners := []string{"t01000", "t01002", "t01003"}
 	invalidMiner := "t02000"
+	ctx := context.TODO()
 	// Delete miner
-	deleted, err := jwtOAuthInstance.DelMiner(context.Background(), &DelMinerReq{Miner: user1Miners[0]})
+	deleted, err := jwtOAuthInstance.DelMiner(ctx, &DelMinerReq{Miner: user1Miners[0]})
 	assert.Nil(t, err)
 	assert.True(t, deleted)
 	// Then get this miner
-	has, err := jwtOAuthInstance.HasMiner(context.Background(), &HasMinerRequest{Miner: user1Miners[0]})
+	has, err := jwtOAuthInstance.HasMiner(ctx, &HasMinerRequest{Miner: user1Miners[0]})
 	assert.Nil(t, err)
 	assert.False(t, has)
 	// Try to get user by this miner
-	_, err = jwtOAuthInstance.GetUserByMiner(context.Background(), &GetUserByMinerRequest{
+	_, err = jwtOAuthInstance.GetUserByMiner(ctx, &GetUserByMinerRequest{
 		Miner: user1Miners[0],
 	})
 	assert.NotNil(t, err)
 
 	// Delete an invalid miner
-	deleted, err = jwtOAuthInstance.DelMiner(context.Background(), &DelMinerReq{Miner: invalidMiner})
+	deleted, err = jwtOAuthInstance.DelMiner(ctx, &DelMinerReq{Miner: invalidMiner})
 	assert.Nil(t, err)
 	assert.False(t, deleted)
 }
@@ -511,11 +566,12 @@ func addUsersAndSigners(t *testing.T, userSigners map[string][]string) {
 			State: 1,
 		}
 
+		ctx := context.TODO()
 		// Create users.
-		_, _ = jwtOAuthInstance.CreateUser(context.Background(), createUserReq)
+		_, _ = jwtOAuthInstance.CreateUser(ctx, createUserReq)
 		// Add Signer
 		for _, signer := range signers {
-			ifCreate, err := jwtOAuthInstance.RegisterSigner(context.Background(), &RegisterSignerReq{
+			ifCreate, err := jwtOAuthInstance.RegisterSigner(ctx, &RegisterSignerReq{
 				User:   userName,
 				Signer: signer,
 			})

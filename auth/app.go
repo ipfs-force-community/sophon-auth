@@ -72,8 +72,7 @@ func SuccessResponse(c *gin.Context, obj interface{}) {
 
 func Response(c *gin.Context, err error) {
 	if err != nil {
-		c.Error(err) // nolint
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		BadResponse(c, err)
 		return
 	}
 	c.AbortWithStatus(http.StatusOK)
@@ -205,10 +204,6 @@ func (o *oauthApp) UpdateUser(c *gin.Context) {
 		return
 	}
 	err := o.srv.UpdateUser(c, req)
-	if err != nil {
-		BadResponse(c, err)
-		return
-	}
 	Response(c, err)
 }
 
@@ -276,11 +271,7 @@ func (o *oauthApp) DeleteUser(c *gin.Context) {
 		return
 	}
 	err := o.srv.DeleteUser(c, req)
-	if err != nil {
-		BadResponse(c, err)
-		return
-	}
-	Response(c, nil)
+	Response(c, err)
 }
 
 func (o *oauthApp) RecoverUser(c *gin.Context) {
@@ -290,11 +281,7 @@ func (o *oauthApp) RecoverUser(c *gin.Context) {
 		return
 	}
 	err := o.srv.RecoverUser(c, req)
-	if err != nil {
-		BadResponse(c, err)
-		return
-	}
-	Response(c, nil)
+	Response(c, err)
 }
 
 func (o *oauthApp) AddUserRateLimit(c *gin.Context) {

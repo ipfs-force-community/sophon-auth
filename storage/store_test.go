@@ -108,7 +108,9 @@ func testDeleteUser(t *testing.T) {
 		updated.State = core.UserStateEnabled
 		updated.Comment = "new comment"
 		require.NoError(t, theStore.UpdateUser(updated))
+
 		res, err = theStore.GetUser(res.Name)
+		require.NoError(t, err)
 		require.Equal(t, res.State, updated.State)
 		require.Equal(t, res.Comment, updated.Comment)
 	}

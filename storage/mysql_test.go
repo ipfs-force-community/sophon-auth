@@ -21,13 +21,13 @@ import (
 
 type anyTime struct{}
 
-var simulateError = fmt.Errorf("just simulate an error")
+var errSimulated = fmt.Errorf("just simulate an error")
 
 func sqlMockExpect(m sqlmock.Sqlmock, prefix string, fail bool) {
 	m.ExpectBegin()
 	exe := m.ExpectExec(regexp.QuoteMeta(prefix))
 	if fail {
-		exe.WillReturnError(simulateError)
+		exe.WillReturnError(errSimulated)
 		m.ExpectRollback()
 		return
 	}
@@ -52,7 +52,6 @@ func TestMysqlStore(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	// Token
 	//stm: @VENUSAUTH_MYSQL_PUT_001
 	t.Run("mysql put token", wrapper(testMySQLPutToken, mySQLStore, mock))
@@ -197,10 +196,9 @@ func testMySQLGetToken(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmoc
 
 	mock.ExpectQuery(regexp.QuoteMeta(
 		"SELECT * FROM `token` WHERE token = ? and is_deleted=? LIMIT 1")).
-		WithArgs(token, core.NotDelete).WillReturnError(simulateError)
+		WithArgs(token, core.NotDelete).WillReturnError(errSimulated)
 	_, err = mySQLStore.Get(token)
-	assert.Equal(t, err, simulateError)
-
+	assert.Error(t, err)
 }
 
 func testMySQLGetTokenRecord(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
@@ -219,9 +217,9 @@ func testMySQLGetTokenRecord(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.
 
 	mock.ExpectQuery(regexp.QuoteMeta(
 		"SELECT * FROM `token` WHERE token = ? LIMIT 1")).
-		WithArgs(token).WillReturnError(simulateError)
+		WithArgs(token).WillReturnError(errSimulated)
 	_, err = mySQLStore.GetTokenRecord(token)
-	assert.Equal(t, err, simulateError)
+	assert.Error(t, err)
 }
 
 func testMySQLGetTokenByName(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
@@ -258,10 +256,10 @@ func testMySQLListTokens(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlm
 
 	mock.ExpectQuery(regexp.QuoteMeta(
 		fmt.Sprintf("SELECT * FROM `token` WHERE is_deleted=? ORDER BY name LIMIT %v OFFSET %v", limit, skip))).
-		WithArgs(core.NotDelete).WillReturnError(simulateError)
+		WithArgs(core.NotDelete).WillReturnError(errSimulated)
 
 	_, err = mySQLStore.List(skip, limit)
-	assert.Equal(t, err, simulateError)
+	assert.Error(t, err)
 }
 
 func testMySQLDeleteToken(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
@@ -285,7 +283,7 @@ func testMySQLDeleteToken(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sql
 	// simulate `Has` retuens an error
 	mock.ExpectQuery(regexp.QuoteMeta(
 		"SELECT count(*) FROM `token` WHERE token=? and is_deleted=?")).
-		WithArgs(token, core.NotDelete).WillReturnError(simulateError)
+		WithArgs(token, core.NotDelete).WillReturnError(errSimulated)
 	assert.Error(t, mySQLStore.Delete(token))
 
 	// `Has` returns a false
@@ -311,7 +309,7 @@ func testMySQLPutUser(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock
 	assert.Nil(t, mySQLStore.PutUser(user))
 
 	sqlMockExpect(mock, op, true)
-	assert.Equal(t, mySQLStore.PutUser(user), simulateError)
+	assert.Error(t, mySQLStore.PutUser(user))
 }
 
 func testMySQLUpdateUser(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
@@ -331,7 +329,7 @@ func testMySQLUpdateUser(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlm
 
 	sqlMockExpect(mock, op, true)
 	err = mySQLStore.UpdateUser(newUser)
-	assert.Equal(t, err, simulateError)
+	assert.Error(t, err)
 }
 
 func testMySQLHasUser(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
@@ -344,9 +342,9 @@ func testMySQLHasUser(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock
 	assert.Nil(t, err)
 	assert.True(t, exist)
 
-	mock.ExpectQuery(op).WillReturnError(simulateError)
+	mock.ExpectQuery(op).WillReturnError(errSimulated)
 	_, err = mySQLStore.HasUser(user)
-	assert.Equal(t, err, simulateError)
+	assert.Error(t, err)
 }
 
 func testMySQLGetUser(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
@@ -364,7 +362,7 @@ func testMySQLGetUser(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock
 	assert.Equal(t, userInfo.Name, user)
 	assert.Equal(t, userInfo.Comment, comment)
 
-	mock.ExpectQuery(op).WillReturnError(simulateError)
+	mock.ExpectQuery(op).WillReturnError(errSimulated)
 	_, err = mySQLStore.GetUser(user)
 	assert.Error(t, err)
 }
@@ -383,7 +381,7 @@ func testMySQLGetUserRecord(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.S
 	assert.Equal(t, userInfo.Name, user)
 	assert.Equal(t, userInfo.Comment, comment)
 
-	mock.ExpectQuery(op).WillReturnError(simulateError)
+	mock.ExpectQuery(op).WillReturnError(errSimulated)
 	_, err = mySQLStore.GetUserRecord(user)
 	assert.Error(t, err)
 }
@@ -399,7 +397,7 @@ func testMySQLListUsers(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmo
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(users))
 
-	mock.ExpectQuery(op).WillReturnError(simulateError)
+	mock.ExpectQuery(op).WillReturnError(errSimulated)
 	_, err = mySQLStore.ListUsers(skip, limit, core.UserStateUndefined)
 	assert.Error(t, err)
 

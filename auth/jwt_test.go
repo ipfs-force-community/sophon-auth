@@ -28,7 +28,7 @@ func TestJwt(t *testing.T) {
 	var originLimits []*storage.UserRateLimit
 
 	if err := json.Unmarshal([]byte(limitStrs), &originLimits); err != nil {
-		t.Fatal(fmt.Sprintf("initialize origin Ratelimit failed:%s", err.Error()))
+		t.Fatalf("initialize origin Ratelimit failed:%s", err.Error())
 	}
 
 	var userMiners = map[string][]string{

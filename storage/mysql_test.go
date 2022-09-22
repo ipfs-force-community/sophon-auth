@@ -32,12 +32,12 @@ func sqlMockExpect(m sqlmock.Sqlmock, sql string, fail bool, params ...driver.Va
 	}
 
 	if fail {
-		exe = exe.WillReturnError(errSimulated)
+		exe.WillReturnError(errSimulated)
 		m.ExpectRollback()
 		return
 	}
 
-	exe = exe.WillReturnResult(sqlmock.NewResult(1, 1))
+	exe.WillReturnResult(sqlmock.NewResult(1, 1))
 	m.ExpectCommit()
 }
 

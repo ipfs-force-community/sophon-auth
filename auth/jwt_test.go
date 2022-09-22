@@ -122,7 +122,7 @@ func testVerifyToken(t *testing.T) {
 		Perm:  "admin",
 		Extra: "",
 	}
-	ctx := context.TODO()
+	ctx := context.Background()
 	token1, err := jwtOAuthInstance.GenerateToken(ctx, pl1)
 	assert.Nil(t, err)
 
@@ -148,17 +148,18 @@ func testGetToken(t *testing.T) {
 		Perm:  "admin",
 		Extra: "",
 	}
-	token1, err := jwtOAuthInstance.GenerateToken(context.Background(), pl1)
+	ctx := context.Background()
+	token1, err := jwtOAuthInstance.GenerateToken(ctx, pl1)
 	assert.Nil(t, err)
 
 	// Get token
-	tokenInfo1, err := jwtOAuthInstance.GetToken(context.Background(), token1)
+	tokenInfo1, err := jwtOAuthInstance.GetToken(ctx, token1)
 	assert.Nil(t, err)
 	assert.Equal(t, pl1.Name, tokenInfo1.Name)
 	assert.Equal(t, pl1.Perm, tokenInfo1.Perm)
 	// Try to get invalid token
 	invalidToken := "I'm just an invalid token"
-	_, err = jwtOAuthInstance.GetToken(context.Background(), invalidToken)
+	_, err = jwtOAuthInstance.GetToken(ctx, invalidToken)
 	assert.NotNil(t, err)
 }
 
@@ -173,16 +174,17 @@ func testGetTokenByName(t *testing.T) {
 		Perm:  "admin",
 		Extra: "",
 	}
-	token1, err := jwtOAuthInstance.GenerateToken(context.Background(), pl1)
+	ctx := context.Background()
+	token1, err := jwtOAuthInstance.GenerateToken(ctx, pl1)
 	assert.Nil(t, err)
 
 	// Get token by name
-	tokenInfoList1, err := jwtOAuthInstance.GetTokenByName(context.Background(), "test-token-01")
+	tokenInfoList1, err := jwtOAuthInstance.GetTokenByName(ctx, "test-token-01")
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(tokenInfoList1))
 	assert.Equal(t, token1, tokenInfoList1[0].Token)
 	// Try to get token by wrong name
-	tokenInfoInvalid, err := jwtOAuthInstance.GetTokenByName(context.Background(), "invalid_name")
+	tokenInfoInvalid, err := jwtOAuthInstance.GetTokenByName(ctx, "invalid_name")
 	assert.Nil(t, err)
 	assert.Equal(t, 0, len(tokenInfoInvalid))
 }
@@ -203,24 +205,25 @@ func testTokenList(t *testing.T) {
 		Perm:  "admin",
 		Extra: "",
 	}
-	_, err := jwtOAuthInstance.GenerateToken(context.Background(), pl1)
+	ctx := context.Background()
+	_, err := jwtOAuthInstance.GenerateToken(ctx, pl1)
 	assert.Nil(t, err)
-	_, err = jwtOAuthInstance.GenerateToken(context.Background(), pl2)
+	_, err = jwtOAuthInstance.GenerateToken(ctx, pl2)
 	assert.Nil(t, err)
 
-	allTokenInfos, err := jwtOAuthInstance.Tokens(context.Background(), 0, 2)
+	allTokenInfos, err := jwtOAuthInstance.Tokens(ctx, 0, 2)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(allTokenInfos))
 	// with skip or limit
-	allTokenInfos, err = jwtOAuthInstance.Tokens(context.Background(), 1, 10)
+	allTokenInfos, err = jwtOAuthInstance.Tokens(ctx, 1, 10)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(allTokenInfos))
 
-	allTokenInfos, err = jwtOAuthInstance.Tokens(context.Background(), 0, 1)
+	allTokenInfos, err = jwtOAuthInstance.Tokens(ctx, 0, 1)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(allTokenInfos))
 
-	allTokenInfos, err = jwtOAuthInstance.Tokens(context.Background(), 2, 10)
+	allTokenInfos, err = jwtOAuthInstance.Tokens(ctx, 2, 10)
 	assert.Nil(t, err)
 	assert.Equal(t, 0, len(allTokenInfos))
 }
@@ -236,7 +239,7 @@ func testRemoveAndRecoverToken(t *testing.T) {
 		Perm:  "admin",
 		Extra: "",
 	}
-	ctx := context.TODO()
+	ctx := context.Background()
 	token1, err := jwtOAuthInstance.GenerateToken(ctx, pl1)
 	assert.Nil(t, err)
 
@@ -245,35 +248,36 @@ func testRemoveAndRecoverToken(t *testing.T) {
 	assert.Error(t, err)
 
 	// Remove a token
-	err = jwtOAuthInstance.RemoveToken(context.Background(), token1)
+	err = jwtOAuthInstance.RemoveToken(ctx, token1)
 	assert.Nil(t, err)
 
-	_, err = jwtOAuthInstance.Verify(context.Background(), token1)
+	_, err = jwtOAuthInstance.Verify(ctx, token1)
 	assert.NotNil(t, err)
 
-	tokenInfoList1, err := jwtOAuthInstance.GetTokenByName(context.Background(), "test-token-01")
+	tokenInfoList1, err := jwtOAuthInstance.GetTokenByName(ctx, "test-token-01")
 	assert.Nil(t, err)
 	assert.Equal(t, 0, len(tokenInfoList1))
 
 	// Recover a token
-	err = jwtOAuthInstance.RecoverToken(context.Background(), token1)
+	err = jwtOAuthInstance.RecoverToken(ctx, token1)
 	assert.Nil(t, err)
-	payload1, err := jwtOAuthInstance.Verify(context.Background(), token1)
+	payload1, err := jwtOAuthInstance.Verify(ctx, token1)
 	assert.Nil(t, err)
 	assert.True(t, reflect.DeepEqual(payload1, pl1))
-	allTokenInfos, err := jwtOAuthInstance.Tokens(context.Background(), 0, 2)
+	allTokenInfos, err := jwtOAuthInstance.Tokens(ctx, 0, 2)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(allTokenInfos))
 }
 
 func createUsers(t *testing.T, userMiners map[string][]string) {
+	ctx := context.Background()
 	// Create 3 users
 	for userName := range userMiners {
 		createUserReq := &CreateUserRequest{
 			Name:  userName,
 			State: 0,
 		}
-		resp, err := jwtOAuthInstance.CreateUser(context.Background(), createUserReq)
+		resp, err := jwtOAuthInstance.CreateUser(ctx, createUserReq)
 		assert.Nil(t, err)
 		assert.Equal(t, userName, resp.Name)
 		assert.Equal(t, "", resp.Comment)
@@ -285,6 +289,8 @@ func testCreateUser(t *testing.T, userMiners map[string][]string) {
 	setup(&cfg, t)
 	defer shutdown(&cfg, t)
 
+	ctx := context.Background()
+
 	existUserName := "test_user_001"
 	comment := "test comment"
 	// Create 3 users
@@ -294,13 +300,13 @@ func testCreateUser(t *testing.T, userMiners map[string][]string) {
 			Comment: &comment,
 			State:   0,
 		}
-		resp, err := jwtOAuthInstance.CreateUser(context.Background(), createUserReq)
+		resp, err := jwtOAuthInstance.CreateUser(ctx, createUserReq)
 		assert.Nil(t, err)
 		assert.Equal(t, userName, resp.Name)
 		assert.Equal(t, "test comment", resp.Comment)
 	}
 	// Create duplicate user
-	_, err := jwtOAuthInstance.CreateUser(context.Background(), &CreateUserRequest{Name: existUserName})
+	_, err := jwtOAuthInstance.CreateUser(ctx, &CreateUserRequest{Name: existUserName})
 	assert.NotNil(t, err)
 }
 
@@ -313,7 +319,7 @@ func testGetUser(t *testing.T, userMiners map[string][]string) {
 	defer shutdown(&cfg, t)
 	createUsers(t, userMiners)
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	// HasUser
 	exist, err := jwtOAuthInstance.HasUser(ctx, &HasUserRequest{Name: existUserName})
 	assert.Nil(t, err)
@@ -355,15 +361,16 @@ func testUpdateUser(t *testing.T, userMiners map[string][]string) {
 		Name:    existUserName,
 		Comment: &comment,
 	}
-	err := jwtOAuthInstance.UpdateUser(context.Background(), updateUserReq)
+	ctx := context.Background()
+	err := jwtOAuthInstance.UpdateUser(ctx, updateUserReq)
 	assert.Nil(t, err)
 	// Then get this user
-	outPutUser1, err := jwtOAuthInstance.GetUser(context.Background(), &GetUserRequest{Name: existUserName})
+	outPutUser1, err := jwtOAuthInstance.GetUser(ctx, &GetUserRequest{Name: existUserName})
 	assert.Nil(t, err)
 	assert.Equal(t, "New Comment", outPutUser1.Comment)
 
 	// invalid user name
-	err = jwtOAuthInstance.UpdateUser(context.Background(), &UpdateUserRequest{})
+	err = jwtOAuthInstance.UpdateUser(ctx, &UpdateUserRequest{})
 	assert.Error(t, err)
 }
 
@@ -376,14 +383,16 @@ func testDeleteAndRecoverUser(t *testing.T, userMiners map[string][]string) {
 	defer shutdown(&cfg, t)
 	createUsers(t, userMiners)
 
+	ginCtx := &gin.Context{}
+
 	// Delete User
-	err := jwtOAuthInstance.DeleteUser(&gin.Context{}, &DeleteUserRequest{Name: existUserName})
+	err := jwtOAuthInstance.DeleteUser(ginCtx, &DeleteUserRequest{Name: existUserName})
 	assert.Nil(t, err)
 	// Then try to get this user
-	_, err = jwtOAuthInstance.GetUser(context.Background(), &GetUserRequest{Name: existUserName})
+	_, err = jwtOAuthInstance.GetUser(ginCtx, &GetUserRequest{Name: existUserName})
 	assert.NotNil(t, err)
 	// And also list users now
-	allUserInfos, err := jwtOAuthInstance.ListUsers(context.Background(), &ListUsersRequest{
+	allUserInfos, err := jwtOAuthInstance.ListUsers(ginCtx, &ListUsersRequest{
 		Page:  &core.Page{},
 		State: int(core.UserStateUndefined),
 	})
@@ -391,37 +400,38 @@ func testDeleteAndRecoverUser(t *testing.T, userMiners map[string][]string) {
 	assert.Equal(t, 2, len(allUserInfos))
 
 	// Try to delete non-existing users
-	err = jwtOAuthInstance.DeleteUser(&gin.Context{}, &DeleteUserRequest{Name: invalidUserName})
+	err = jwtOAuthInstance.DeleteUser(ginCtx, &DeleteUserRequest{Name: invalidUserName})
 	assert.NotNil(t, err)
 
 	// Recover user
-	err = jwtOAuthInstance.RecoverUser(&gin.Context{}, &RecoverUserRequest{Name: existUserName})
+	err = jwtOAuthInstance.RecoverUser(ginCtx, &RecoverUserRequest{Name: existUserName})
 	assert.Nil(t, err)
 	// Then get this user
-	outPutUser1, err := jwtOAuthInstance.GetUser(context.Background(), &GetUserRequest{Name: existUserName})
+	outPutUser1, err := jwtOAuthInstance.GetUser(ginCtx, &GetUserRequest{Name: existUserName})
 	assert.Nil(t, err)
 	assert.Equal(t, existUserName, outPutUser1.Name)
 
 	// Try to recover an invalid user
-	err = jwtOAuthInstance.RecoverUser(&gin.Context{}, &RecoverUserRequest{Name: invalidUserName})
+	err = jwtOAuthInstance.RecoverUser(ginCtx, &RecoverUserRequest{Name: invalidUserName})
 	assert.NotNil(t, err)
 
 	// Try to recover a valid, but not deleted user
-	err = jwtOAuthInstance.RecoverUser(&gin.Context{}, &RecoverUserRequest{Name: existUserName})
+	err = jwtOAuthInstance.RecoverUser(ginCtx, &RecoverUserRequest{Name: existUserName})
 	assert.NotNil(t, err)
 }
 
 func addUsersAndMiners(t *testing.T, userMiners map[string][]string) {
+	ctx := context.Background()
 	for userName, miners := range userMiners {
 		createUserReq := &CreateUserRequest{
 			Name:  userName,
 			State: 0,
 		}
 		// Create users.
-		_, _ = jwtOAuthInstance.CreateUser(context.Background(), createUserReq)
+		_, _ = jwtOAuthInstance.CreateUser(ctx, createUserReq)
 		// Add miners
 		for _, minerID := range miners {
-			ifCreate, err := jwtOAuthInstance.UpsertMiner(context.Background(), &UpsertMinerReq{
+			ifCreate, err := jwtOAuthInstance.UpsertMiner(ctx, &UpsertMinerReq{
 				User:  userName,
 				Miner: minerID,
 			})
@@ -437,7 +447,7 @@ func testUpsertMiner(t *testing.T, userMiners map[string][]string) {
 	defer shutdown(&cfg, t)
 	addUsersAndMiners(t, userMiners)
 
-	var ctx = context.TODO()
+	var ctx = context.Background()
 	// error signer address
 	_, _ = jwtOAuthInstance.CreateUser(ctx, &CreateUserRequest{
 		Name:  "user_01",
@@ -463,7 +473,7 @@ func testListMiner(t *testing.T, userMiners map[string][]string) {
 
 	validUser1 := "test_user_001"
 	user1Miners := []string{"t01000", "t01002", "t01003"}
-	ctx := context.TODO()
+	ctx := context.Background()
 	// List miners
 	resp, err := jwtOAuthInstance.ListMiners(ctx, &ListMinerReq{User: validUser1})
 	assert.Nil(t, err)
@@ -481,21 +491,23 @@ func testHasMiner(t *testing.T, userMiners map[string][]string) {
 	defer shutdown(&cfg, t)
 	addUsersAndMiners(t, userMiners)
 
+	ctx := context.Background()
+
 	// Has Miner
-	has, err := jwtOAuthInstance.HasMiner(context.Background(), &HasMinerRequest{Miner: "t01000"})
+	has, err := jwtOAuthInstance.HasMiner(ctx, &HasMinerRequest{Miner: "t01000"})
 	assert.Nil(t, err)
 	assert.True(t, has)
 
 	// Miner Exist In Account
-	exist, err := jwtOAuthInstance.MinerExistInUser(context.Background(), &MinerExistInUserRequest{Miner: "t01000", User: "test_user_001"})
+	exist, err := jwtOAuthInstance.MinerExistInUser(ctx, &MinerExistInUserRequest{Miner: "t01000", User: "test_user_001"})
 	assert.Nil(t, err)
 	assert.True(t, exist)
 
-	exist, err = jwtOAuthInstance.MinerExistInUser(context.Background(), &MinerExistInUserRequest{Miner: "t01000", User: "test_user_002"})
+	exist, err = jwtOAuthInstance.MinerExistInUser(ctx, &MinerExistInUserRequest{Miner: "t01000", User: "test_user_002"})
 	assert.Nil(t, err)
 	assert.False(t, exist)
 
-	_, err = jwtOAuthInstance.HasMiner(context.Background(), &HasMinerRequest{Miner: "invalid address"})
+	_, err = jwtOAuthInstance.HasMiner(ctx, &HasMinerRequest{Miner: "invalid address"})
 	assert.Error(t, err)
 }
 
@@ -505,7 +517,7 @@ func testGetUserByMiner(t *testing.T, userMiners map[string][]string) {
 	defer shutdown(&cfg, t)
 	addUsersAndMiners(t, userMiners)
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	// Get User By Miner
 	validUser1 := "test_user_001"
 	user1Miners := []string{"t01000", "t01002", "t01003"}
@@ -536,7 +548,7 @@ func testDeleteMiner(t *testing.T, userMiners map[string][]string) {
 
 	user1Miners := []string{"t01000", "t01002", "t01003"}
 	invalidMiner := "t02000"
-	ctx := context.TODO()
+	ctx := context.Background()
 	// Delete miner
 	deleted, err := jwtOAuthInstance.DelMiner(ctx, &DelMinerReq{Miner: user1Miners[0]})
 	assert.Nil(t, err)
@@ -564,7 +576,7 @@ func addUsersAndSigners(t *testing.T, userSigners map[string][]string) {
 			State: 1,
 		}
 
-		ctx := context.TODO()
+		ctx := context.Background()
 		// Create users.
 		_, _ = jwtOAuthInstance.CreateUser(ctx, createUserReq)
 		// Add Signer
@@ -650,12 +662,13 @@ func testHasSigner(t *testing.T, userSigners map[string][]string) {
 	setup(&cfg, t)
 	defer shutdown(&cfg, t)
 	addUsersAndSigners(t, userSigners)
+	ctx := context.Background()
 
-	has, err := jwtOAuthInstance.HasSigner(context.Background(), &HasSignerReq{Signer: "t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua"})
+	has, err := jwtOAuthInstance.HasSigner(ctx, &HasSignerReq{Signer: "t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua"})
 	assert.Nil(t, err)
 	assert.True(t, has)
 
-	has, err = jwtOAuthInstance.HasSigner(context.Background(), &HasSignerReq{Signer: "f3r72mrymha6wrtb6dzynkzjbnl572az27ddbiq3aovj3d235h2jjgsya4afbf3d37vzfbtsy3dssfnitnhklq"})
+	has, err = jwtOAuthInstance.HasSigner(ctx, &HasSignerReq{Signer: "f3r72mrymha6wrtb6dzynkzjbnl572az27ddbiq3aovj3d235h2jjgsya4afbf3d37vzfbtsy3dssfnitnhklq"})
 	assert.Nil(t, err)
 	assert.False(t, has)
 }
@@ -720,22 +733,23 @@ func testDeleteSigner(t *testing.T, userSigners map[string][]string) {
 	assert.True(t, deleted)
 
 	// Then get this signer
-	has, err := jwtOAuthInstance.HasSigner(context.Background(), &HasSignerReq{Signer: signer})
+	has, err := jwtOAuthInstance.HasSigner(ctx, &HasSignerReq{Signer: signer})
 	assert.Nil(t, err)
 	assert.False(t, has)
 }
 
 func addUsersAndRateLimits(t *testing.T, userMiners map[string][]string, originLimits []*storage.UserRateLimit) {
+	ctx := context.Background()
 	// Create 3 users and add rate limits
 	for userName := range userMiners {
 		createUserReq := &CreateUserRequest{
 			Name:  userName,
 			State: 0,
 		}
-		_, _ = jwtOAuthInstance.CreateUser(context.Background(), createUserReq)
+		_, _ = jwtOAuthInstance.CreateUser(ctx, createUserReq)
 	}
 	for _, limit := range originLimits {
-		id, err := jwtOAuthInstance.UpsertUserRateLimit(context.Background(), &UpsertUserRateLimitReq{
+		id, err := jwtOAuthInstance.UpsertUserRateLimit(ctx, &UpsertUserRateLimitReq{
 			Id:       limit.Id,
 			Name:     limit.Name,
 			Service:  limit.Service,
@@ -782,20 +796,22 @@ func testDeleteUserRateLimits(t *testing.T, userMiners map[string][]string, orig
 	userName := originLimits[0].Name
 	existId := originLimits[0].Id
 
-	err := jwtOAuthInstance.DelUserRateLimit(context.Background(), &DelUserRateLimitReq{
+	ctx := context.Background()
+
+	err := jwtOAuthInstance.DelUserRateLimit(ctx, &DelUserRateLimitReq{
 		Name: userName,
 		Id:   existId,
 	})
 	assert.Nil(t, err)
 	// Try to get it again
-	resp, err := jwtOAuthInstance.GetUserRateLimits(context.Background(), &GetUserRateLimitsReq{
+	resp, err := jwtOAuthInstance.GetUserRateLimits(ctx, &GetUserRateLimitsReq{
 		Id:   existId,
 		Name: userName,
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, 0, len(resp))
 	// Try to delete again
-	err = jwtOAuthInstance.DelUserRateLimit(context.Background(), &DelUserRateLimitReq{
+	err = jwtOAuthInstance.DelUserRateLimit(ctx, &DelUserRateLimitReq{
 		Name: userName,
 		Id:   existId,
 	})

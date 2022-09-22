@@ -23,15 +23,21 @@ type anyTime struct{}
 
 var errSimulated = fmt.Errorf("just simulate an error")
 
-func sqlMockExpect(m sqlmock.Sqlmock, prefix string, fail bool) {
+func sqlMockExpect(m sqlmock.Sqlmock, sql string, fail bool, params ...driver.Value) {
 	m.ExpectBegin()
-	exe := m.ExpectExec(regexp.QuoteMeta(prefix))
+	exe := m.ExpectExec(regexp.QuoteMeta(sql))
+
+	if len(params) > 0 {
+		exe = exe.WithArgs(params...)
+	}
+
 	if fail {
-		exe.WillReturnError(errSimulated)
+		exe = exe.WillReturnError(errSimulated)
 		m.ExpectRollback()
 		return
 	}
-	exe.WillReturnResult(sqlmock.NewResult(1, 1))
+
+	exe = exe.WillReturnResult(sqlmock.NewResult(1, 1))
 	m.ExpectCommit()
 }
 
@@ -159,11 +165,14 @@ func testMySQLUpdateToken(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sql
 		IsDeleted:  0,
 	}
 
-	sqlMockExpect(mock, "UPDATE", false)
+	sql := "UPDATE `token` SET `createTime`=?,`extra`=?,`is_deleted`=?,`name`=?,`perm`=?,`secret`=?,`token`=? WHERE token = ?"
+	sqlMockExpect(mock, sql, false,
+		kp.CreateTime, kp.Extra, kp.IsDeleted, kp.Name, kp.Perm, kp.Secret, kp.Token, kp.Token)
 	err := mySQLStore.UpdateToken(kp)
 	assert.Nil(t, err)
 
-	sqlMockExpect(mock, "UPDATE", true)
+	sqlMockExpect(mock, sql, true,
+		kp.CreateTime, kp.Extra, kp.IsDeleted, kp.Name, kp.Perm, kp.Secret, kp.Token, kp.Token)
 	assert.Error(t, mySQLStore.UpdateToken(kp))
 }
 
@@ -303,32 +312,36 @@ func testMySQLPutUser(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock
 		CreateTime: now,
 	}
 
-	op := "INSERT INTO `users`"
-
-	sqlMockExpect(mock, op, false)
+	sql := "INSERT INTO `users` (`id`,`name`,`comment`,`state`,`createTime`,`updateTime`,`is_deleted`) VALUES (?,?,?,?,?,?,?)"
+	sqlMockExpect(mock, sql, false,
+		user.Id, user.Name, user.Comment, user.State, user.CreateTime, user.UpdateTime, user.IsDeleted)
 	assert.Nil(t, mySQLStore.PutUser(user))
 
-	sqlMockExpect(mock, op, true)
+	sqlMockExpect(mock, sql, true,
+		user.Id, user.Name, user.Comment, user.State, user.CreateTime, user.UpdateTime, user.IsDeleted)
 	assert.Error(t, mySQLStore.PutUser(user))
 }
 
 func testMySQLUpdateUser(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
 	now := time.Now()
-	var newUser = &User{
+	var user = &User{
 		Id:         uuid.NewString(),
 		Name:       "test_user_001",
 		UpdateTime: now,
 		CreateTime: now,
+		IsDeleted:  core.NotDelete,
 	}
 
-	op := "UPDATE `users`"
+	sql := "UPDATE `users` SET `name`=?,`comment`=?,`state`=?,`createTime`=?,`updateTime`=?,`is_deleted`=? WHERE `id` = ?"
 
-	sqlMockExpect(mock, op, false)
-	err := mySQLStore.UpdateUser(newUser)
+	sqlMockExpect(mock, sql, false,
+		user.Name, user.Comment, user.State, user.CreateTime, user.UpdateTime, user.IsDeleted, user.Id)
+	err := mySQLStore.UpdateUser(user)
 	assert.Nil(t, err)
 
-	sqlMockExpect(mock, op, true)
-	err = mySQLStore.UpdateUser(newUser)
+	sqlMockExpect(mock, sql, true,
+		user.Name, user.Comment, user.State, user.CreateTime, user.UpdateTime, user.IsDeleted, user.Id)
+	err = mySQLStore.UpdateUser(user)
 	assert.Error(t, err)
 }
 

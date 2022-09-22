@@ -1,3 +1,4 @@
+//stm: #unit
 package storage
 
 import (
@@ -6,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -90,6 +92,9 @@ func testAddUser(t *testing.T) {
 			t.Fatalf("add user failed:%s", err.Error())
 		}
 	}
+	users, err := theStore.ListUsers(0, 0, core.UserStateUndefined)
+	require.NoError(t, err)
+	require.Equal(t, len(userMiners), len(users))
 }
 
 func testDeleteUser(t *testing.T) {
@@ -98,10 +103,25 @@ func testDeleteUser(t *testing.T) {
 
 	res, err := theStore.GetUser(userName)
 	require.Nil(t, err)
+	{
+		updated := res
+		updated.State = core.UserStateEnabled
+		updated.Comment = "new comment"
+		require.NoError(t, theStore.UpdateUser(updated))
+
+		res, err = theStore.GetUser(res.Name)
+		require.NoError(t, err)
+		require.Equal(t, res.State, updated.State)
+		require.Equal(t, res.Comment, updated.Comment)
+	}
 	require.Nil(t, theStore.DeleteUser(userName))
 	has, err := theStore.HasUser(userName)
 	require.Nil(t, err)
 	require.False(t, has)
+
+	// delete already deleted user
+	require.Error(t, theStore.DeleteUser(userName))
+
 	_, err = theStore.GetUser(userName)
 	require.Error(t, err)
 
@@ -137,6 +157,13 @@ func testAddMiner(t *testing.T) {
 			require.NoError(t, err)
 		}
 	}
+
+	newAddr, _ := address.NewFromString("f0109988")
+
+	// expects a not found error
+	_, err := theStore.UpsertMiner(newAddr, "not-exist-user")
+	require.True(t, strings.Contains(err.Error(), "not exist user"))
+	require.Error(t, err)
 }
 
 func testListMiners(t *testing.T) {
@@ -166,14 +193,14 @@ func testListMiners(t *testing.T) {
 
 func testDelMiners(t *testing.T) {
 	for userName, miners := range userMiners {
-		// already delete user
-		if userName == "test_user_001" {
-			continue
-		}
 		for m := range miners {
 			addr, _ := address.NewFromString(m)
 			_, err := theStore.DelMiner(addr)
-			require.NoError(t, err)
+			if userName == "test_user_001" { // already deleted user, expect an error
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
 		}
 	}
 }
@@ -338,23 +365,34 @@ func testRatelimit(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, 0, len(limit))
 	}
+	require.Error(t, theStore.DelRateLimit("", ""))
 }
 
 func TestStore(t *testing.T) {
+	//stm: @VENUSAUTH_BADGER_PUT_001, @VENUSAUTH_BADGER_PUT_USER_001, @VENUSAUTH_BADGER_LIST_USERS_001
 	t.Run("add users", testAddUser)
+	//stm: @VENUSAUTH_BADGER_UPSERT_MINER_001, @VENUSAUTH_BADGER_UPSERT_MINER_002, @VENUSAUTH_BADGER_UPSERT_MINER_003
 	t.Run("add miners", testAddMiner)
+	//stm: @VENUSAUTH_BADGER_GET_USER_BY_MINER_001, @VENUSAUTH_BADGER_GET_USER_BY_MINER_002
 	t.Run("get miners", testListMiners)
 	t.Run("add signers", testAddSigner)
 	t.Run("signer exist in user", testSignerExistInUser)
+	//stm: @VENUSAUTH_BADGER_HAS_001
 	t.Run("has signer", testHasSigner)
 	t.Run("list signers", testListSigners)
 	t.Run("get user by signer", testGetUserBySigner)
+	//stm: @VENUSAUTH_BADGER_DELETE_001, @VENUSAUTH_BADGER_GET_USER_001, @VENUSAUTH_BADGER_GET_USER_RECORD_001, @VENUSAUTH_BADGER_UPDATE_USER_001
+	//stm: @VENUSAUTH_BADGER_HAS_USER_001, @VENUSAUTH_BADGER_HAS_MINER_001, @VENUSAUTH_BADGER_DELETE_USER_001
+	//stm: @VENUSAUTH_BADGER_DELETE_USER_003
 	t.Run("del user", testDeleteUser)
+	//stm: @VENUSAUTH_BADGER_DEL_MINER_001, @VENUSAUTH_BADGER_DEL_MINER_002
 	t.Run("del miners", testDelMiners)
 	t.Run("unregister signer", testUnregisterSigner)
 	t.Run("del signers", testDelSigners)
 
+	//stm: @VENUSAUTH_BADGER_HAS_001, @VENUSAUTH_BADGER_GET_001, @VENUSAUTH_BADGER_BY_NAME_001, @VENUSAUTH_BADGER_LIST_001
 	t.Run("test token", testTokens)
+	//stm: @VENUSAUTH_BADGER_GET_RATE_LIMITS_001, @VENUSAUTH_BADGER_DEL_RATE_LIMITS_001, @VENUSAUTH_BADGER_DEL_RATE_LIMITS_002
 	t.Run("test ratelimit", testRatelimit)
 }
 

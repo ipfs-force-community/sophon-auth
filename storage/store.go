@@ -328,9 +328,11 @@ func (s *StoreVersion) Bytes() ([]byte, error) {
 	return json.Marshal(s)
 }
 
+// we are perpose to support limit user requests with `Service`/`Service.API` ferther,
+// so we add their declar in `UserRateLimit`
 type UserRateLimit struct {
 	Id       string   `gorm:"column:id;type:varchar(64);primary_key"`
-	Name     string   `gorm:"column:name;type:varchar(50);index:user_service_api_IDX;not null"`
+	Name     string   `gorm:"column:name;type:varchar(50);index:user_service_api_IDX;not null" binding:"required"`
 	Service  string   `gorm:"column:service;type:varchar(50);index:user_service_api_IDX"`
 	API      string   `gorm:"column:api;type:varchar(50);index:user_service_api_IDX"`
 	ReqLimit ReqLimit `gorm:"column:reqLimit;type:varchar(256)"`

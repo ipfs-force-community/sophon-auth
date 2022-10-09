@@ -45,11 +45,10 @@ func NewStore(cnf *config.DBConfig, dataPath string) (Store, error) {
 type Store interface {
 	// token
 	Get(token Token) (*KeyPair, error)
-	// GetTokenRecord return a KeyPair, whether deleted or not
-	GetTokenRecord(token Token) (*KeyPair, error)
 	ByName(name string) ([]*KeyPair, error)
 	Put(kp *KeyPair) error
 	Delete(token Token) error
+	Recover(token Token) error
 	Has(token Token) (bool, error)
 	List(skip, limit int64) ([]*KeyPair, error)
 	UpdateToken(kp *KeyPair) error

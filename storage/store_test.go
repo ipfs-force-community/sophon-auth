@@ -346,10 +346,10 @@ func testTokens(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, has, false)
 
-		tokenRecord, err := theStore.GetTokenRecord(token.Token)
-		require.Nil(t, err)
-		require.Equal(t, core.Deleted, tokenRecord.IsDeleted)
-		require.Equal(t, otk.Name, tokenRecord.Name)
+		require.NoError(t, theStore.Recover(token.Token))
+		has, err = theStore.Has(token.Token)
+		require.NoError(t, err)
+		require.Equal(t, has, true)
 	}
 }
 

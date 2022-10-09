@@ -233,8 +233,7 @@ func (o *jwtOAuth) Tokens(ctx context.Context, skip, limit int64) ([]*TokenInfo,
 }
 
 func (o *jwtOAuth) RemoveToken(ctx context.Context, token string) error {
-	tk := []byte(token)
-	err := o.store.Delete(storage.Token(tk))
+	err := o.store.Delete(storage.Token(token))
 	if err != nil {
 		return fmt.Errorf("remove token %s: %w", token, err)
 	}
@@ -242,25 +241,11 @@ func (o *jwtOAuth) RemoveToken(ctx context.Context, token string) error {
 }
 
 func (o *jwtOAuth) RecoverToken(ctx context.Context, token string) error {
-	tk := storage.Token(token)
-	kp, err := o.store.GetTokenRecord(tk)
+	err := o.store.Recover(storage.Token(token))
 	if err != nil {
-		return err
+		return fmt.Errorf("recover token %s: %w", token, err)
 	}
-	if kp.IsDeleted == core.NotDelete {
-		return xerrors.Errorf("token is usable")
-	}
-	// todo: add this verify after one token must bind one user
-	//has, err := o.store.HasUser(kp.Name)
-	//if err != nil {
-	//	return xerrors.Errorf("get user %s failed %v", kp.Name, err)
-	//}
-	//if has {
-	//	return xerrors.Errorf("user %s not exist", kp.Name)
-	//}
-	kp.IsDeleted = core.NotDelete
-
-	return o.store.UpdateToken(kp)
+	return nil
 }
 
 func (o *jwtOAuth) CreateUser(ctx context.Context, req *CreateUserRequest) (*CreateUserResponse, error) {

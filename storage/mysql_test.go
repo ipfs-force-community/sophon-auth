@@ -70,12 +70,13 @@ func TestMysqlStore(t *testing.T) {
 	//stm: @VENUSAUTH_MYSQL_LIST_001, @VENUSAUTH_MYSQL_LIST_002
 	t.Run("mysql list tokens", wrapper(testMySQLListTokens, mySQLStore, mock))
 	//stm: @VENUSAUTH_MYSQL_GET_TOKEN_RECORD_001, @VENUSAUTH_MYSQL_GET_TOKEN_RECORD_002
-	t.Run("mysql get token record", wrapper(testMySQLGetTokenRecord, mySQLStore, mock))
 	//stm: @VENUSAUTH_MYSQL_BY_NAME_001, @VENUSAUTH_MYSQL_BY_NAME_002
 	t.Run("mysql get token by name", wrapper(testMySQLGetTokenByName, mySQLStore, mock))
 	//stm: @VENUSAUTH_MYSQL_DELETE_001,@VENUSAUTH_MYSQL_DELETE_002, @VENUSAUTH_MYSQL_DELETE_003
 	//stm: @VENUSAUTH_MYSQL_HAS_001, @VENUSAUTH_MYSQL_HAS_002
 	t.Run("mysql delete token", wrapper(testMySQLDeleteToken, mySQLStore, mock))
+	//stm: @VENUSAUTH_MYSQL_RECOVER_001,@VENUSAUTH_MYSQL_RECOVER_002, @VENUSAUTH_MYSQL_RECOVER_003
+	t.Run("mysql recover token", wrapper(testMySQLRecoverToken, mySQLStore, mock))
 
 	// User
 	//stm: @VENUSAUTH_MYSQL_PUT_USER_001, @VENUSAUTH_MYSQL_UPDATE_USER_002
@@ -210,27 +211,6 @@ func testMySQLGetToken(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmoc
 	assert.Error(t, err)
 }
 
-func testMySQLGetTokenRecord(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
-	name := "test_token_name"
-	token := Token("test_token")
-
-	mock.ExpectQuery(regexp.QuoteMeta(
-		"SELECT * FROM `token` WHERE token = ? LIMIT 1")).
-		WithArgs(token).
-		WillReturnRows(sqlmock.NewRows([]string{"name", "token"}).AddRow(name, token))
-
-	tokenInfo, err := mySQLStore.GetTokenRecord(token)
-	assert.Nil(t, err)
-	assert.Equal(t, name, tokenInfo.Name)
-	assert.Equal(t, token, tokenInfo.Token)
-
-	mock.ExpectQuery(regexp.QuoteMeta(
-		"SELECT * FROM `token` WHERE token = ? LIMIT 1")).
-		WithArgs(token).WillReturnError(errSimulated)
-	_, err = mySQLStore.GetTokenRecord(token)
-	assert.Error(t, err)
-}
-
 func testMySQLGetTokenByName(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
 	name := "test_token_name"
 	token := Token("test_token")
@@ -301,6 +281,36 @@ func testMySQLDeleteToken(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sql
 		WithArgs(token, core.NotDelete).WillReturnRows(
 		sqlmock.NewRows([]string{"count"}).AddRow(0))
 	assert.Equal(t, mySQLStore.Delete(token), gorm.ErrRecordNotFound)
+}
+
+func testMySQLRecoverToken(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
+	token := Token("test_token")
+
+	mock.ExpectQuery(regexp.QuoteMeta(
+		"SELECT count(*) FROM `token` WHERE token=? and is_deleted=?")).
+		WithArgs(token, core.Deleted).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta(
+		"UPDATE `token` SET `is_deleted`=? WHERE token=?")).
+		WithArgs(core.NotDelete, token).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	err := mySQLStore.Recover(token)
+	assert.Nil(t, err)
+
+	mock.ExpectQuery(regexp.QuoteMeta(
+		"SELECT count(*) FROM `token` WHERE token=? and is_deleted=?")).
+		WithArgs(token, core.Deleted).WillReturnError(errSimulated)
+	assert.Error(t, mySQLStore.Recover(token))
+
+	mock.ExpectQuery(regexp.QuoteMeta(
+		"SELECT count(*) FROM `token` WHERE token=? and is_deleted=?")).
+		WithArgs(token, core.Deleted).WillReturnRows(
+		sqlmock.NewRows([]string{"count"}).AddRow(0))
+	assert.Equal(t, mySQLStore.Recover(token), gorm.ErrRecordNotFound)
 }
 
 func testMySQLPutUser(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {

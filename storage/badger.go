@@ -50,6 +50,21 @@ func (s *badgerStore) Delete(token Token) error {
 	return s.softDelObj(kp)
 }
 
+func (s *badgerStore) Recover(token Token) error {
+	var kp KeyPair
+	err := s.getObj(tokenKey(token.String()), &kp)
+	if err != nil {
+		return err
+	}
+
+	if kp.IsDeleted == core.NotDelete {
+		return xerrors.Errorf("token is not deleted")
+	}
+
+	kp.IsDeleted = core.NotDelete
+	return s.putBadgerObj(&kp)
+}
+
 func (s *badgerStore) Has(token Token) (bool, error) {
 	kp := &KeyPair{Token: token}
 	return s.isExist(kp)
@@ -58,11 +73,6 @@ func (s *badgerStore) Has(token Token) (bool, error) {
 func (s *badgerStore) Get(token Token) (*KeyPair, error) {
 	var kp KeyPair
 	return &kp, s.getUsableObj(tokenKey(token.String()), &kp)
-}
-
-func (s *badgerStore) GetTokenRecord(token Token) (*KeyPair, error) {
-	var kp KeyPair
-	return &kp, s.getObj(tokenKey(token.String()), &kp)
 }
 
 func (s *badgerStore) ByName(name string) ([]*KeyPair, error) {

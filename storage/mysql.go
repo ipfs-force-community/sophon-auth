@@ -62,7 +62,7 @@ func newMySQLStore(cnf *config.DBConfig) (Store, error) {
 		}
 	}
 
-	if err = session.AutoMigrate(&KeyPair{}, &User{}, &Miner{}, &UserRateLimit{}, &StoreVersion{}); err != nil {
+	if err = session.AutoMigrate(&KeyPair{}, &User{}, &Miner{}, &Signer{}, &UserRateLimit{}, &StoreVersion{}); err != nil {
 		return nil, err
 	}
 
@@ -347,14 +347,16 @@ func (s *mysqlStore) RegisterSigner(addr address.Address, userName string) (bool
 		}
 		isCreate = count == 0
 		return tx.Model(&Signer{}).
-			Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "signer"}, {Name: "user"}}, UpdateAll: true}).
+			Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "signer"}, {Name: "user"}},
+				UpdateAll: true, // created_at will not be updated
+			}).
 			Create(&Signer{Signer: storedSigner, User: user.Name}).Error
 	}, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false})
 }
 
 func (s mysqlStore) SignerExistInUser(addr address.Address, userName string) (bool, error) {
 	var count int64
-
 	if err := s.db.Table("signers").Where("`signer` = ? AND `user` = ? AND deleted_at IS NULL", storedAddress(addr), userName).Count(&count).Error; err != nil {
 		return false, nil
 	}
@@ -382,10 +384,10 @@ func (s *mysqlStore) UnregisterSigner(addr address.Address, userName string) (bo
 
 func (s mysqlStore) HasSigner(addr address.Address) (bool, error) {
 	var count int64
-
 	if err := s.db.Table("signers").Where("`signer` = ? AND deleted_at IS NULL", storedAddress(addr)).Count(&count).Error; err != nil {
 		return false, nil
 	}
+
 	return count > 0, nil
 }
 

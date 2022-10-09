@@ -257,9 +257,9 @@ func (sa storedAddress) Value() (driver.Value, error) {
 }
 
 type Miner struct {
-	ID         uint64        `gorm:"column:id;primaryKey;bigint(20) unsigned AUTO_INCREMENT"`
+	ID         uint64        `gorm:"column:id;primary_key;bigint(20) unsigned AUTO_INCREMENT"`
 	Miner      storedAddress `gorm:"column:miner;type:varchar(128);uniqueIndex:user_miner_idx,priority:2"`
-	User       string        `gorm:"column:user;type:varchar(50);uniqueIndex:user_miner_idx,priority:1;not null"`
+	User       string        `gorm:"column:user;type:varchar(50);uniqueIndex:user_miner_idx,priority:1;NOT NULL"`
 	OpenMining *bool         `gorm:"column:open_mining;default:1;comment:0-false,1-true"`
 	OrmTimestamp
 }
@@ -286,9 +286,9 @@ func (m *Miner) setDeleted() {
 }
 
 type Signer struct {
-	ID     uint          `gorm:"column:id;primary_key;unsigned AUTO_INCREMENT;not null"`
-	Signer storedAddress `gorm:"column:signer;type:varchar(128);index:user_signer_idx,priority:2"`
-	User   string        `gorm:"column:user;type:varchar(50);index:user_signer_idx,priority:1;not null"`
+	ID     uint64        `gorm:"column:id;primary_key;bigint(20) unsigned AUTO_INCREMENT;"`
+	Signer storedAddress `gorm:"column:signer;type:varchar(128);uniqueIndex:user_signer_idx,priority:2"`
+	User   string        `gorm:"column:user;type:varchar(50);uniqueIndex:user_signer_idx,priority:1;NOT NULL"`
 	OrmTimestamp
 }
 

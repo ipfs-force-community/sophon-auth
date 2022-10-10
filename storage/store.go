@@ -56,12 +56,12 @@ type Store interface {
 	// user
 	HasUser(name string) (bool, error)
 	GetUser(name string) (*User, error)
-	// GetUserRecord return a user, whether deleted or not
-	GetUserRecord(name string) (*User, error)
+	VerifyUsers(names []string) error
 	PutUser(*User) error
 	UpdateUser(*User) error
 	ListUsers(skip, limit int64, state core.UserState) ([]*User, error)
 	DeleteUser(name string) error
+	RecoverUser(name string) error
 
 	// rate limit
 	GetRateLimits(name, id string) ([]*UserRateLimit, error)
@@ -79,10 +79,10 @@ type Store interface {
 	DelMiner(maddr address.Address) (bool, error)
 
 	// signer-user(n-n)
-	RegisterSigner(addr address.Address, userName string) (bool, error)
+	RegisterSigner(addr address.Address, userName string) error
 	SignerExistInUser(addr address.Address, userName string) (bool, error)
 	ListSigner(userName string) ([]*Signer, error)
-	UnregisterSigner(addr address.Address, userName string) (bool, error)
+	UnregisterSigner(addr address.Address, userName string) error
 	// has signer in system
 	HasSigner(addr address.Address) (bool, error)
 	// delete all signers

@@ -18,6 +18,17 @@ import (
 	"github.com/filecoin-project/venus-auth/errcode"
 )
 
+type IAuthClient interface {
+	VerifyUsers(names []string) error
+	GetUser(req *auth.GetUserRequest) (*auth.OutputUser, error)
+	GetUserByMiner(req *auth.GetUserByMinerRequest) (*auth.OutputUser, error)
+	GetUserBySigner(signer string) (auth.ListUsersResponse, error)
+	RegisterSigners(user string, addrs []string) error
+	UnregisterSigners(user string, addrs []string) error
+}
+
+var _ IAuthClient = (*AuthClient)(nil)
+
 type AuthClient struct {
 	cli *resty.Client
 }
@@ -199,6 +210,18 @@ func (lc *AuthClient) ListUsersWithMiners(req *auth.ListUsersRequest) (auth.List
 		}
 	}
 	return resp, nil
+}
+
+func (lc *AuthClient) VerifyUsers(names []string) error {
+	resp, err := lc.cli.R().SetBody(&auth.VerifyUsersReq{Names: names}).
+		SetError(&errcode.ErrMsg{}).Post("/user/verify")
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode() == http.StatusOK {
+		return nil
+	}
+	return resp.Error().(*errcode.ErrMsg).Err()
 }
 
 func (lc *AuthClient) GetUser(req *auth.GetUserRequest) (*auth.OutputUser, error) {
@@ -387,21 +410,16 @@ func (lc *AuthClient) GetUserByMiner(req *auth.GetUserByMinerRequest) (*auth.Out
 	return nil, resp.Error().(*errcode.ErrMsg).Err()
 }
 
-func (lc *AuthClient) RegisterSigner(user, addr string) (bool, error) {
-	if _, err := address.NewFromString(addr); err != nil {
-		return false, xerrors.Errorf("invalid signer address:%s", addr)
-	}
-
-	var isCreate bool
-	resp, err := lc.cli.R().SetBody(&auth.RegisterSignerReq{Signer: addr, User: user}).
-		SetResult(&isCreate).SetError(&errcode.ErrMsg{}).Post("/user/signer/register")
+func (lc *AuthClient) RegisterSigners(user string, addrs []string) error {
+	resp, err := lc.cli.R().SetBody(&auth.RegisterSignersReq{Signers: addrs, User: user}).
+		SetError(&errcode.ErrMsg{}).Post("/user/signer/register")
 	if err != nil {
-		return false, err
+		return err
 	}
 	if resp.StatusCode() == http.StatusOK {
-		return isCreate, nil
+		return nil
 	}
-	return false, resp.Error().(*errcode.ErrMsg).Err()
+	return resp.Error().(*errcode.ErrMsg).Err()
 }
 
 func (lc *AuthClient) SignerExistInUser(user, signer string) (bool, error) {
@@ -432,18 +450,17 @@ func (lc *AuthClient) ListSigners(user string) (auth.ListSignerResp, error) {
 	return nil, resp.Error().(*errcode.ErrMsg).Err()
 }
 
-func (lc *AuthClient) UnregisterSigner(user, addr string) (bool, error) {
-	var has bool
-	resp, err := lc.cli.R().SetBody(&auth.UnregisterSignerReq{Signer: addr, User: user}).
-		SetResult(&has).SetError(&errcode.ErrMsg{}).Post("/user/signer/unregister")
+func (lc *AuthClient) UnregisterSigners(user string, addrs []string) error {
+	resp, err := lc.cli.R().SetBody(&auth.UnregisterSignersReq{Signers: addrs, User: user}).
+		SetError(&errcode.ErrMsg{}).Post("/user/signer/unregister")
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	if resp.StatusCode() == http.StatusOK {
-		return has, nil
+		return nil
 	}
-	return false, resp.Error().(*errcode.ErrMsg).Err()
+	return resp.Error().(*errcode.ErrMsg).Err()
 }
 
 func (lc *AuthClient) HasSigner(signer string) (bool, error) {

@@ -33,6 +33,7 @@ func InitRouter(app OAuthApp) http.Handler {
 	userGroup.POST("/update", app.UpdateUser)
 	userGroup.GET("/list", app.ListUsers)
 	userGroup.GET("", app.GetUser)
+	userGroup.POST("/verify", app.VerifyUsers)
 	userGroup.GET("/has", app.HasUser)
 	userGroup.POST("/del", app.DeleteUser)
 	userGroup.POST("/recover", app.RecoverUser)
@@ -61,10 +62,10 @@ func InitRouter(app OAuthApp) http.Handler {
 
 	userSignerGroup := userGroup.Group("/signer")
 	userSignerGroup.GET("", app.GetUserBySigner)
-	userSignerGroup.POST("/register", app.RegisterSigner)
+	userSignerGroup.POST("/register", app.RegisterSigners)
 	userSignerGroup.GET("/exist", app.SignerExistInUser)
 	userSignerGroup.GET("/list", app.ListSigner)
-	userSignerGroup.POST("/unregister", app.UnregisterSigner)
+	userSignerGroup.POST("/unregister", app.UnregisterSigners)
 
 	signerGroup := router.Group("/signer")
 	signerGroup.GET("/has", app.HasSigner)

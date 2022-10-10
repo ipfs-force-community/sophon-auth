@@ -87,8 +87,6 @@ func TestMysqlStore(t *testing.T) {
 	t.Run("mysql has user", wrapper(testMySQLHasUser, mySQLStore, mock))
 	//stm: @VENUSAUTH_MYSQL_GET_USER_001, @VENUSAUTH_MYSQL_INNER_GET_USER_001, @VENUSAUTH_MYSQL_INNER_GET_USER_002
 	t.Run("mysql get user", wrapper(testMySQLGetUser, mySQLStore, mock))
-	//stm: @VENUSAUTH_MYSQL_GET_USER_RECORD_001, @VENUSAUTH_MYSQL_GET_USER_RECORD_002
-	t.Run("mysql get user record", wrapper(testMySQLGetUserRecord, mySQLStore, mock))
 	//stm: @VENUSAUTH_MYSQL_LIST_USERS_001, @VENUSAUTH_MYSQL_LIST_USERS_002
 	t.Run("mysql list users", wrapper(testMySQLListUsers, mySQLStore, mock))
 	//stm: @VENUSAUTH_MYSQL_DELETE_USER_001
@@ -390,25 +388,6 @@ func testMySQLGetUser(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock
 	assert.Error(t, err)
 }
 
-func testMySQLGetUserRecord(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
-	user := "test_user_001"
-	comment := "comment"
-
-	op := regexp.QuoteMeta("SELECT * FROM `users` WHERE name=? LIMIT 1")
-	mock.ExpectQuery(op).
-		WithArgs(user).
-		WillReturnRows(sqlmock.NewRows([]string{"name", "comment"}).AddRow(user, comment))
-
-	userInfo, err := mySQLStore.GetUserRecord(user)
-	assert.Nil(t, err)
-	assert.Equal(t, userInfo.Name, user)
-	assert.Equal(t, userInfo.Comment, comment)
-
-	mock.ExpectQuery(op).WillReturnError(errSimulated)
-	_, err = mySQLStore.GetUserRecord(user)
-	assert.Error(t, err)
-}
-
 func testMySQLListUsers(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
 	var skip int64 = 2
 	var limit int64 = 10
@@ -635,11 +614,6 @@ func testMySQLRegisterSigner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.
 		WithArgs(mockUser).
 		WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow(mockUser))
 
-	mock.ExpectQuery(regexp.QuoteMeta(
-		"SELECT count(*) FROM `signers` WHERE (`signer` = ? AND `user`= ?) AND `signers`.`deleted_at` IS NULL")).
-		WithArgs(storedAddress(addr), mockUser).
-		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
-
 	mock.ExpectExec(regexp.QuoteMeta(
 		"INSERT INTO `signers` (`signer`,`user`,`created_at`,`updated_at`,`deleted_at`) "+
 			"VALUES (?,?,?,?,?) ON DUPLICATE KEY UPDATE `signer`=VALUES(`signer`),`user`=VALUES(`user`),`updated_at`=VALUES(`updated_at`),"+
@@ -649,9 +623,8 @@ func testMySQLRegisterSigner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.
 
 	mock.ExpectCommit()
 
-	isCreate, err := mySQLStore.RegisterSigner(addr, mockUser)
+	err = mySQLStore.RegisterSigner(addr, mockUser)
 	assert.Nil(t, err)
-	assert.False(t, isCreate)
 }
 
 func testMySQLSignerExistInUser(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
@@ -726,9 +699,8 @@ func testMySQLUnregisterSigner(t *testing.T, mySQLStore *mysqlStore, mock sqlmoc
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
-	success, err := mySQLStore.UnregisterSigner(addr, userName)
+	err = mySQLStore.UnregisterSigner(addr, userName)
 	assert.Nil(t, err)
-	assert.True(t, success)
 }
 
 func testMySQLDeleteSigner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {

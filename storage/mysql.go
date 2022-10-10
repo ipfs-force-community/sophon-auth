@@ -188,11 +188,14 @@ func (s *mysqlStore) innerGetUser(tx *gorm.DB, name string) (*User, error) {
 	return &user, err
 }
 
-func (s *mysqlStore) GetUserRecord(name string) (*User, error) {
-	var user User
-	err := s.db.Table("users").Take(&user, "name=?", name).Error
+func (s *mysqlStore) VerifyUsers(names []string) error {
+	for _, name := range names {
+		if _, err := s.innerGetUser(s.db, name); err != nil {
+			return xerrors.Errorf("verify %s: %w", name, err)
+		}
+	}
 
-	return &user, err
+	return nil
 }
 
 func (s *mysqlStore) DeleteUser(userName string) error {
@@ -235,6 +238,17 @@ func (s *mysqlStore) DeleteUser(userName string) error {
 	})
 
 	return err
+}
+
+func (s *mysqlStore) RecoverUser(userName string) error {
+	var user User
+	err := s.db.Table("users").Take(&user, "name=? and is_deleted=?", userName, core.Deleted).Error
+	if err != nil {
+		return err
+	}
+
+	user.IsDeleted = core.NotDelete
+	return s.innerUpdateUser(s.db, &user)
 }
 
 func (s *mysqlStore) GetRateLimits(name string, id string) ([]*UserRateLimit, error) {
@@ -336,10 +350,9 @@ func (s *mysqlStore) innerListMiners(tx *gorm.DB, user string) ([]*Miner, error)
 	return miners, nil
 }
 
-func (s *mysqlStore) RegisterSigner(addr address.Address, userName string) (bool, error) {
-	var isCreate bool
+func (s *mysqlStore) RegisterSigner(addr address.Address, userName string) error {
 	storedSigner := storedAddress(addr)
-	return isCreate, s.db.Transaction(func(tx *gorm.DB) error {
+	return s.db.Transaction(func(tx *gorm.DB) error {
 		var user User
 		if err := tx.Model(&user).First(&user, "`name` = ?", userName).Error; err != nil {
 			if xerrors.Is(err, gorm.ErrRecordNotFound) {
@@ -347,11 +360,6 @@ func (s *mysqlStore) RegisterSigner(addr address.Address, userName string) (bool
 			}
 			return xerrors.Errorf("bind signer:%s to user:%s failed:%w", addr.String(), userName, err)
 		}
-		var count int64
-		if err := tx.Model(&Signer{}).Where("`signer` = ? AND `user`= ?", storedSigner, userName).Count(&count).Error; err != nil {
-			return err
-		}
-		isCreate = count == 0
 		return tx.Model(&Signer{}).
 			Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "signer"}, {Name: "user"}},
@@ -382,10 +390,10 @@ func (s *mysqlStore) ListSigner(user string) ([]*Signer, error) {
 	return s.innerListSigners(s.db, user)
 }
 
-func (s *mysqlStore) UnregisterSigner(addr address.Address, userName string) (bool, error) {
+func (s *mysqlStore) UnregisterSigner(addr address.Address, userName string) error {
 	db := s.db.Model((*Signer)(nil)).Delete(&Signer{}, "`signer` = ? AND `user` = ?", storedAddress(addr), userName)
 
-	return db.RowsAffected > 0, db.Error
+	return db.Error
 }
 
 func (s mysqlStore) HasSigner(addr address.Address) (bool, error) {

@@ -54,6 +54,8 @@ func TestJwt(t *testing.T) {
 	t.Run("test create user", func(t *testing.T) { testCreateUser(t, userMiners) })
 	//stm: @VENUSAUTH_JWT_GET_USER_001, @VENUSAUTH_JWT_HAS_USER_001, @VENUSAUTH_JWT_GET_USER_002
 	t.Run("test get user", func(t *testing.T) { testGetUser(t, userMiners) })
+	//stm: @VENUSAUTH_JWT_VERIFY_USERS_001
+	t.Run("test verify user", func(t *testing.T) { testVerifyUsers(t, userMiners) })
 	//stm: @VENUSAUTH_JWT_LIST_USERS_001
 	t.Run("test list user", func(t *testing.T) { testListUser(t, userMiners) })
 	//stm: @VENUSAUTH_JWT_UPDATE_USER_001, @VENUSAUTH_JWT_UPDATE_USER_002
@@ -333,6 +335,22 @@ func testGetUser(t *testing.T, userMiners map[string][]string) {
 	assert.Equal(t, u.Name, existUserName)
 }
 
+func testVerifyUsers(t *testing.T, userMiners map[string][]string) {
+	cfg := config.DBConfig{Type: "badger"}
+	setup(&cfg, t)
+	defer shutdown(&cfg, t)
+	createUsers(t, userMiners)
+
+	usernames := make([]string, 0)
+	for key := range userMiners {
+		usernames = append(usernames, key)
+	}
+
+	ctx := context.Background()
+	err := jwtOAuthInstance.VerifyUsers(ctx, &VerifyUsersReq{Names: usernames})
+	assert.Nil(t, err)
+}
+
 func testListUser(t *testing.T, userMiners map[string][]string) {
 	cfg := config.DBConfig{Type: "badger"}
 	setup(&cfg, t)
@@ -580,14 +598,11 @@ func addUsersAndSigners(t *testing.T, userSigners map[string][]string) {
 		// Create users.
 		_, _ = jwtOAuthInstance.CreateUser(ctx, createUserReq)
 		// Add Signer
-		for _, signer := range signers {
-			ifCreate, err := jwtOAuthInstance.RegisterSigner(ctx, &RegisterSignerReq{
-				User:   userName,
-				Signer: signer,
-			})
-			assert.Nil(t, err)
-			assert.True(t, ifCreate)
-		}
+		err := jwtOAuthInstance.RegisterSigners(ctx, &RegisterSignersReq{
+			User:    userName,
+			Signers: signers,
+		})
+		assert.Nil(t, err)
 	}
 }
 
@@ -604,20 +619,19 @@ func testRegisterSigner(t *testing.T, userSigners map[string][]string) {
 		Name:  "user_01",
 		State: 1,
 	})
-	_, err := jwtOAuthInstance.RegisterSigner(ctx, &RegisterSignerReq{
-		User:   "user_01",
-		Signer: "f0128788",
+	err := jwtOAuthInstance.RegisterSigners(ctx, &RegisterSignersReq{
+		User:    "user_01",
+		Signers: []string{"f0128788"},
 	})
 	assert.NotNil(t, err)
 	require.Contains(t, err.Error(), "invalid protocol type")
 
-	// update
-	isCreate, err := jwtOAuthInstance.RegisterSigner(ctx, &RegisterSignerReq{
-		User:   "test_user_003",
-		Signer: "t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua",
+	err = jwtOAuthInstance.RegisterSigners(ctx, &RegisterSignersReq{
+		User:    "user_01",
+		Signers: []string{"128788"},
 	})
-	assert.Nil(t, err)
-	assert.False(t, isCreate)
+	assert.NotNil(t, err)
+	require.Contains(t, err.Error(), "invalid signer address")
 }
 
 func testSignerExistInUser(t *testing.T, userSigners map[string][]string) {
@@ -704,9 +718,9 @@ func testUnregisterSigner(t *testing.T, userSigners map[string][]string) {
 	username := "test_user_001"
 	signer := "t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua"
 	ctx := context.Background()
-	_, err := jwtOAuthInstance.UnregisterSigner(ctx, &UnregisterSignerReq{
-		Signer: signer,
-		User:   username,
+	err := jwtOAuthInstance.UnregisterSigners(ctx, &UnregisterSignersReq{
+		Signers: []string{signer},
+		User:    username,
 	})
 
 	assert.Nil(t, err)

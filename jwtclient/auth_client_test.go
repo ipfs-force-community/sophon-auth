@@ -244,6 +244,11 @@ func TestUserBusiness(t *testing.T) {
 		t.Fatalf("get user err:%s", err)
 	}
 	assert.DeepEqual(t, users[1].Name, user.Name)
+
+	err = cli.VerifyUsers([]string{"name1", "name2"})
+	if err != nil {
+		t.Fatalf("verify users err:%s", err)
+	}
 }
 
 func TestClient_Verify(t *testing.T) {

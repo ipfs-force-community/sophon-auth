@@ -136,9 +136,15 @@ func (s *badgerStore) GetUser(name string) (*User, error) {
 	return user, s.getUsableObj(userKey(name), user)
 }
 
-func (s *badgerStore) GetUserRecord(name string) (*User, error) {
-	user := new(User)
-	return user, s.getObj(userKey(name), user)
+func (s *badgerStore) VerifyUsers(names []string) error {
+	for _, name := range names {
+		user := new(User)
+		if err := s.getUsableObj(userKey(name), user); err != nil {
+			return xerrors.Errorf("verify %s: %w", name, err)
+		}
+	}
+
+	return nil
 }
 
 func (s *badgerStore) UpdateUser(user *User) error {
@@ -249,7 +255,7 @@ func (s *badgerStore) DeleteUser(name string) error {
 				if signer.User == name && !signer.isDeleted() {
 					signerAddrs = append(signerAddrs, signer.Signer.Address())
 
-					if _, err := s.innerUnregisterSigner(signer.Signer.Address(), name); err != nil {
+					if err := s.innerUnregisterSigner(signer.Signer.Address(), name); err != nil {
 						return err
 					}
 				}
@@ -265,6 +271,21 @@ func (s *badgerStore) DeleteUser(name string) error {
 		log.Infof("delete user: %s, miners: %v, signer: %v", name, minerAddrs, signerAddrs)
 		return nil
 	})
+}
+
+func (s *badgerStore) RecoverUser(name string) error {
+	var user User
+	err := s.getObj(userKey(name), &user)
+	if err != nil {
+		return err
+	}
+
+	if user.IsDeleted == core.NotDelete {
+		return xerrors.Errorf("user is not deleted")
+	}
+
+	user.IsDeleted = core.NotDelete
+	return s.putBadgerObj(&user)
 }
 
 func (s *badgerStore) GetRateLimits(name, id string) ([]*UserRateLimit, error) {
@@ -469,12 +490,11 @@ func (s *badgerStore) DelMiner(miner address.Address) (bool, error) {
 	return true, nil
 }
 
-func (s *badgerStore) RegisterSigner(addr address.Address, userName string) (bool, error) {
+func (s *badgerStore) RegisterSigner(addr address.Address, userName string) error {
 	signer := &Signer{}
 	now := time.Now()
-	var isCreate bool
 	userKey, signerForUserKey := userKey(userName), signerForUserKey(addr.String(), userName)
-	return isCreate, s.db.Update(func(txn *badger.Txn) error {
+	return s.db.Update(func(txn *badger.Txn) error {
 		// this 'get(userKey)' purpose to make sure 'user' exist
 		if _, err := txn.Get(userKey); err != nil {
 			if xerrors.Is(err, badger.ErrKeyNotFound) {
@@ -490,7 +510,6 @@ func (s *badgerStore) RegisterSigner(addr address.Address, userName string) (boo
 			if xerrors.Is(err, badger.ErrKeyNotFound) {
 				signer.Signer = storedAddress(addr)
 				signer.CreatedAt = now
-				isCreate = true
 			} else {
 				return err
 			}
@@ -539,19 +558,17 @@ func (s *badgerStore) ListSigner(userName string) ([]*Signer, error) {
 	return signers, nil
 }
 
-func (s *badgerStore) innerUnregisterSigner(addr address.Address, userName string) (bool, error) {
+func (s *badgerStore) innerUnregisterSigner(addr address.Address, userName string) error {
 	signer := &Signer{Signer: storedAddress(addr), User: userName}
 	err := s.softDelObj(signer)
-	if err != nil {
-		if xerrors.Is(err, badger.ErrKeyNotFound) {
-			return false, nil
-		}
-		return false, err
+	if err != nil && !xerrors.Is(err, badger.ErrKeyNotFound) {
+		return err
 	}
-	return true, nil
+
+	return nil
 }
 
-func (s *badgerStore) UnregisterSigner(addr address.Address, userName string) (bool, error) {
+func (s *badgerStore) UnregisterSigner(addr address.Address, userName string) error {
 	return s.innerUnregisterSigner(addr, userName)
 }
 

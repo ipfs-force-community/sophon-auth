@@ -38,20 +38,13 @@ var signerRegisterCmd = &cli.Command{
 		if err != nil {
 			return err
 		}
-		user, addr := ctx.Args().Get(0), ctx.Args().Get(1)
 
-		var isCreate bool
-		if isCreate, err = client.RegisterSigner(user, addr); err != nil {
+		user, addr := ctx.Args().Get(0), ctx.Args().Get(1)
+		if err = client.RegisterSigners(user, []string{addr}); err != nil {
 			return err
 		}
-		var opStr string
-		if isCreate {
-			opStr = "create"
-		} else {
-			opStr = "update"
-		}
 
-		fmt.Printf("%s user:%s signer address:%s success.\n", opStr, user, addr)
+		fmt.Printf("register signer address:%s success for %s.\n", addr, user)
 		return nil
 	},
 }
@@ -159,16 +152,12 @@ var signerUnregisterCmd = &cli.Command{
 
 		signer := args.First()
 		user := ctx.String("user")
-		exists, err := client.UnregisterSigner(user, signer)
+		err = client.UnregisterSigners(user, []string{signer})
 		if err != nil {
 			return xerrors.Errorf("unregister signer:%s failed: %w", signer, err)
 		}
 
-		if exists {
-			fmt.Printf("unregister signer:%s of %s success.\n", signer, user)
-		} else {
-			fmt.Printf("signer: %s not exists in %s.\n", signer, user)
-		}
+		fmt.Printf("unregister signers: %v of %s success.\n", signer, user)
 		return nil
 	},
 }

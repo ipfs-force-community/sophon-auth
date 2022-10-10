@@ -20,6 +20,7 @@ type OAuthApp interface {
 
 	CreateUser(c *gin.Context)
 	GetUser(c *gin.Context)
+	VerifyUsers(c *gin.Context)
 	ListUsers(c *gin.Context)
 	HasUser(c *gin.Context)
 	UpdateUser(c *gin.Context)
@@ -38,10 +39,10 @@ type OAuthApp interface {
 	DeleteMiner(c *gin.Context)
 	GetUserByMiner(c *gin.Context)
 
-	RegisterSigner(c *gin.Context)
+	RegisterSigners(c *gin.Context)
 	SignerExistInUser(c *gin.Context)
 	ListSigner(c *gin.Context)
-	UnregisterSigner(c *gin.Context)
+	UnregisterSigners(c *gin.Context)
 	HasSigner(c *gin.Context)
 	DelSigner(c *gin.Context)
 	GetUserBySigner(c *gin.Context)
@@ -250,6 +251,17 @@ func (o *oauthApp) GetUser(c *gin.Context) {
 	SuccessResponse(c, res)
 }
 
+func (o *oauthApp) VerifyUsers(c *gin.Context) {
+	req := new(VerifyUsersReq)
+	if err := c.ShouldBind(req); err != nil {
+		BadResponse(c, err)
+		return
+	}
+
+	err := o.srv.VerifyUsers(c, req)
+	Response(c, err)
+}
+
 func (o *oauthApp) HasUser(c *gin.Context) {
 	req := new(HasUserRequest)
 	if err := c.ShouldBindQuery(req); err != nil {
@@ -412,18 +424,14 @@ func (o *oauthApp) DeleteMiner(c *gin.Context) {
 	SuccessResponse(c, res)
 }
 
-func (o *oauthApp) RegisterSigner(c *gin.Context) {
-	req := new(RegisterSignerReq)
+func (o *oauthApp) RegisterSigners(c *gin.Context) {
+	req := new(RegisterSignersReq)
 	if err := c.ShouldBind(req); err != nil {
 		BadResponse(c, err)
 		return
 	}
-	isCreate, err := o.srv.RegisterSigner(c, req)
-	if err != nil {
-		BadResponse(c, err)
-		return
-	}
-	SuccessResponse(c, isCreate)
+	err := o.srv.RegisterSigners(c, req)
+	Response(c, err)
 }
 
 func (o *oauthApp) SignerExistInUser(c *gin.Context) {
@@ -454,18 +462,14 @@ func (o *oauthApp) ListSigner(c *gin.Context) {
 	SuccessResponse(c, res)
 }
 
-func (o *oauthApp) UnregisterSigner(c *gin.Context) {
-	req := new(UnregisterSignerReq)
+func (o *oauthApp) UnregisterSigners(c *gin.Context) {
+	req := new(UnregisterSignersReq)
 	if err := c.ShouldBind(req); err != nil {
 		BadResponse(c, err)
 		return
 	}
-	res, err := o.srv.UnregisterSigner(c, req)
-	if err != nil {
-		BadResponse(c, err)
-		return
-	}
-	SuccessResponse(c, res)
+	err := o.srv.UnregisterSigners(c, req)
+	Response(c, err)
 }
 
 func (o *oauthApp) HasSigner(c *gin.Context) {

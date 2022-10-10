@@ -37,11 +37,8 @@ func setupAndAddSigners(t *testing.T) (*jwtclient.AuthClient, string) {
 		_, err = client.CreateUser(&auth.CreateUserRequest{Name: username})
 		assert.Nil(t, err)
 
-		for _, signer := range signers {
-			isCreate, err := client.RegisterSigner(username, signer)
-			assert.Nil(t, err)
-			assert.True(t, isCreate)
-		}
+		err = client.RegisterSigners(username, signers)
+		assert.Nil(t, err)
 	}
 
 	return client, tmpDir
@@ -120,9 +117,8 @@ func testUnregisterSigner(t *testing.T) {
 	userName := "test_user01"
 	signer := "t1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q"
 
-	bDel, err := client.UnregisterSigner(userName, signer)
+	err := client.UnregisterSigners(userName, []string{signer})
 	assert.Nil(t, err)
-	assert.True(t, bDel)
 
 	bExist, err := client.SignerExistInUser(userName, signer)
 	assert.Nil(t, err)

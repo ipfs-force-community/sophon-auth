@@ -95,6 +95,9 @@ func testAddUser(t *testing.T) {
 	users, err := theStore.ListUsers(0, 0, core.UserStateUndefined)
 	require.NoError(t, err)
 	require.Equal(t, len(userMiners), len(users))
+
+	err = theStore.VerifyUsers([]string{"test_user_001", "test_user_002", "test_user_003"})
+	require.NoError(t, err)
 }
 
 func testDeleteUser(t *testing.T) {
@@ -124,12 +127,6 @@ func testDeleteUser(t *testing.T) {
 
 	_, err = theStore.GetUser(userName)
 	require.Error(t, err)
-
-	userRecord, err := theStore.GetUserRecord(userName)
-	require.Nil(t, err)
-	require.Equal(t, core.Deleted, userRecord.IsDeleted)
-	userRecord.IsDeleted = core.NotDelete
-	require.Equal(t, res, userRecord)
 
 	finalMiner := address.Address{}
 	for miner := range miners {
@@ -209,7 +206,7 @@ func testAddSigner(t *testing.T) {
 	for user, signers := range userSigners {
 		for _, signer := range signers {
 			addr, _ := address.NewFromString(signer)
-			_, err := theStore.RegisterSigner(addr, user)
+			err := theStore.RegisterSigner(addr, user)
 			require.NoError(t, err)
 		}
 	}
@@ -277,9 +274,8 @@ func testUnregisterSigner(t *testing.T) {
 	userName := "test_user_002"
 
 	addr, _ := address.NewFromString(signer)
-	bExist, err := theStore.UnregisterSigner(addr, userName)
+	err := theStore.UnregisterSigner(addr, userName)
 	require.NoError(t, err)
-	require.True(t, bExist)
 }
 
 func testDelSigners(t *testing.T) {
@@ -369,7 +365,7 @@ func testRatelimit(t *testing.T) {
 }
 
 func TestStore(t *testing.T) {
-	//stm: @VENUSAUTH_BADGER_PUT_001, @VENUSAUTH_BADGER_PUT_USER_001, @VENUSAUTH_BADGER_LIST_USERS_001
+	//stm: @VENUSAUTH_BADGER_PUT_001, @VENUSAUTH_BADGER_PUT_USER_001, @VENUSAUTH_BADGER_LIST_USERS_001, @VENUSAUTH_BADGER_VERIFY_USERS_001
 	t.Run("add users", testAddUser)
 	//stm: @VENUSAUTH_BADGER_UPSERT_MINER_001, @VENUSAUTH_BADGER_UPSERT_MINER_002, @VENUSAUTH_BADGER_UPSERT_MINER_003
 	t.Run("add miners", testAddMiner)

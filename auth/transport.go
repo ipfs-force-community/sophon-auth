@@ -96,6 +96,10 @@ type OutputUser struct {
 	Miners []*OutputMiner `json:"-"`
 }
 
+type VerifyUsersReq struct {
+	Names []string `form:"names" binding:"required"`
+}
+
 type GetUserRequest struct {
 	Name string `form:"name" binding:"required"`
 }
@@ -159,12 +163,14 @@ type DelMinerReq struct {
 }
 
 // type definitions for signer
-type RegisterSignerReq struct {
-	User, Signer string
+type RegisterSignersReq struct {
+	User    string
+	Signers []string
 }
 
-type UnregisterSignerReq struct {
-	User, Signer string
+type UnregisterSignersReq struct {
+	User    string
+	Signers []string
 }
 
 type SignerExistInUserReq struct {

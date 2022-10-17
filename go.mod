@@ -20,7 +20,6 @@ require (
 	github.com/ipfs/go-log/v2 v2.0.8
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/magefile/mage v1.11.0 // indirect
-	github.com/magiconair/properties v1.8.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/viper v1.3.2

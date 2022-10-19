@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/dgraph-io/badger/v3"
+	"github.com/dgraph-io/badger/v2"
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/log"
 	"golang.org/x/xerrors"

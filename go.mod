@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/DATA-DOG/go-sqlmock v1.5.0
-	github.com/dgraph-io/badger/v3 v3.2011.1
+	github.com/dgraph-io/badger/v2 v2.2007.3
 	github.com/filecoin-project/go-address v0.0.5
 	github.com/filecoin-project/go-jsonrpc v0.1.3
 	github.com/fsnotify/fsnotify v1.4.9
@@ -33,7 +33,5 @@ require (
 	gorm.io/gorm v1.21.12
 	gotest.tools v2.2.0+incompatible
 )
-
-replace github.com/google/flatbuffers => github.com/google/flatbuffers v1.12.1
 
 replace github.com/filecoin-project/go-jsonrpc => github.com/ipfs-force-community/go-jsonrpc v0.1.4-0.20210721095535-a67dff16de21

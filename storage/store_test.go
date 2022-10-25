@@ -1,4 +1,4 @@
-//stm: #unit
+// stm: #unit
 package storage
 
 import (
@@ -20,8 +20,10 @@ import (
 	"github.com/filecoin-project/venus-auth/core"
 )
 
-var theStore Store
-var cfg config.DBConfig
+var (
+	theStore Store
+	cfg      config.DBConfig
+)
 
 // badgerstore: go test -v ./storage/ -test.run TestStore --args -db=badger
 // mysqlstore : go test -v ./storage/ -test.run TestStore --args -db=mysql -dns='root:ko2005@tcp(127.0.0.1:3306)/venus_auth?charset=utf8mb4&parseTime=True&loc=Local&timeout=10s'
@@ -59,11 +61,15 @@ var userSigners = map[string][]string{
 	"test_user_003": {"t1uqtvvwkkfkkez52ocnqe6vg74qewiwja4t2tiba", "t1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q"},
 }
 
-var limitStrs = `[{"Id":"794fc9a4-2b80-4503-835a-7e8e27360b3d","Name":"test_user_01","Service":"","API":"","ReqLimit":{"Cap":10,"ResetDur":120000000000}},{"Id":"252f581e-cbd2-4a61-a517-0b7df65013aa","Name":"test_user_02","Service":"","API":"","ReqLimit":{"Cap":10,"ResetDur":72000000000000}}]`
-var originLimits []*UserRateLimit
+var (
+	limitStrs    = `[{"Id":"794fc9a4-2b80-4503-835a-7e8e27360b3d","Name":"test_user_01","Service":"","API":"","ReqLimit":{"Cap":10,"ResetDur":120000000000}},{"Id":"252f581e-cbd2-4a61-a517-0b7df65013aa","Name":"test_user_02","Service":"","API":"","ReqLimit":{"Cap":10,"ResetDur":72000000000000}}]`
+	originLimits []*UserRateLimit
+)
 
-var tokenStrs = `{"test-token-01":{"Name":"test-token-01","Perm":"admin","Secret":"d6234bf3f14a568a9c8315a6ee4f474e380beb2b65a64e6ba0142df72b454f4e","Extra":"","Token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiemwtdG9rZW4iLCJwZXJtIjoiYWRtaW4iLCJleHQiOiIifQ.DQ-ETWoEnNrpGKCikwZax6YUzdQIkhT0pHOTSta8770","CreateTime":"2022-03-18T16:11:53+08:00"}, "test-token-02":{"Name":"test-token-02","Perm":"admin","Secret":"862ed997d2943b7cd0997917f2ad524f4d56a4b50ff27e8bc680f4cc113cdd1b","Extra":"","Token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiemwtdG9rZW4tMDEiLCJwZXJtIjoiYWRtaW4iLCJleHQiOiIifQ.iw0L1UidBj0qaEddqc83AF36oa1lVeE9A_F9hXTK47c","CreateTime":"2022-03-18T16:14:49+08:00"}}`
-var originTokens map[string]*KeyPair
+var (
+	tokenStrs    = `{"test-token-01":{"Name":"test-token-01","Perm":"admin","Secret":"d6234bf3f14a568a9c8315a6ee4f474e380beb2b65a64e6ba0142df72b454f4e","Extra":"","Token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiemwtdG9rZW4iLCJwZXJtIjoiYWRtaW4iLCJleHQiOiIifQ.DQ-ETWoEnNrpGKCikwZax6YUzdQIkhT0pHOTSta8770","CreateTime":"2022-03-18T16:11:53+08:00"}, "test-token-02":{"Name":"test-token-02","Perm":"admin","Secret":"862ed997d2943b7cd0997917f2ad524f4d56a4b50ff27e8bc680f4cc113cdd1b","Extra":"","Token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiemwtdG9rZW4tMDEiLCJwZXJtIjoiYWRtaW4iLCJleHQiOiIifQ.iw0L1UidBj0qaEddqc83AF36oa1lVeE9A_F9hXTK47c","CreateTime":"2022-03-18T16:14:49+08:00"}}`
+	originTokens map[string]*KeyPair
+)
 
 func init() {
 	if err := json.Unmarshal([]byte(tokenStrs), &originTokens); err != nil {
@@ -173,7 +179,7 @@ func testListMiners(t *testing.T) {
 		ms, err := theStore.ListMiners(u)
 		require.NoError(t, err)
 
-		var minerMap = make(map[string]*Miner, len(ms))
+		minerMap := make(map[string]*Miner, len(ms))
 		for _, m := range ms {
 			minerMap[m.Miner.Address().String()] = m
 		}
@@ -365,30 +371,30 @@ func testRatelimit(t *testing.T) {
 }
 
 func TestStore(t *testing.T) {
-	//stm: @VENUSAUTH_BADGER_PUT_001, @VENUSAUTH_BADGER_PUT_USER_001, @VENUSAUTH_BADGER_LIST_USERS_001, @VENUSAUTH_BADGER_VERIFY_USERS_001
+	// stm: @VENUSAUTH_BADGER_PUT_001, @VENUSAUTH_BADGER_PUT_USER_001, @VENUSAUTH_BADGER_LIST_USERS_001, @VENUSAUTH_BADGER_VERIFY_USERS_001
 	t.Run("add users", testAddUser)
-	//stm: @VENUSAUTH_BADGER_UPSERT_MINER_001, @VENUSAUTH_BADGER_UPSERT_MINER_002, @VENUSAUTH_BADGER_UPSERT_MINER_003
+	// stm: @VENUSAUTH_BADGER_UPSERT_MINER_001, @VENUSAUTH_BADGER_UPSERT_MINER_002, @VENUSAUTH_BADGER_UPSERT_MINER_003
 	t.Run("add miners", testAddMiner)
-	//stm: @VENUSAUTH_BADGER_GET_USER_BY_MINER_001, @VENUSAUTH_BADGER_GET_USER_BY_MINER_002
+	// stm: @VENUSAUTH_BADGER_GET_USER_BY_MINER_001, @VENUSAUTH_BADGER_GET_USER_BY_MINER_002
 	t.Run("get miners", testListMiners)
 	t.Run("add signers", testAddSigner)
 	t.Run("signer exist in user", testSignerExistInUser)
-	//stm: @VENUSAUTH_BADGER_HAS_001
+	// stm: @VENUSAUTH_BADGER_HAS_001
 	t.Run("has signer", testHasSigner)
 	t.Run("list signers", testListSigners)
 	t.Run("get user by signer", testGetUserBySigner)
-	//stm: @VENUSAUTH_BADGER_DELETE_001, @VENUSAUTH_BADGER_GET_USER_001, @VENUSAUTH_BADGER_GET_USER_RECORD_001, @VENUSAUTH_BADGER_UPDATE_USER_001
-	//stm: @VENUSAUTH_BADGER_HAS_USER_001, @VENUSAUTH_BADGER_HAS_MINER_001, @VENUSAUTH_BADGER_DELETE_USER_001
-	//stm: @VENUSAUTH_BADGER_DELETE_USER_003
+	// stm: @VENUSAUTH_BADGER_DELETE_001, @VENUSAUTH_BADGER_GET_USER_001, @VENUSAUTH_BADGER_GET_USER_RECORD_001, @VENUSAUTH_BADGER_UPDATE_USER_001
+	// stm: @VENUSAUTH_BADGER_HAS_USER_001, @VENUSAUTH_BADGER_HAS_MINER_001, @VENUSAUTH_BADGER_DELETE_USER_001
+	// stm: @VENUSAUTH_BADGER_DELETE_USER_003
 	t.Run("del user", testDeleteUser)
-	//stm: @VENUSAUTH_BADGER_DEL_MINER_001, @VENUSAUTH_BADGER_DEL_MINER_002
+	// stm: @VENUSAUTH_BADGER_DEL_MINER_001, @VENUSAUTH_BADGER_DEL_MINER_002
 	t.Run("del miners", testDelMiners)
 	t.Run("unregister signer", testUnregisterSigner)
 	t.Run("del signers", testDelSigners)
 
-	//stm: @VENUSAUTH_BADGER_HAS_001, @VENUSAUTH_BADGER_GET_001, @VENUSAUTH_BADGER_BY_NAME_001, @VENUSAUTH_BADGER_LIST_001
+	// stm: @VENUSAUTH_BADGER_HAS_001, @VENUSAUTH_BADGER_GET_001, @VENUSAUTH_BADGER_BY_NAME_001, @VENUSAUTH_BADGER_LIST_001
 	t.Run("test token", testTokens)
-	//stm: @VENUSAUTH_BADGER_GET_RATE_LIMITS_001, @VENUSAUTH_BADGER_DEL_RATE_LIMITS_001, @VENUSAUTH_BADGER_DEL_RATE_LIMITS_002
+	// stm: @VENUSAUTH_BADGER_GET_RATE_LIMITS_001, @VENUSAUTH_BADGER_DEL_RATE_LIMITS_001, @VENUSAUTH_BADGER_DEL_RATE_LIMITS_002
 	t.Run("test ratelimit", testRatelimit)
 }
 

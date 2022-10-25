@@ -101,7 +101,7 @@ type InfluxDBConfig struct {
 }
 
 func MakeDir(path string) error {
-	err := os.Mkdir(path, 0755)
+	err := os.Mkdir(path, 0o755)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}

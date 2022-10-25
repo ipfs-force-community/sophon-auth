@@ -211,7 +211,7 @@ func (sa storedAddress) Address() address.Address {
 }
 
 func (sa storedAddress) String() string {
-	var val = sa.Address().String()
+	val := sa.Address().String()
 	if sa.Address().Empty() {
 		return val
 	}
@@ -248,7 +248,7 @@ func (sa storedAddress) MarshalJSON() ([]byte, error) {
 }
 
 func (sa storedAddress) Value() (driver.Value, error) {
-	var val = sa.String()
+	val := sa.String()
 	if sa.Address().Empty() {
 		return val, nil
 	}
@@ -409,8 +409,10 @@ type iBadgerObj interface {
 	iStreamableObj
 }
 
-var _ iBadgerObj = (*Miner)(nil)
-var _ iBadgerObj = (*User)(nil)
-var _ iBadgerObj = (*KeyPair)(nil)
-var _ iBadgerObj = (*mapedRatelimit)(nil)
-var _ iBadgerObj = (*StoreVersion)(nil)
+var (
+	_ iBadgerObj = (*Miner)(nil)
+	_ iBadgerObj = (*User)(nil)
+	_ iBadgerObj = (*KeyPair)(nil)
+	_ iBadgerObj = (*mapedRatelimit)(nil)
+	_ iBadgerObj = (*StoreVersion)(nil)
+)

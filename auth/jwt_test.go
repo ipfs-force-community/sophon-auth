@@ -24,58 +24,58 @@ import (
 )
 
 func TestJwt(t *testing.T) {
-	var limitStrs = `[{"Id":"794fc9a4-2b80-4503-835a-7e8e27360b3d","Name":"test_user_01","Service":"","API":"","ReqLimit":{"Cap":10,"ResetDur":120000000000}},{"Id":"252f581e-cbd2-4a61-a517-0b7df65013aa","Name":"test_user_02","Service":"","API":"","ReqLimit":{"Cap":10,"ResetDur":72000000000000}}]`
+	limitStrs := `[{"Id":"794fc9a4-2b80-4503-835a-7e8e27360b3d","Name":"test_user_01","Service":"","API":"","ReqLimit":{"Cap":10,"ResetDur":120000000000}},{"Id":"252f581e-cbd2-4a61-a517-0b7df65013aa","Name":"test_user_02","Service":"","API":"","ReqLimit":{"Cap":10,"ResetDur":72000000000000}}]`
 	var originLimits []*storage.UserRateLimit
 
 	if err := json.Unmarshal([]byte(limitStrs), &originLimits); err != nil {
 		t.Fatalf("initialize origin Ratelimit failed:%s", err.Error())
 	}
 
-	var userMiners = map[string][]string{
+	userMiners := map[string][]string{
 		"test_user_001": {"t01000", "t01002", "t01003"},
 		"test_user_002": {"t01004", "t01005", "t01006"},
 		"test_user_003": {"t01007", "t01008", "t01009"},
 	}
 
-	//stm: @VENUSAUTH_JWT_GENERATE_TOKEN_001
+	// stm: @VENUSAUTH_JWT_GENERATE_TOKEN_001
 	t.Run("generate token", testGenerateToken)
-	//stm: @VENUSAUTH_JWT_VERIFY_TOKEN_001, @VENUSAUTH_JWT_VERIFY_TOKEN_002
+	// stm: @VENUSAUTH_JWT_VERIFY_TOKEN_001, @VENUSAUTH_JWT_VERIFY_TOKEN_002
 	t.Run("verify token", testVerifyToken)
-	//stm: @VENUSAUTH_JWT_GET_TOKEN_001, @VENUSAUTH_JWT_GET_TOKEN_002
+	// stm: @VENUSAUTH_JWT_GET_TOKEN_001, @VENUSAUTH_JWT_GET_TOKEN_002
 	t.Run("get token", testGetToken)
-	//stm: @VENUSAUTH_JWT_GET_TOKEN_BY_NAME_001, @VENUSAUTH_JWT_GET_TOKEN_BY_NAME_002
+	// stm: @VENUSAUTH_JWT_GET_TOKEN_BY_NAME_001, @VENUSAUTH_JWT_GET_TOKEN_BY_NAME_002
 	t.Run("get token by name", testGetTokenByName)
-	//stm: @VENUSAUTH_JWT_TOKENS_001
+	// stm: @VENUSAUTH_JWT_TOKENS_001
 	t.Run("list all tokens", testTokenList)
-	//stm: @VENUSAUTH_JWT_REMOVE_TOKEN_001, @VENUSAUTH_JWT_RECOVER_TOKEN_001, @VENUSAUTH_JWT_RECOVER_TOKEN_003
+	// stm: @VENUSAUTH_JWT_REMOVE_TOKEN_001, @VENUSAUTH_JWT_RECOVER_TOKEN_001, @VENUSAUTH_JWT_RECOVER_TOKEN_003
 	t.Run("remove and recover tokens", testRemoveAndRecoverToken)
 	// Features about users
-	//stm: @VENUSAUTH_JWT_CREATE_USER_001, @VENUSAUTH_JWT_CREATE_USER_003
+	// stm: @VENUSAUTH_JWT_CREATE_USER_001, @VENUSAUTH_JWT_CREATE_USER_003
 	t.Run("test create user", func(t *testing.T) { testCreateUser(t, userMiners) })
-	//stm: @VENUSAUTH_JWT_GET_USER_001, @VENUSAUTH_JWT_HAS_USER_001, @VENUSAUTH_JWT_GET_USER_002
+	// stm: @VENUSAUTH_JWT_GET_USER_001, @VENUSAUTH_JWT_HAS_USER_001, @VENUSAUTH_JWT_GET_USER_002
 	t.Run("test get user", func(t *testing.T) { testGetUser(t, userMiners) })
-	//stm: @VENUSAUTH_JWT_VERIFY_USERS_001
+	// stm: @VENUSAUTH_JWT_VERIFY_USERS_001
 	t.Run("test verify user", func(t *testing.T) { testVerifyUsers(t, userMiners) })
-	//stm: @VENUSAUTH_JWT_LIST_USERS_001
+	// stm: @VENUSAUTH_JWT_LIST_USERS_001
 	t.Run("test list user", func(t *testing.T) { testListUser(t, userMiners) })
-	//stm: @VENUSAUTH_JWT_UPDATE_USER_001, @VENUSAUTH_JWT_UPDATE_USER_002
+	// stm: @VENUSAUTH_JWT_UPDATE_USER_001, @VENUSAUTH_JWT_UPDATE_USER_002
 	t.Run("test update user", func(t *testing.T) { testUpdateUser(t, userMiners) })
-	//stm: @VENUSAUTH_JWT_DELETE_USER_001, @VENUSAUTH_JWT_RECOVER_USER_001, @VENUSAUTH_JWT_RECOVER_USER_002, @VENUSAUTH_JWT_RECOVER_USER_003
+	// stm: @VENUSAUTH_JWT_DELETE_USER_001, @VENUSAUTH_JWT_RECOVER_USER_001, @VENUSAUTH_JWT_RECOVER_USER_002, @VENUSAUTH_JWT_RECOVER_USER_003
 	t.Run("test delete and recover user", func(t *testing.T) { testDeleteAndRecoverUser(t, userMiners) })
 	// Features about miners
-	//stm: @VENUSAUTH_JWT_UPSERT_MINER_001, @VENUSAUTH_JWT_UPSERT_MINER_002
+	// stm: @VENUSAUTH_JWT_UPSERT_MINER_001, @VENUSAUTH_JWT_UPSERT_MINER_002
 	t.Run("test upsert miner", func(t *testing.T) { testUpsertMiner(t, userMiners) })
-	//stm: @VENUSAUTH_JWT_LIST_MINERS_001
+	// stm: @VENUSAUTH_JWT_LIST_MINERS_001
 	t.Run("test list miner", func(t *testing.T) { testListMiner(t, userMiners) })
-	//stm: @VENUSAUTH_JWT_HAS_MINER_001, @VENUSAUTH_JWT_HAS_MINER_002
+	// stm: @VENUSAUTH_JWT_HAS_MINER_001, @VENUSAUTH_JWT_HAS_MINER_002
 	t.Run("test has miner", func(t *testing.T) { testHasMiner(t, userMiners) })
-	//stm: @VENUSAUTH_JWT_GET_USER_BY_MINER_001, @VENUSAUTH_JWT_GET_USER_BY_MINER_002, @VENUSAUTH_JWT_GET_USER_BY_MINER_003
+	// stm: @VENUSAUTH_JWT_GET_USER_BY_MINER_001, @VENUSAUTH_JWT_GET_USER_BY_MINER_002, @VENUSAUTH_JWT_GET_USER_BY_MINER_003
 	t.Run("test get user by miner", func(t *testing.T) { testGetUserByMiner(t, userMiners) })
-	//stm: @VENUSAUTH_JWT_DELETE_MINER_001, @VENUSAUTH_JWT_DELETE_MINER_002
+	// stm: @VENUSAUTH_JWT_DELETE_MINER_001, @VENUSAUTH_JWT_DELETE_MINER_002
 	t.Run("test delete miner", func(t *testing.T) { testDeleteMiner(t, userMiners) })
 
 	// Features about signers
-	var userSigners = map[string][]string{
+	userSigners := map[string][]string{
 		"test_user_001": {"t3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha", "t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua"},
 		"test_user_002": {"t3r47fkdzfmtex5ic3jnwlzc7bkpbj7s4d6limyt4f57t3cuqq5nuvhvwv2cu2a6iga2s64vjqcxjqiezyjooq", "t1uqtvvwkkfkkez52ocnqe6vg74qewiwja4t2tiba"},
 		"test_user_003": {"t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua", "t1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q"},
@@ -89,12 +89,11 @@ func TestJwt(t *testing.T) {
 	t.Run("test delete signer", func(t *testing.T) { testDeleteSigner(t, userSigners) })
 
 	// Features about rate limits
-	//stm: @VENUSAUTH_JWT_UPSERT_USER_RATE_LIMITS_001
+	// stm: @VENUSAUTH_JWT_UPSERT_USER_RATE_LIMITS_001
 	t.Run("test upsert rate limit", func(t *testing.T) { testUpsertUserRateLimit(t, userMiners, originLimits) })
 	t.Run("test get rate limit", func(t *testing.T) { testGetUserRateLimits(t, userMiners, originLimits) })
-	//stm: @VENUSAUTH_JWT_DELETE_USER_RATE_LIMITS_001
+	// stm: @VENUSAUTH_JWT_DELETE_USER_RATE_LIMITS_001
 	t.Run("test delete rate limit", func(t *testing.T) { testDeleteUserRateLimits(t, userMiners, originLimits) })
-
 }
 
 func testGenerateToken(t *testing.T) {
@@ -466,7 +465,7 @@ func testUpsertMiner(t *testing.T, userMiners map[string][]string) {
 	defer shutdown(&cfg, t)
 	addUsersAndMiners(t, userMiners)
 
-	var ctx = context.Background()
+	ctx := context.Background()
 	// error signer address
 	_, _ = jwtOAuthInstance.CreateUser(ctx, &CreateUserRequest{
 		Name:  "user_01",
@@ -857,7 +856,6 @@ func setup(cfg *config.DBConfig, t *testing.T) {
 		fmt.Printf("tmp badger store : %s\n", cfg.DSN)
 	}
 	theStore, err := storage.NewStore(cfg, cfg.DSN)
-
 	if err != nil {
 		t.Fatal(err)
 	}

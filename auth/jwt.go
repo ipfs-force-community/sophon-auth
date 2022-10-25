@@ -146,8 +146,10 @@ func (o *jwtOAuth) GenerateToken(ctx context.Context, pl *JWTPayload) (string, e
 		return token.String(), nil
 	}
 
-	err = o.store.Put(&storage.KeyPair{Token: token, Secret: hex.EncodeToString(secret), CreateTime: time.Now(),
-		Name: pl.Name, Perm: pl.Perm, Extra: pl.Extra, IsDeleted: core.NotDelete})
+	err = o.store.Put(&storage.KeyPair{
+		Token: token, Secret: hex.EncodeToString(secret), CreateTime: time.Now(),
+		Name: pl.Name, Perm: pl.Perm, Extra: pl.Extra, IsDeleted: core.NotDelete,
+	})
 	if err != nil {
 		return core.EmptyString, xerrors.Errorf("store token failed :%s", err)
 	}
@@ -550,7 +552,6 @@ func JwtUserFromToken(token string) (string, error) {
 	sks := strings.Split(token, ".")
 	if len(sks) < 1 {
 		return "", fmt.Errorf("can't parse user from input token")
-
 	}
 	dec, err := DecodeToBytes([]byte(sks[1]))
 	if err != nil {

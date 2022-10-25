@@ -14,7 +14,6 @@ type LocalAuthClient struct {
 }
 
 func NewLocalAuthClient() (*LocalAuthClient, []byte, error) {
-
 	payload := venusauth.JWTPayload{
 		Perm: core.PermAdmin,
 		Name: "defaultLocalToken",

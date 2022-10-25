@@ -1,4 +1,4 @@
-//stm: #unit
+// stm: #unit
 package jwtclient
 
 import (
@@ -50,7 +50,7 @@ func TestMain(m *testing.M) {
 		defer os.RemoveAll(tmpPath)
 	}
 
-	//stm: @VENUSAUTH_JWT_NEW_OAUTH_SERVICE_001
+	// stm: @VENUSAUTH_JWT_NEW_OAUTH_SERVICE_001
 	app, err := auth.NewOAuthApp(cnf.Secret, tmpPath, cnf.DB)
 	if err != nil {
 		log.Fatalf("Failed to init oauthApp : %s", err)
@@ -101,7 +101,7 @@ func TestTokenBusiness(t *testing.T) {
 		t.Fatalf("get tokens err:%s", err)
 	}
 
-	var listTks = make(map[string]*auth.TokenInfo)
+	listTks := make(map[string]*auth.TokenInfo)
 
 	for _, tkInfo := range tks {
 		listTks[tkInfo.Token] = tkInfo
@@ -135,20 +135,19 @@ func TestTokenBusiness(t *testing.T) {
 
 func TestUserBusiness(t *testing.T) {
 	comment := "this is a comment"
-	var createReqs = []*auth.CreateUserRequest{
+	createReqs := []*auth.CreateUserRequest{
 		{
 			Name:    "name1",
 			Comment: nil,
 			State:   1,
 		},
 		{
-
 			Name:    "name2",
 			Comment: &comment,
 			State:   1,
 		},
 	}
-	var originUsers = make(map[string]*auth.CreateUserResponse, len(createReqs))
+	originUsers := make(map[string]*auth.CreateUserResponse, len(createReqs))
 	var err error
 	for _, req := range createReqs {
 		resp, err := cli.CreateUser(req)

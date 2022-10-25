@@ -162,10 +162,10 @@ func (s *badgerStore) PutUser(user *User) error {
 
 func (s *badgerStore) ListUsers(skip, limit int64, state core.UserState) ([]*User, error) {
 	var users []*User
-	var satisfiedItemCount = int64(0)
+	satisfiedItemCount := int64(0)
 	if err := s.walkThroughPrefix([]byte(PrefixUser), func(item *badger.Item) (bool, error) {
 		err := item.Value(func(val []byte) error {
-			var user = new(User)
+			user := new(User)
 			if err := user.FromBytes(val); err != nil {
 				return err
 			}
@@ -297,8 +297,8 @@ func (s *badgerStore) GetRateLimits(name, id string) ([]*UserRateLimit, error) {
 		return nil, err
 	}
 
-	var rateLimits = make([]*UserRateLimit, len(mRateLimits))
-	var idx = 0
+	rateLimits := make([]*UserRateLimit, len(mRateLimits))
+	idx := 0
 	for _, l := range mRateLimits {
 		rateLimits[idx] = l
 		idx++

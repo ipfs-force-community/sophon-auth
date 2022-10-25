@@ -43,6 +43,7 @@ func MakeDir(path string) {
 		}
 	}
 }
+
 func configScan(path string) *config.Config {
 	exist, err := config.Exist(path)
 	if err != nil {

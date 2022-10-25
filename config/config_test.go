@@ -13,6 +13,7 @@ func TestDecodeConfig(t *testing.T) {
 	}
 	t.Log(cnf)
 }
+
 func TestDefaultConfig(t *testing.T) {
 	cnf, err := DefaultConfig()
 	if err != nil {
@@ -30,7 +31,7 @@ func TestSafeWriteConfig(t *testing.T) {
 		t.Fail()
 	}
 	p2 := "./safeConfig.toml"
-	//t.Log(cnf.API, cnf.DB)
+	// t.Log(cnf.API, cnf.DB)
 	err = Cover(p2, cnf)
 	if err != nil {
 		t.Fatal(err)

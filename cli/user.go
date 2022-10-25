@@ -219,7 +219,7 @@ var userListCmd = &cli.Command{
 			fmt.Println("name:", v.Name)
 			fmt.Println("state:", v.State.String())
 			if len(v.Miners) != 0 {
-				var miners = make([]string, len(v.Miners))
+				miners := make([]string, len(v.Miners))
 				for idx, m := range v.Miners {
 					miners[idx] = m.Miner
 				}
@@ -305,7 +305,8 @@ var rateLimitSubCmds = &cli.Command{
 		rateLimitAdd,
 		rateLimitUpdate,
 		rateLimitGet,
-		rateLimitDel},
+		rateLimitDel,
+	},
 }
 
 var rateLimitGet = &cli.Command{
@@ -462,9 +463,10 @@ var rateLimitDel = &cli.Command{
 			return cli.ShowAppHelp(ctx)
 		}
 
-		var delReq = &auth.DelUserRateLimitReq{
+		delReq := &auth.DelUserRateLimitReq{
 			Name: ctx.Args().Get(0),
-			Id:   ctx.Args().Get(1)}
+			Id:   ctx.Args().Get(1),
+		}
 
 		if res, err := client.GetUserRateLimit(delReq.Name, delReq.Id); err != nil {
 			return err

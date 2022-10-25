@@ -1,4 +1,4 @@
-//stm: #unit
+// stm: #unit
 package storage
 
 import (
@@ -59,58 +59,58 @@ func TestMysqlStore(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Token
-	//stm: @VENUSAUTH_MYSQL_PUT_001
+	// stm: @VENUSAUTH_MYSQL_PUT_001
 	t.Run("mysql put token", wrapper(testMySQLPutToken, mySQLStore, mock))
-	//stm: @VENUSAUTH_MYSQL_UPDATE_TOKEN_001, @VENUSAUTH_MYSQL_UPDATE_TOKEN_002
+	// stm: @VENUSAUTH_MYSQL_UPDATE_TOKEN_001, @VENUSAUTH_MYSQL_UPDATE_TOKEN_002
 	t.Run("mysql update token", wrapper(testMySQLUpdateToken, mySQLStore, mock))
-	//stm: @VENUSAUTH_MYSQL_HAS_001
+	// stm: @VENUSAUTH_MYSQL_HAS_001
 	t.Run("mysql has token", wrapper(testMySQLHasToken, mySQLStore, mock))
-	//stm: @VENUSAUTH_MYSQL_GET_001, @VENUSAUTH_MYSQL_HAS_002
+	// stm: @VENUSAUTH_MYSQL_GET_001, @VENUSAUTH_MYSQL_HAS_002
 	t.Run("mysql get token", wrapper(testMySQLGetToken, mySQLStore, mock))
-	//stm: @VENUSAUTH_MYSQL_LIST_001, @VENUSAUTH_MYSQL_LIST_002
+	// stm: @VENUSAUTH_MYSQL_LIST_001, @VENUSAUTH_MYSQL_LIST_002
 	t.Run("mysql list tokens", wrapper(testMySQLListTokens, mySQLStore, mock))
-	//stm: @VENUSAUTH_MYSQL_GET_TOKEN_RECORD_001, @VENUSAUTH_MYSQL_GET_TOKEN_RECORD_002
-	//stm: @VENUSAUTH_MYSQL_BY_NAME_001, @VENUSAUTH_MYSQL_BY_NAME_002
+	// stm: @VENUSAUTH_MYSQL_GET_TOKEN_RECORD_001, @VENUSAUTH_MYSQL_GET_TOKEN_RECORD_002
+	// stm: @VENUSAUTH_MYSQL_BY_NAME_001, @VENUSAUTH_MYSQL_BY_NAME_002
 	t.Run("mysql get token by name", wrapper(testMySQLGetTokenByName, mySQLStore, mock))
-	//stm: @VENUSAUTH_MYSQL_DELETE_001,@VENUSAUTH_MYSQL_DELETE_002, @VENUSAUTH_MYSQL_DELETE_003
-	//stm: @VENUSAUTH_MYSQL_HAS_001, @VENUSAUTH_MYSQL_HAS_002
+	// stm: @VENUSAUTH_MYSQL_DELETE_001,@VENUSAUTH_MYSQL_DELETE_002, @VENUSAUTH_MYSQL_DELETE_003
+	// stm: @VENUSAUTH_MYSQL_HAS_001, @VENUSAUTH_MYSQL_HAS_002
 	t.Run("mysql delete token", wrapper(testMySQLDeleteToken, mySQLStore, mock))
-	//stm: @VENUSAUTH_MYSQL_RECOVER_001,@VENUSAUTH_MYSQL_RECOVER_002, @VENUSAUTH_MYSQL_RECOVER_003
+	// stm: @VENUSAUTH_MYSQL_RECOVER_001,@VENUSAUTH_MYSQL_RECOVER_002, @VENUSAUTH_MYSQL_RECOVER_003
 	t.Run("mysql recover token", wrapper(testMySQLRecoverToken, mySQLStore, mock))
 
 	// User
-	//stm: @VENUSAUTH_MYSQL_PUT_USER_001, @VENUSAUTH_MYSQL_UPDATE_USER_002
+	// stm: @VENUSAUTH_MYSQL_PUT_USER_001, @VENUSAUTH_MYSQL_UPDATE_USER_002
 	t.Run("mysql put users", wrapper(testMySQLPutUser, mySQLStore, mock))
-	//stm: @VENUSAUTH_MYSQL_UPDATE_USER_001, @VENUSAUTH_MYSQL_INNER_UPDATE_USER_001, @VENUSAUTH_MYSQL_INNER_UPDATE_USER_002
+	// stm: @VENUSAUTH_MYSQL_UPDATE_USER_001, @VENUSAUTH_MYSQL_INNER_UPDATE_USER_001, @VENUSAUTH_MYSQL_INNER_UPDATE_USER_002
 	t.Run("mysql update user", wrapper(testMySQLUpdateUser, mySQLStore, mock))
-	//stm: @VENUSAUTH_MYSQL_HAS_USER_001, @VENUSAUTH_MYSQL_HAS_USER_002
+	// stm: @VENUSAUTH_MYSQL_HAS_USER_001, @VENUSAUTH_MYSQL_HAS_USER_002
 	t.Run("mysql has user", wrapper(testMySQLHasUser, mySQLStore, mock))
-	//stm: @VENUSAUTH_MYSQL_GET_USER_001, @VENUSAUTH_MYSQL_INNER_GET_USER_001, @VENUSAUTH_MYSQL_INNER_GET_USER_002
+	// stm: @VENUSAUTH_MYSQL_GET_USER_001, @VENUSAUTH_MYSQL_INNER_GET_USER_001, @VENUSAUTH_MYSQL_INNER_GET_USER_002
 	t.Run("mysql get user", wrapper(testMySQLGetUser, mySQLStore, mock))
-	//stm: @VENUSAUTH_MYSQL_LIST_USERS_001, @VENUSAUTH_MYSQL_LIST_USERS_002
+	// stm: @VENUSAUTH_MYSQL_LIST_USERS_001, @VENUSAUTH_MYSQL_LIST_USERS_002
 	t.Run("mysql list users", wrapper(testMySQLListUsers, mySQLStore, mock))
-	//stm: @VENUSAUTH_MYSQL_DELETE_USER_001
+	// stm: @VENUSAUTH_MYSQL_DELETE_USER_001
 	t.Run("mysql delete user", wrapper(testMySQLDeleteUser, mySQLStore, mock))
 
 	// Rate limit
-	//stm: @VENUSAUTH_MYSQL_GET_RATE_LIMITS_001
+	// stm: @VENUSAUTH_MYSQL_GET_RATE_LIMITS_001
 	t.Run("mysql get rate limit", wrapper(testMySQLGetRateLimits, mySQLStore, mock))
-	//stm: @VENUSAUTH_MYSQL_PUT_RATE_LIMITS_001
+	// stm: @VENUSAUTH_MYSQL_PUT_RATE_LIMITS_001
 	t.Run("mysql put rate limit", wrapper(testMySQLPutRateLimits, mySQLStore, mock))
-	//stm: @VENUSAUTH_MYSQL_DEL_RATE_LIMITS_001
+	// stm: @VENUSAUTH_MYSQL_DEL_RATE_LIMITS_001
 	t.Run("mysql delete rate limit", wrapper(testMySQLDeleteRateLimit, mySQLStore, mock))
 
 	// Miner
-	//stm: @VENUSAUTH_MYSQL_HAS_MINER_001
+	// stm: @VENUSAUTH_MYSQL_HAS_MINER_001
 	t.Run("mysql has miner", wrapper(testMySQLHasMiner, mySQLStore, mock))
 	t.Run("mysql miner exist in user", wrapper(testMySQLMinerExistInUser, mySQLStore, mock))
-	//stm: @VENUSAUTH_MYSQL_GET_USER_BY_MINER_001
+	// stm: @VENUSAUTH_MYSQL_GET_USER_BY_MINER_001
 	t.Run("mysql get user by miner", wrapper(testMySQLGetUserByMiner, mySQLStore, mock))
-	//stm: @VENUSAUTH_MYSQL_LIST_MINERS_001, @VENUSAUTH_MYSQL_INNER_LIST_MINERS_001
+	// stm: @VENUSAUTH_MYSQL_LIST_MINERS_001, @VENUSAUTH_MYSQL_INNER_LIST_MINERS_001
 	t.Run("mysql list miners", wrapper(testMySQLListMiner, mySQLStore, mock))
-	//stm: @VENUSAUTH_MYSQL_DEL_MINER_001, @VENUSAUTH_MYSQL_INNER_DEL_MINER_001
+	// stm: @VENUSAUTH_MYSQL_DEL_MINER_001, @VENUSAUTH_MYSQL_INNER_DEL_MINER_001
 	t.Run("mysql delete miner", wrapper(testMySQLDeleteMiner, mySQLStore, mock))
-	//stm: @VENUSAUTH_MYSQL_UPSERT_MINER_001
+	// stm: @VENUSAUTH_MYSQL_UPSERT_MINER_001
 	t.Run("mysql upsert miner", wrapper(testMySQLUpsertMiner, mySQLStore, mock))
 
 	// Signer
@@ -332,7 +332,7 @@ func testMySQLPutUser(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock
 
 func testMySQLUpdateUser(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
 	now := time.Now()
-	var user = &User{
+	user := &User{
 		Id:         uuid.NewString(),
 		Name:       "test_user_001",
 		UpdateTime: now,
@@ -402,7 +402,6 @@ func testMySQLListUsers(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmo
 	mock.ExpectQuery(op).WillReturnError(errSimulated)
 	_, err = mySQLStore.ListUsers(skip, limit, core.UserStateUndefined)
 	assert.Error(t, err)
-
 }
 
 func testMySQLDeleteUser(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
@@ -734,7 +733,6 @@ func testMySQLVersion(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock
 }
 
 func testMySQLMigrateToV1(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sqlmock) {
-
 	mock.ExpectQuery(regexp.QuoteMeta(
 		"SELECT * FROM `users`")).
 		WithArgs().

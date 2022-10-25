@@ -450,7 +450,7 @@ func (s *mysqlStore) MigrateToV1() error {
 		return err
 	}
 
-	var now = time.Now()
+	now := time.Now()
 	return s.db.Transaction(func(tx *gorm.DB) error {
 		for _, u := range arr {
 			maddr, err := address.NewFromString(u.Miner)

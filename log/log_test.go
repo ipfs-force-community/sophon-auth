@@ -43,5 +43,4 @@ func TestLog(t *testing.T) {
 		"from":   "RennbonTest",
 	}).Error("This is an error")
 	time.Sleep(time.Second * 2)
-
 }

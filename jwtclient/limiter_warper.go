@@ -28,7 +28,7 @@ func (l *limitFinder) GetUserLimit(name, service, api string) (*ratelimit.Limit,
 		return nil, err
 	}
 
-	var limit = &ratelimit.Limit{Account: name, Cap: 0, Duration: 0}
+	limit := &ratelimit.Limit{Account: name, Cap: 0, Duration: 0}
 	if l := res.MatchedLimit(service, api); l != nil {
 		limit.Cap = l.ReqLimit.Cap
 		limit.Duration = l.ReqLimit.ResetDur

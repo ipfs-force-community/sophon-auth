@@ -68,8 +68,10 @@ type DelUserRateLimitReq struct {
 	Id   string `form:"id"`
 }
 
-type GetUserRateLimitResponse []*storage.UserRateLimit
-type UpsertUserRateLimitReq storage.UserRateLimit
+type (
+	GetUserRateLimitResponse []*storage.UserRateLimit
+	UpsertUserRateLimitReq   storage.UserRateLimit
+)
 
 type CreateUserRequest struct {
 	Name    string         `form:"name" binding:"required"`

@@ -48,7 +48,6 @@ func (lc *AuthClient) Verify(ctx context.Context, token string) (*auth.VerifyRes
 	resp, err := lc.cli.R().SetContext(ctx).
 		SetBody(auth.VerifyRequest{Token: token}).
 		SetResult(&auth.VerifyResponse{}).Post("/verify")
-
 	if err != nil {
 		return nil, err
 	}

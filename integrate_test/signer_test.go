@@ -10,12 +10,10 @@ import (
 	"github.com/filecoin-project/venus-auth/jwtclient"
 )
 
-var (
-	userSigners = map[string][]string{
-		"test_user01": {"t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua", "t1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q"},
-		"test_user02": {"t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua", "t3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha"},
-	}
-)
+var userSigners = map[string][]string{
+	"test_user01": {"t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua", "t1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q"},
+	"test_user02": {"t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua", "t3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha"},
+}
 
 func TestSignerAPI(t *testing.T) {
 	t.Run("register signer", testRegisterSigners)

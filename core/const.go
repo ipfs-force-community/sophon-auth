@@ -13,8 +13,10 @@ var Version = BuildVersion + CurrentCommit
 
 const EmptyString = ""
 
-type DBPrefix = []byte
-type Permission = string
+type (
+	DBPrefix   = []byte
+	Permission = string
+)
 
 const (
 	// When changing these, update docs/API.md too
@@ -24,11 +26,9 @@ const (
 	PermAdmin Permission = "admin" // Manage permissions
 )
 
-var (
-	PermArr = []Permission{
-		PermAdmin, PermSign, PermWrite, PermRead,
-	}
-)
+var PermArr = []Permission{
+	PermAdmin, PermSign, PermWrite, PermRead,
+}
 var ErrPermIllegal = errors.New("perm illegal")
 
 func ContainsPerm(perm Permission) error {
@@ -64,12 +64,15 @@ func WithPerm(ctx context.Context, perm Permission) context.Context {
 	return context.WithValue(ctx, PermCtxKey, AdaptOldStrategy(perm))
 }
 
-type LogField = string
-type Measurement = string
+type (
+	LogField    = string
+	Measurement = string
+)
 
 const (
 	MTMethod Measurement = "method"
 )
+
 const (
 	FieldName    LogField = "name"
 	FieldIP      LogField = "ip"
@@ -99,6 +102,7 @@ func (o *Page) GetSkip() int64 {
 	}
 	return o.Skip
 }
+
 func (o *Page) GetLimit() int64 {
 	if o.Limit < 0 || o.Limit > 1000 {
 		o.Limit = 1000

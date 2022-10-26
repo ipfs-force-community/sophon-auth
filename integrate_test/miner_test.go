@@ -56,11 +56,11 @@ func testUpsertMiners(t *testing.T) {
 	c, user, tmpDir := setupAndAddMiners(t)
 
 	// `ShouldBind` failed
-	_, err := c.UpsertMiner("", "f01034")
+	_, err := c.UpsertMiner("", "f01034", true)
 	assert.Error(t, err)
 
 	// invalid address error
-	_, err = c.UpsertMiner(user.Name, address.Undef.String())
+	_, err = c.UpsertMiner(user.Name, address.Undef.String(), true)
 	assert.Error(t, err)
 
 	shutdown(t, tmpDir)

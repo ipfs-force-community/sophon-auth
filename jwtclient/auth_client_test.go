@@ -202,9 +202,10 @@ func TestUserBusiness(t *testing.T) {
 		break
 	}
 
-	if _, err = cli.GetUserByMiner(&auth.GetUserByMinerRequest{
+	user, err := cli.GetUserByMiner(&auth.GetUserByMinerRequest{
 		Miner: "f02345",
-	}); err != nil {
+	})
+	if err != nil {
 		t.Fatalf("get miner err:%s", err)
 	}
 
@@ -224,19 +225,19 @@ func TestUserBusiness(t *testing.T) {
 	}
 	assert.DeepEqual(t, false, has)
 
-	exist, err := cli.MinerExistInUser("name1", "f02345")
+	exist, err := cli.MinerExistInUser(user.Name, "f02345")
 	if err != nil {
 		t.Fatalf("check miner exist in user err:%s", err)
 	}
 	assert.DeepEqual(t, true, exist)
 
-	exist, err = cli.MinerExistInUser("name1", "f023450")
+	exist, err = cli.MinerExistInUser(user.Name, "f023452")
 	if err != nil {
 		t.Fatalf("check miner exist in user err:%s", err)
 	}
 	assert.DeepEqual(t, false, exist)
 
-	user, err := cli.GetUser(&auth.GetUserRequest{
+	user, err = cli.GetUser(&auth.GetUserRequest{
 		Name: "name2",
 	})
 	if err != nil {

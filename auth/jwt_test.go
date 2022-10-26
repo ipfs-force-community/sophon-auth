@@ -31,10 +31,11 @@ func TestJwt(t *testing.T) {
 	}
 
 	if err := json.Unmarshal([]byte(limitStrs), &originLimits); err != nil {
-		t.Fatal(fmt.Sprintf("initialize origin Ratelimit failed:%s", err.Error()))
+		t.Fatalf("initialize origin Ratelimit failed:%s", err.Error())
 	}
 
 	// Features about tokens
+	t.Run("generate token", testGenerateToken)
 	t.Run("generate token", testGenerateToken)
 	t.Run("verify token", testVerifyToken)
 	t.Run("get token", testGetToken)
@@ -377,8 +378,9 @@ func addUsersAndMiners(t *testing.T, userMiners map[string]map[string]interface{
 		// Add miners
 		for minerName := range minerMap {
 			ifCreate, err := jwtOAuthInstance.UpsertMiner(context.Background(), &UpsertMinerReq{
-				User:  userName,
-				Miner: minerName,
+				User:       userName,
+				Miner:      minerName,
+				OpenMining: true,
 			})
 			assert.Nil(t, err)
 			assert.True(t, ifCreate)
@@ -409,6 +411,7 @@ func testListMiner(t *testing.T, userMiners map[string]map[string]interface{}) {
 	for i := 0; i < len(user1Miners); i++ {
 		assert.Equal(t, user1Miners[i], resp[i].Miner)
 		assert.Equal(t, validUser1, resp[i].User)
+		assert.Equal(t, true, resp[i].OpenMining)
 	}
 }
 

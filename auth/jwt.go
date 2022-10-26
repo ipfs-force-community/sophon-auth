@@ -381,7 +381,7 @@ func (o *jwtOAuth) UpsertMiner(ctx context.Context, req *UpsertMinerReq) (bool, 
 	if err != nil || maddr.Empty() {
 		return false, xerrors.Errorf("invalid miner address:%s, error: %w", req.Miner, err)
 	}
-	return o.store.UpsertMiner(maddr, req.User)
+	return o.store.UpsertMiner(maddr, req.User, req.OpenMining)
 }
 
 func (o *jwtOAuth) ListMiners(ctx context.Context, req *ListMinerReq) (ListMinerResp, error) {
@@ -394,10 +394,11 @@ func (o *jwtOAuth) ListMiners(ctx context.Context, req *ListMinerReq) (ListMiner
 	for idx, m := range miners {
 		addrStr := m.Miner.Address().String()
 		outs[idx] = &OutputMiner{
-			Miner:     addrStr,
-			User:      m.User,
-			CreatedAt: m.CreatedAt,
-			UpdatedAt: m.UpdatedAt,
+			Miner:      addrStr,
+			User:       m.User,
+			OpenMining: m.OpenMining,
+			CreatedAt:  m.CreatedAt,
+			UpdatedAt:  m.UpdatedAt,
 		}
 	}
 	return outs, nil

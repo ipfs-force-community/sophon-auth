@@ -89,7 +89,7 @@ func testAddMiner(t *testing.T) {
 	for u, ms := range userMiners {
 		for m := range ms {
 			addr, _ := address.NewFromString(m)
-			_, err := theStore.UpsertMiner(addr, u)
+			_, err := theStore.UpsertMiner(addr, u, true)
 			require.NoError(t, err)
 		}
 	}

@@ -147,6 +147,7 @@ func (ls GetUserRateLimitResponse) MatchedLimit(service, api string) *storage.Us
 
 type UpsertMinerReq struct {
 	User, Miner string
+	OpenMining  bool
 }
 
 type ListMinerReq struct {
@@ -155,6 +156,7 @@ type ListMinerReq struct {
 
 type OutputMiner struct {
 	Miner, User          string
+	OpenMining           bool
 	CreatedAt, UpdatedAt time.Time
 }
 

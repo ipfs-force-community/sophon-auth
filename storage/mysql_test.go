@@ -466,6 +466,7 @@ func testMySQLUpsertMiner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sql
 	addr, err := address.NewIDAddress(1)
 	assert.Nil(t, err)
 	user := "user"
+	openMining := true
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(
@@ -479,15 +480,15 @@ func testMySQLUpsertMiner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sql
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
 
 	mock.ExpectExec(regexp.QuoteMeta(
-		"INSERT INTO `miners` (`miner`,`user`,`created_at`,`updated_at`,`deleted_at`) "+
-			"VALUES (?,?,?,?,?) ON DUPLICATE KEY UPDATE `user`=VALUES(`user`),`updated_at`=VALUES(`updated_at`),"+
-			"`deleted_at`=VALUES(`deleted_at`)")).
-		WithArgs(storedAddress(addr), user, anyTime{}, anyTime{}, nil).
+		"INSERT INTO `miners` (`miner`,`user`,`open_mining`,`created_at`,`updated_at`,`deleted_at`) "+
+			"VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE `user`=VALUES(`user`),`open_mining`=VALUES(`open_mining`),"+
+			"`updated_at`=VALUES(`updated_at`),`deleted_at`=VALUES(`deleted_at`)")).
+		WithArgs(storedAddress(addr), user, openMining, anyTime{}, anyTime{}, nil).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	mock.ExpectCommit()
 
-	success, err := mySQLStore.UpsertMiner(addr, user)
+	success, err := mySQLStore.UpsertMiner(addr, user, openMining)
 	assert.Nil(t, err)
 	assert.True(t, success)
 }

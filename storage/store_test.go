@@ -164,7 +164,7 @@ func testAddMiner(t *testing.T) {
 	newAddr, _ := address.NewFromString("f0109988")
 
 	// expects a not found error
-	_, err := theStore.UpsertMiner(newAddr, "not-exist-user")
+	_, err := theStore.UpsertMiner(newAddr, "not-exist-user", true)
 	require.True(t, strings.Contains(err.Error(), "not exist user"))
 	require.Error(t, err)
 }

@@ -80,6 +80,7 @@ type Store interface {
 
 	Version() (uint64, error)
 	MigrateToV1() error
+	MigrateToV2() error
 }
 
 type KeyPair struct {
@@ -245,7 +246,7 @@ func (sa storedAddress) Value() (driver.Value, error) {
 type Miner struct {
 	Miner      storedAddress `gorm:"column:miner;type:varchar(128);primarykey;index:user_miner_idx,priority:2"`
 	User       string        `gorm:"column:user;type:varchar(50);index:user_miner_idx,priority:1;not null"`
-	OpenMining bool          `gorm:"column:open_mining;comment:'0-false,1-true'"`
+	OpenMining bool          `gorm:"column:open_mining;default:1;comment:0-false,1-true"`
 	OrmTimestamp
 }
 

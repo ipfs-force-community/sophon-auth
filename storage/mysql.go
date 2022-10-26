@@ -356,3 +356,10 @@ func (s *mysqlStore) MigrateToV1() error {
 			Create(&StoreVersion{ID: 1, Version: 1}).Error
 	})
 }
+
+func (s *mysqlStore) MigrateToV2() error {
+	// `open-mining` upgrade dependency field default value implementation
+	return s.db.Model(&StoreVersion{}).
+		Clauses(clause.OnConflict{UpdateAll: true}).
+		Create(&StoreVersion{ID: 1, Version: 2}).Error
+}

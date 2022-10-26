@@ -324,12 +324,12 @@ func (lc *AuthClient) DelUserRateLimit(req *auth.DelUserRateLimitReq) (string, e
 	return "", resp.Error().(*errcode.ErrMsg).Err()
 }
 
-func (lc *AuthClient) UpsertMiner(user, miner string) (bool, error) {
+func (lc *AuthClient) UpsertMiner(user, miner string, openMining bool) (bool, error) {
 	if _, err := address.NewFromString(miner); err != nil {
 		return false, xerrors.Errorf("invalid miner address:%s", miner)
 	}
 	var isCreate bool
-	resp, err := lc.cli.R().SetBody(&auth.UpsertMinerReq{Miner: miner, User: user}).
+	resp, err := lc.cli.R().SetBody(&auth.UpsertMinerReq{Miner: miner, User: user, OpenMining: openMining}).
 		SetResult(&isCreate).SetError(&errcode.ErrMsg{}).Post("/miner/add-miner")
 	if err != nil {
 		return false, err

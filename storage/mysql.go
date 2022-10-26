@@ -267,16 +267,16 @@ func (s *mysqlStore) GetUserByMiner(miner address.Address) (*User, error) {
 	return users[0], nil
 }
 
-func (s *mysqlStore) UpsertMiner(miner address.Address, userName string) (bool, error) {
+func (s *mysqlStore) UpsertMiner(maddr address.Address, userName string, openMining bool) (bool, error) {
 	var isCreate bool
-	stoMiner := storedAddress(miner)
+	stoMiner := storedAddress(maddr)
 	return isCreate, s.db.Transaction(func(tx *gorm.DB) error {
 		var user User
 		if err := tx.Model(&user).First(&user, "name = ?", userName).Error; err != nil {
 			if xerrors.Is(err, gorm.ErrRecordNotFound) {
-				return xerrors.Errorf("can't bind miner:%s to not exist user:%s", miner.String(), userName)
+				return xerrors.Errorf("can't bind miner:%s to not exist user:%s", maddr.String(), userName)
 			}
-			return xerrors.Errorf("bind miner:%s to user:%s failed:%w", miner.String(), userName, err)
+			return xerrors.Errorf("bind miner:%s to user:%s failed:%w", maddr.String(), userName, err)
 		}
 		var count int64
 		if err := tx.Model(&Miner{}).Where("miner = ?", stoMiner).Count(&count).Error; err != nil {
@@ -285,7 +285,7 @@ func (s *mysqlStore) UpsertMiner(miner address.Address, userName string) (bool, 
 		isCreate = count > 0
 		return tx.Model(&Miner{}).
 			Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "miner"}}, UpdateAll: true}).
-			Create(&Miner{Miner: stoMiner, User: user.Name}).Error
+			Create(&Miner{Miner: stoMiner, User: user.Name, OpenMining: openMining}).Error
 	}, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false})
 }
 
@@ -355,4 +355,11 @@ func (s *mysqlStore) MigrateToV1() error {
 			Clauses(clause.OnConflict{UpdateAll: true}).
 			Create(&StoreVersion{ID: 1, Version: 1}).Error
 	})
+}
+
+func (s *mysqlStore) MigrateToV2() error {
+	// `open-mining` upgrade dependency field default value implementation
+	return s.db.Model(&StoreVersion{}).
+		Clauses(clause.OnConflict{UpdateAll: true}).
+		Create(&StoreVersion{ID: 1, Version: 2}).Error
 }

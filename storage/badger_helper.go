@@ -222,3 +222,39 @@ func (s *badgerStore) MigrateToV1() error {
 		return txn.Set(storeVersionKey, version)
 	})
 }
+
+func (s *badgerStore) MigrateToV2() error {
+	return s.db.Update(func(txn *badger.Txn) error {
+		it := txn.NewIterator(badger.DefaultIteratorOptions)
+		defer it.Close()
+		for it.Seek([]byte(PrefixMiner)); it.ValidForPrefix([]byte(PrefixMiner)); it.Next() {
+			item := it.Item()
+			var m Miner
+			if err := item.Value(func(val []byte) error {
+				if err := m.FromBytes(val); err != nil {
+					return err
+				}
+
+				m.OpenMining = true
+				b, err := m.Bytes()
+				if err != nil {
+					return xerrors.Errorf("get miner object data failed:%w", err)
+				}
+				if err := txn.Set(minerKey(m.Miner.Address().String()), b); err != nil {
+					return err
+				}
+
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+
+		version, err := (&StoreVersion{ID: 1, Version: 2}).Bytes()
+		if err != nil {
+			return err
+		}
+		return txn.Set(storeVersionKey, version)
+	})
+
+}

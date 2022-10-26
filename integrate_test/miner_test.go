@@ -30,10 +30,10 @@ func setupAndAddMiners(t *testing.T) (*jwtclient.AuthClient, string) {
 	_, err = client.CreateUser(&auth.CreateUserRequest{Name: userName})
 	assert.Nil(t, err)
 	// Add 2 miners
-	success, err := client.UpsertMiner(userName, miner1)
+	success, err := client.UpsertMiner(userName, miner1, true)
 	assert.Nil(t, err)
 	assert.True(t, success)
-	success, err = client.UpsertMiner(userName, miner2)
+	success, err = client.UpsertMiner(userName, miner2, true)
 	assert.Nil(t, err)
 	assert.True(t, success)
 

@@ -22,8 +22,15 @@ var minerSubCmds = &cli.Command{
 }
 
 var cmdAddMiner = &cli.Command{
-	Name:      "add",
-	Usage:     "Add miner for specified user",
+	Name:  "add",
+	Usage: "Add miner for specified user",
+	Flags: []cli.Flag{
+		&cli.BoolFlag{
+			Name:  "openMining",
+			Usage: "false/true",
+			Value: true,
+		},
+	},
 	ArgsUsage: "<user> <miner>",
 	Action: func(ctx *cli.Context) error {
 		if ctx.Args().Len() != 2 {
@@ -34,9 +41,10 @@ var cmdAddMiner = &cli.Command{
 			return err
 		}
 		user, miner := ctx.Args().Get(0), ctx.Args().Get(1)
+		openMining := ctx.Bool("openMining")
 
 		var isCreate bool
-		if isCreate, err = client.UpsertMiner(user, miner); err != nil {
+		if isCreate, err = client.UpsertMiner(user, miner, openMining); err != nil {
 			return err
 		}
 		var opStr string
@@ -82,9 +90,9 @@ var cmdListMiners = &cli.Command{
 
 		const padding = 2
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, padding, ' ', tabwriter.TabIndent)
-		fmt.Fprintln(w, "idx\tminer\tcreate-time\t")
+		fmt.Fprintln(w, "idx\tminer\topen-mining\tcreate-time\t")
 		for idx, miner := range miners {
-			fmt.Fprintf(w, "%d\t%s\t%s\t\n", idx, miner.Miner, miner.CreatedAt.Format(time.RFC1123))
+			fmt.Fprintf(w, "%d\t%s\t%v\t%s\t\n", idx, miner.Miner, miner.OpenMining, miner.CreatedAt.Format(time.RFC1123))
 		}
 		_ = w.Flush()
 		return nil

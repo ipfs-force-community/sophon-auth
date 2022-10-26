@@ -197,7 +197,7 @@ func TestUserBusiness(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, err = cli.UpsertMiner(res1.Name, "f02345")
+		_, err = cli.UpsertMiner(res1.Name, "f02345", true)
 		assert.NilError(t, err)
 		break
 	}

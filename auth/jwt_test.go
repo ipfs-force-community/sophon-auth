@@ -36,7 +36,6 @@ func TestJwt(t *testing.T) {
 
 	// Features about tokens
 	t.Run("generate token", testGenerateToken)
-	t.Run("generate token", testGenerateToken)
 	t.Run("verify token", testVerifyToken)
 	t.Run("get token", testGetToken)
 	t.Run("get token by name", testGetTokenByName)

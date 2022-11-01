@@ -235,7 +235,8 @@ func (s *badgerStore) MigrateToV2() error {
 					return err
 				}
 
-				m.OpenMining = true
+				openMining := true
+				m.OpenMining = &openMining
 				b, err := m.Bytes()
 				if err != nil {
 					return xerrors.Errorf("get miner object data failed:%w", err)

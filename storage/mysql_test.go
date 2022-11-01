@@ -466,7 +466,7 @@ func testMySQLUpsertMiner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sql
 	addr, err := address.NewIDAddress(1)
 	assert.Nil(t, err)
 	user := "user"
-	openMining := true
+	openMining := false
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(

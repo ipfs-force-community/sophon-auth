@@ -283,9 +283,12 @@ func (s *mysqlStore) UpsertMiner(maddr address.Address, userName string, openMin
 			return err
 		}
 		isCreate = count > 0
+		// 声明了默认值的字段, 通过结构体更新数据库时gorm库会忽略零值: 0, nil, "", false 等. 可以用map或把字段定义为指针方式避免
 		return tx.Model(&Miner{}).
-			Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "miner"}}, UpdateAll: true}).
-			Create(&Miner{Miner: stoMiner, User: user.Name, OpenMining: openMining}).Error
+			Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "miner"}},
+				UpdateAll: true,
+			}).
+			Create(&Miner{Miner: stoMiner, User: user.Name, OpenMining: &openMining}).Error
 	}, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false})
 }
 

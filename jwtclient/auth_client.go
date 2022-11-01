@@ -7,13 +7,15 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/venus-auth/auth"
-	"github.com/filecoin-project/venus-auth/core"
-	"github.com/filecoin-project/venus-auth/errcode"
 	"github.com/go-resty/resty/v2"
 	"go.opencensus.io/trace"
 	"golang.org/x/xerrors"
+
+	"github.com/filecoin-project/go-address"
+
+	"github.com/filecoin-project/venus-auth/auth"
+	"github.com/filecoin-project/venus-auth/core"
+	"github.com/filecoin-project/venus-auth/errcode"
 )
 
 type AuthClient struct {
@@ -35,7 +37,6 @@ func (lc *AuthClient) Verify(ctx context.Context, token string) (*auth.VerifyRes
 	resp, err := lc.cli.R().SetContext(ctx).
 		SetBody(auth.VerifyRequest{Token: token}).
 		SetResult(&auth.VerifyResponse{}).Post("/verify")
-
 	if err != nil {
 		return nil, err
 	}
@@ -191,10 +192,11 @@ func (lc *AuthClient) ListUsersWithMiners(req *auth.ListUsersRequest) (auth.List
 				continue
 			}
 			user.Miners = append(user.Miners, &auth.OutputMiner{
-				Miner:     addr.String(),
-				User:      user.Name,
-				CreatedAt: time.Time{},
-				UpdatedAt: time.Time{},
+				Miner:      addr.String(),
+				User:       user.Name,
+				OpenMining: val.OpenMining,
+				CreatedAt:  time.Time{},
+				UpdatedAt:  time.Time{},
 			})
 		}
 	}

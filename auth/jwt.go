@@ -396,7 +396,7 @@ func (o *jwtOAuth) ListMiners(ctx context.Context, req *ListMinerReq) (ListMiner
 		outs[idx] = &OutputMiner{
 			Miner:      addrStr,
 			User:       m.User,
-			OpenMining: m.OpenMining,
+			OpenMining: *m.OpenMining,
 			CreatedAt:  m.CreatedAt,
 			UpdatedAt:  m.UpdatedAt,
 		}

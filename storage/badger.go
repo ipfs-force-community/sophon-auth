@@ -377,7 +377,7 @@ func (s *badgerStore) UpsertMiner(maddr address.Address, userName string, openMi
 			}
 		}
 		miner.User = userName
-		miner.OpenMining = openMining
+		miner.OpenMining = &openMining
 		miner.UpdatedAt = now
 		// update miner to valid
 		miner.DeletedAt.Valid = true

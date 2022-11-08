@@ -677,8 +677,8 @@ func testMySQLGetUserBySigner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock
 	userName := "name"
 
 	mock.ExpectQuery(regexp.QuoteMeta(
-		"SELECT users.* FROM `signers` inner join users on signers.`signer` = ? and users.`name` = signers.`user` and users.`is_deleted` IS NULL WHERE `signers`.`deleted_at` IS NULL")).
-		WithArgs(storedAddress(addr)).
+		"SELECT users.* FROM `signers` inner join users on signers.`signer` = ? and users.`name` = signers.`user` and users.`is_deleted` = ? WHERE `signers`.`deleted_at` IS NULL")).
+		WithArgs(storedAddress(addr), core.NotDelete).
 		WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow(userName))
 
 	users, err := mySQLStore.GetUserBySigner(addr)

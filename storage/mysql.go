@@ -417,7 +417,7 @@ func (s *mysqlStore) DelSigner(addr address.Address) (bool, error) {
 func (s *mysqlStore) GetUserBySigner(addr address.Address) ([]*User, error) {
 	var users []*User
 	if err := s.db.Model(&Signer{}).Select("users.*").
-		Joins("inner join users on signers.`signer` = ? and users.`name` = signers.`user` and users.`is_deleted` IS NULL", storedAddress(addr)).
+		Joins("inner join users on signers.`signer` = ? and users.`name` = signers.`user` and users.`is_deleted` = ?", storedAddress(addr), core.NotDelete).
 		Scan(&users).Error; err != nil {
 		return nil, err
 	}

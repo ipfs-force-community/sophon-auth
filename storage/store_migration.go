@@ -12,6 +12,7 @@ var migrationSchedules = map[uint64]struct {
 }{
 	0: {from: 0, to: 1, migrate: Store.MigrateToV1},
 	1: {from: 1, to: 2, migrate: Store.MigrateToV2},
+	2: {from: 2, to: 3, migrate: Store.MigrateToV3},
 }
 
 func StoreMigrate(store Store) error {

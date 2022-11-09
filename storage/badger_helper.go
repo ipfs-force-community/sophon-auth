@@ -267,5 +267,14 @@ func (s *badgerStore) MigrateToV2() error {
 		}
 		return txn.Set(storeVersionKey, version)
 	})
+}
 
+func (s *badgerStore) MigrateToV3() error {
+	return s.db.Update(func(txn *badger.Txn) error {
+		version, err := (&StoreVersion{ID: 1, Version: 3}).Bytes()
+		if err != nil {
+			return err
+		}
+		return txn.Set(storeVersionKey, version)
+	})
 }

@@ -62,8 +62,21 @@ func newMySQLStore(cnf *config.DBConfig) (Store, error) {
 		}
 	}
 
-	if err = session.AutoMigrate(&KeyPair{}, &User{}, &Miner{}, &Signer{}, &UserRateLimit{}, &StoreVersion{}); err != nil {
+	if err = session.AutoMigrate(&KeyPair{}, &User{}, &Signer{}, &UserRateLimit{}, &StoreVersion{}); err != nil {
 		return nil, err
+	}
+
+	// `miners` table changes the primary key in V1.9.0. AutoMigrate will fail, so need to handle migration independently.
+	if bHas := session.Migrator().HasTable(&Miner{}); !bHas {
+		if err := session.Migrator().CreateTable(&Miner{}); err != nil {
+			return nil, err
+		}
+	} else {
+		if bHas := session.Migrator().HasColumn(&Miner{}, "ID"); bHas {
+			if err := session.AutoMigrate(&Miner{}); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	return &mysqlStore{db: db}, nil
@@ -485,4 +498,20 @@ func (s *mysqlStore) MigrateToV2() error {
 	return s.db.Model(&StoreVersion{}).
 		Clauses(clause.OnConflict{UpdateAll: true}).
 		Create(&StoreVersion{ID: 1, Version: 2}).Error
+}
+
+func (s *mysqlStore) MigrateToV3() error {
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("alter table `miners` drop primary key;").Error; err != nil {
+			return err
+		}
+
+		if err := tx.Exec("alter table `miners` add column `id` bigint(20) not null auto_increment primary key first;").Error; err != nil {
+			return err
+		}
+
+		return tx.Model(&StoreVersion{}).
+			Clauses(clause.OnConflict{UpdateAll: true}).
+			Create(&StoreVersion{ID: 1, Version: 3}).Error
+	})
 }

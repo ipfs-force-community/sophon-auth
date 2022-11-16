@@ -2,17 +2,20 @@ package storage
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 
-	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/venus-auth/config"
-	"github.com/filecoin-project/venus-auth/core"
-	"github.com/filecoin-project/venus-auth/log"
 	"github.com/google/uuid"
 	"golang.org/x/xerrors"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"github.com/filecoin-project/go-address"
+
+	"github.com/filecoin-project/venus-auth/config"
+	"github.com/filecoin-project/venus-auth/core"
+	"github.com/filecoin-project/venus-auth/log"
 )
 
 type mysqlStore struct {
@@ -59,8 +62,21 @@ func newMySQLStore(cnf *config.DBConfig) (Store, error) {
 		}
 	}
 
-	if err = session.AutoMigrate(&KeyPair{}, &User{}, &Miner{}, &UserRateLimit{}, &StoreVersion{}); err != nil {
+	if err = session.AutoMigrate(&KeyPair{}, &User{}, &Signer{}, &UserRateLimit{}, &StoreVersion{}); err != nil {
 		return nil, err
+	}
+
+	// `miners` table changes the primary key in V1.9.0. AutoMigrate will fail, so need to handle migration independently.
+	if bHas := session.Migrator().HasTable(&Miner{}); !bHas {
+		if err := session.Migrator().CreateTable(&Miner{}); err != nil {
+			return nil, err
+		}
+	} else {
+		if bHas := session.Migrator().HasColumn(&Miner{}, "ID"); bHas {
+			if err := session.AutoMigrate(&Miner{}); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	return &mysqlStore{db: db}, nil
@@ -81,6 +97,20 @@ func (s mysqlStore) Delete(token Token) error {
 	return s.db.Table("token").Where("token=?", token.String()).Update("is_deleted", core.Deleted).Error
 }
 
+func (s mysqlStore) Recover(token Token) error {
+	var count int64
+	err := s.db.Table("token").Where("token=? and is_deleted=?", token.String(), core.Deleted).Count(&count).Error
+	if err != nil {
+		return err
+	}
+
+	if count > 0 {
+		return s.db.Table("token").Where("token=?", token.String()).Update("is_deleted", core.NotDelete).Error
+	}
+
+	return gorm.ErrRecordNotFound
+}
+
 func (s mysqlStore) Has(token Token) (bool, error) {
 	var count int64
 	err := s.db.Table("token").Where("token=? and is_deleted=?", token.String(), core.NotDelete).Count(&count).Error
@@ -93,13 +123,6 @@ func (s mysqlStore) Has(token Token) (bool, error) {
 func (s mysqlStore) Get(token Token) (*KeyPair, error) {
 	var kp KeyPair
 	err := s.db.Table("token").Take(&kp, "token = ? and is_deleted=?", token.String(), core.NotDelete).Error
-
-	return &kp, err
-}
-
-func (s mysqlStore) GetTokenRecord(token Token) (*KeyPair, error) {
-	var kp KeyPair
-	err := s.db.Table("token").Take(&kp, "token = ?", token.String()).Error
 
 	return &kp, err
 }
@@ -133,7 +156,6 @@ func (s *mysqlStore) UpdateToken(kp *KeyPair) error {
 		"is_deleted": kp.IsDeleted,
 	}
 	return s.db.Table("token").Where("token = ?", kp.Token.String()).UpdateColumns(columns).Error
-
 }
 
 func (s mysqlStore) HasUser(name string) (bool, error) {
@@ -155,12 +177,9 @@ func (s *mysqlStore) PutUser(user *User) error {
 	return s.db.Table("users").Create(user).Error
 }
 
-func (s *mysqlStore) ListUsers(skip, limit int64, state int, sourceType core.SourceType, code core.KeyCode) ([]*User, error) {
+func (s *mysqlStore) ListUsers(skip, limit int64, state core.UserState) ([]*User, error) {
 	exec := s.db.Table("users")
-	if code&1 == 1 {
-		exec = exec.Where("stype=?", sourceType)
-	}
-	if code&2 == 2 {
+	if state != core.UserStateUndefined {
 		exec = exec.Where("state=?", state)
 	}
 	arr := make([]*User, 0)
@@ -182,11 +201,14 @@ func (s *mysqlStore) innerGetUser(tx *gorm.DB, name string) (*User, error) {
 	return &user, err
 }
 
-func (s *mysqlStore) GetUserRecord(name string) (*User, error) {
-	var user User
-	err := s.db.Table("users").Take(&user, "name=?", name).Error
+func (s *mysqlStore) VerifyUsers(names []string) error {
+	for _, name := range names {
+		if _, err := s.innerGetUser(s.db, name); err != nil {
+			return xerrors.Errorf("verify %s: %w", name, err)
+		}
+	}
 
-	return &user, err
+	return nil
 }
 
 func (s *mysqlStore) DeleteUser(userName string) error {
@@ -204,32 +226,42 @@ func (s *mysqlStore) DeleteUser(userName string) error {
 			return err
 		}
 
-		addrs := make([]address.Address, 0, len(miners))
+		minerAddrs := make([]address.Address, 0, len(miners))
 		for _, miner := range miners {
 			_, err := s.innerDelMiner(tx, miner.Miner.Address())
 			if err != nil {
 				return err
 			}
-			addrs = append(addrs, miner.Miner.Address())
+			minerAddrs = append(minerAddrs, miner.Miner.Address())
 		}
+
+		// delete signer of user
+		counts, err := s.innerDelSignerOfUser(tx, user.Name)
+		if err != nil {
+			return err
+		}
+		log.Infof("delete %v signers of %s", counts, userName)
 
 		if err := s.innerUpdateUser(tx, user); err != nil {
 			return err
 		}
 
-		log.Infof("delete user %s, delete miners %v", userName, addrs)
+		log.Infof("delete user %s, delete miners %v", userName, minerAddrs)
 		return nil
 	})
 
 	return err
 }
 
-func (s mysqlStore) HasMiner(maddr address.Address) (bool, error) {
-	var count int64
-	if err := s.db.Table("miners").Where("miner = ? and deleted_at is NULL", storedAddress(maddr)).Count(&count).Error; err != nil {
-		return false, nil
+func (s *mysqlStore) RecoverUser(userName string) error {
+	var user User
+	err := s.db.Table("users").Take(&user, "name=? and is_deleted=?", userName, core.Deleted).Error
+	if err != nil {
+		return err
 	}
-	return count > 0, nil
+
+	user.IsDeleted = core.NotDelete
+	return s.innerUpdateUser(s.db, &user)
 }
 
 func (s *mysqlStore) GetRateLimits(name string, id string) ([]*UserRateLimit, error) {
@@ -249,22 +281,24 @@ func (s *mysqlStore) PutRateLimit(limit *UserRateLimit) (string, error) {
 }
 
 func (s *mysqlStore) DelRateLimit(name, id string) error {
+	if len(name) == 0 || len(id) == 0 {
+		return errors.New("user and rate-limit id is required for removing rate limit regulation")
+	}
+
 	return s.db.Table("user_rate_limits").
 		Where("id = ? and name= ?", id, name).
 		Delete(nil).Error
 }
 
 func (s *mysqlStore) GetUserByMiner(miner address.Address) (*User, error) {
-	var users []*User
+	var user User
 	if err := s.db.Model(&Miner{}).Select("users.*").
-		Joins("inner join users on miners.miner = ? and users.name = miners.user", storedAddress(miner)).
-		Scan(&users).Error; err != nil {
+		Joins("inner join users on miners.`miner` = ? and users.`name` = miners.`user` and users.`is_deleted` IS NULL", storedAddress(miner)).
+		Scan(&user).Error; err != nil {
 		return nil, err
 	}
-	if len(users) == 0 {
-		return nil, gorm.ErrRecordNotFound
-	}
-	return users[0], nil
+
+	return &user, nil
 }
 
 func (s *mysqlStore) UpsertMiner(maddr address.Address, userName string, openMining bool) (bool, error) {
@@ -282,8 +316,8 @@ func (s *mysqlStore) UpsertMiner(maddr address.Address, userName string, openMin
 		if err := tx.Model(&Miner{}).Where("miner = ?", stoMiner).Count(&count).Error; err != nil {
 			return err
 		}
-		isCreate = count > 0
 		// 声明了默认值的字段, 通过结构体更新数据库时gorm库会忽略零值: 0, nil, "", false 等. 可以用map或把字段定义为指针方式避免
+		isCreate = count == 0
 		return tx.Model(&Miner{}).
 			Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "miner"}},
 				UpdateAll: true,
@@ -292,12 +326,31 @@ func (s *mysqlStore) UpsertMiner(maddr address.Address, userName string, openMin
 	}, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false})
 }
 
+func (s mysqlStore) HasMiner(maddr address.Address) (bool, error) {
+	var count int64
+	if err := s.db.Table("miners").Where("miner = ? AND deleted_at IS NULL", storedAddress(maddr)).Count(&count).Error; err != nil {
+		return false, nil
+	}
+
+	return count > 0, nil
+}
+
+func (s mysqlStore) MinerExistInUser(maddr address.Address, userName string) (bool, error) {
+	var count int64
+	if err := s.db.Table("miners").Where("miner = ? AND user = ? AND deleted_at IS NULL", storedAddress(maddr), userName).Count(&count).Error; err != nil {
+		return false, nil
+	}
+
+	return count > 0, nil
+}
+
 func (s *mysqlStore) DelMiner(miner address.Address) (bool, error) {
 	return s.innerDelMiner(s.db, miner)
 }
 
 func (s *mysqlStore) innerDelMiner(tx *gorm.DB, miner address.Address) (bool, error) {
 	db := tx.Model((*Miner)(nil)).Delete(&Miner{}, "miner = ?", storedAddress(miner))
+
 	return db.RowsAffected > 0, db.Error
 }
 
@@ -311,6 +364,86 @@ func (s *mysqlStore) innerListMiners(tx *gorm.DB, user string) ([]*Miner, error)
 		return nil, err
 	}
 	return miners, nil
+}
+
+func (s *mysqlStore) RegisterSigner(addr address.Address, userName string) error {
+	storedSigner := storedAddress(addr)
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		var user User
+		if err := tx.Model(&user).First(&user, "`name` = ?", userName).Error; err != nil {
+			if xerrors.Is(err, gorm.ErrRecordNotFound) {
+				return xerrors.Errorf("can't bind signer:%s to not exist user:%s", addr.String(), userName)
+			}
+			return xerrors.Errorf("bind signer:%s to user:%s failed:%w", addr.String(), userName, err)
+		}
+		return tx.Model(&Signer{}).
+			Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "signer"}, {Name: "user"}},
+				UpdateAll: true, // created_at will not be updated
+			}).
+			Create(&Signer{Signer: storedSigner, User: user.Name}).Error
+	}, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false})
+}
+
+func (s mysqlStore) SignerExistInUser(addr address.Address, userName string) (bool, error) {
+	var count int64
+	if err := s.db.Table("signers").Where("`signer` = ? AND `user` = ? AND deleted_at IS NULL", storedAddress(addr), userName).Count(&count).Error; err != nil {
+		return false, nil
+	}
+
+	return count > 0, nil
+}
+
+func (s *mysqlStore) innerListSigners(tx *gorm.DB, user string) ([]*Signer, error) {
+	var signers []*Signer
+	if err := tx.Model((*Signer)(nil)).Find(&signers, "`user` = ?", user).Error; err != nil {
+		return nil, err
+	}
+	return signers, nil
+}
+
+func (s *mysqlStore) ListSigner(user string) ([]*Signer, error) {
+	return s.innerListSigners(s.db, user)
+}
+
+func (s *mysqlStore) UnregisterSigner(addr address.Address, userName string) error {
+	db := s.db.Model((*Signer)(nil)).Delete(&Signer{}, "`signer` = ? AND `user` = ?", storedAddress(addr), userName)
+
+	return db.Error
+}
+
+func (s mysqlStore) HasSigner(addr address.Address) (bool, error) {
+	var count int64
+	if err := s.db.Table("signers").Where("`signer` = ? AND deleted_at IS NULL", storedAddress(addr)).Count(&count).Error; err != nil {
+		return false, nil
+	}
+
+	return count > 0, nil
+}
+
+func (s *mysqlStore) DelSigner(addr address.Address) (bool, error) {
+	db := s.db.Model((*Signer)(nil)).Delete(&Signer{}, "`signer` = ?", storedAddress(addr))
+
+	return db.RowsAffected > 0, db.Error
+}
+
+func (s *mysqlStore) GetUserBySigner(addr address.Address) ([]*User, error) {
+	var users []*User
+	if err := s.db.Model(&Signer{}).Select("users.*").
+		Joins("inner join users on signers.`signer` = ? and users.`name` = signers.`user` and users.`is_deleted` = ?", storedAddress(addr), core.NotDelete).
+		Scan(&users).Error; err != nil {
+		return nil, err
+	}
+	if len(users) == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+	return users, nil
+}
+
+func (s *mysqlStore) innerDelSignerOfUser(tx *gorm.DB, userName string) (int64, error) {
+	db := tx.Model((*Signer)(nil)).Delete(&Signer{}, "`user` = ?", userName)
+
+	return db.RowsAffected, db.Error
 }
 
 func (s *mysqlStore) Version() (uint64, error) {
@@ -333,7 +466,7 @@ func (s *mysqlStore) MigrateToV1() error {
 		return err
 	}
 
-	var now = time.Now()
+	now := time.Now()
 	return s.db.Transaction(func(tx *gorm.DB) error {
 		for _, u := range arr {
 			maddr, err := address.NewFromString(u.Miner)
@@ -365,4 +498,20 @@ func (s *mysqlStore) MigrateToV2() error {
 	return s.db.Model(&StoreVersion{}).
 		Clauses(clause.OnConflict{UpdateAll: true}).
 		Create(&StoreVersion{ID: 1, Version: 2}).Error
+}
+
+func (s *mysqlStore) MigrateToV3() error {
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("alter table `miners` drop primary key;").Error; err != nil {
+			return err
+		}
+
+		if err := tx.Exec("alter table `miners` add column `id` bigint(20) not null auto_increment primary key first;").Error; err != nil {
+			return err
+		}
+
+		return tx.Model(&StoreVersion{}).
+			Clauses(clause.OnConflict{UpdateAll: true}).
+			Create(&StoreVersion{ID: 1, Version: 3}).Error
+	})
 }

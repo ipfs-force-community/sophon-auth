@@ -2,6 +2,7 @@ package storage
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/dgraph-io/badger/v3"
@@ -17,6 +18,7 @@ const (
 	PrefixUser     Prefix = "USER:"
 	PrefixReqLimit Prefix = "ReqLimit:"
 	PrefixMiner    Prefix = "MINERS:"
+	PrefixSigner   Prefix = "SIGNERS:"
 )
 
 var storeVersionKey = []byte("StoreVersion")
@@ -35,6 +37,14 @@ func tokenKey(name string) []byte {
 
 func minerKey(miner string) []byte {
 	return []byte(PrefixMiner + miner)
+}
+
+func signerKey(signer string) []byte {
+	return []byte(PrefixSigner + signer)
+}
+
+func signerForUserKey(signer, userName string) []byte {
+	return []byte(fmt.Sprintf("%s%s:%s", PrefixSigner, signer, userName))
 }
 
 // if key not exists, will get a badger.ErrKeyNotFound error.
@@ -257,5 +267,14 @@ func (s *badgerStore) MigrateToV2() error {
 		}
 		return txn.Set(storeVersionKey, version)
 	})
+}
 
+func (s *badgerStore) MigrateToV3() error {
+	return s.db.Update(func(txn *badger.Txn) error {
+		version, err := (&StoreVersion{ID: 1, Version: 3}).Bytes()
+		if err != nil {
+			return err
+		}
+		return txn.Set(storeVersionKey, version)
+	})
 }

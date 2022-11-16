@@ -30,6 +30,7 @@ func InitLog(c *config.LogConfig) {
 		}
 	}
 }
+
 func WithInflux(c *config.InfluxDBConfig) error {
 	hook := NewInfluxHook(c)
 	localLog.AddHook(hook)

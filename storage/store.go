@@ -45,11 +45,10 @@ func NewStore(cnf *config.DBConfig, dataPath string) (Store, error) {
 type Store interface {
 	// token
 	Get(token Token) (*KeyPair, error)
-	// GetTokenRecord return a KeyPair, whether deleted or not
-	GetTokenRecord(token Token) (*KeyPair, error)
 	ByName(name string) ([]*KeyPair, error)
 	Put(kp *KeyPair) error
 	Delete(token Token) error
+	Recover(token Token) error
 	Has(token Token) (bool, error)
 	List(skip, limit int64) ([]*KeyPair, error)
 	UpdateToken(kp *KeyPair) error
@@ -57,30 +56,44 @@ type Store interface {
 	// user
 	HasUser(name string) (bool, error)
 	GetUser(name string) (*User, error)
-	// GetUserRecord return a user, whether deleted or not
-	GetUserRecord(name string) (*User, error)
-	HasMiner(maddr address.Address) (bool, error)
+	VerifyUsers(names []string) error
 	PutUser(*User) error
 	UpdateUser(*User) error
-	ListUsers(skip, limit int64, state int, sourceType core.SourceType, code core.KeyCode) ([]*User, error)
+	ListUsers(skip, limit int64, state core.UserState) ([]*User, error)
 	DeleteUser(name string) error
+	RecoverUser(name string) error
 
 	// rate limit
 	GetRateLimits(name, id string) ([]*UserRateLimit, error)
 	PutRateLimit(limit *UserRateLimit) (string, error)
 	DelRateLimit(name, id string) error
 
-	// miner
+	// miner-user(1-1)
 	// first returned bool, 'miner' is created(true) or updated(false)
 	UpsertMiner(maddr address.Address, userName string, openMining bool) (bool, error)
-	// first returned bool, if miner exists(true) or false
-	DelMiner(miner address.Address) (bool, error)
-	GetUserByMiner(miner address.Address) (*User, error)
+	HasMiner(maddr address.Address) (bool, error)
+	MinerExistInUser(maddr address.Address, userName string) (bool, error)
+	GetUserByMiner(maddr address.Address) (*User, error)
 	ListMiners(user string) ([]*Miner, error)
+	// first returned bool, if miner exists(true) or false
+	DelMiner(maddr address.Address) (bool, error)
+
+	// signer-user(n-n)
+	RegisterSigner(addr address.Address, userName string) error
+	SignerExistInUser(addr address.Address, userName string) (bool, error)
+	ListSigner(userName string) ([]*Signer, error)
+	UnregisterSigner(addr address.Address, userName string) error
+	// has signer in system
+	HasSigner(addr address.Address) (bool, error)
+	// delete all signers
+	DelSigner(addr address.Address) (bool, error)
+	// all users including the specified signer
+	GetUserBySigner(addr address.Address) ([]*User, error)
 
 	Version() (uint64, error)
 	MigrateToV1() error
 	MigrateToV2() error
+	MigrateToV3() error
 }
 
 type KeyPair struct {
@@ -140,19 +153,19 @@ func (kp *KeyPair) setDeleted() {
 }
 
 type User struct {
-	Id         string          `gorm:"column:id;type:varchar(64);primary_key"`
-	Name       string          `gorm:"column:name;type:varchar(50);uniqueIndex:users_name_IDX,type:btree;not null"`
-	Comment    string          `gorm:"column:comment;type:varchar(255);"`
-	SourceType core.SourceType `gorm:"column:stype;type:tinyint(4);default:0;NOT NULL"`
-	State      core.UserState  `gorm:"column:state;type:tinyint(4);default:0;NOT NULL"`
-	CreateTime time.Time       `gorm:"column:createTime;type:datetime;NOT NULL"`
-	UpdateTime time.Time       `gorm:"column:updateTime;type:datetime;NOT NULL"`
-	IsDeleted  int             `gorm:"column:is_deleted;index;default:0;NOT NULL"`
+	Id         string         `gorm:"column:id;type:varchar(64);primary_key"`
+	Name       string         `gorm:"column:name;type:varchar(50);uniqueIndex:users_name_IDX,type:btree;not null"`
+	Comment    string         `gorm:"column:comment;type:varchar(255);"`
+	State      core.UserState `gorm:"column:state;type:tinyint(4);default:0;NOT NULL"`
+	CreateTime time.Time      `gorm:"column:createTime;type:datetime;NOT NULL"`
+	UpdateTime time.Time      `gorm:"column:updateTime;type:datetime;NOT NULL"`
+	IsDeleted  int            `gorm:"column:is_deleted;index;default:0;NOT NULL"`
 }
 
 type OrmTimestamp struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	// Implemented soft delete
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
@@ -199,7 +212,7 @@ func (sa storedAddress) Address() address.Address {
 }
 
 func (sa storedAddress) String() string {
-	var val = sa.Address().String()
+	val := sa.Address().String()
 	if sa.Address().Empty() {
 		return val
 	}
@@ -236,7 +249,7 @@ func (sa storedAddress) MarshalJSON() ([]byte, error) {
 }
 
 func (sa storedAddress) Value() (driver.Value, error) {
-	var val = sa.String()
+	val := sa.String()
 	if sa.Address().Empty() {
 		return val, nil
 	}
@@ -244,8 +257,9 @@ func (sa storedAddress) Value() (driver.Value, error) {
 }
 
 type Miner struct {
-	Miner      storedAddress `gorm:"column:miner;type:varchar(128);primarykey;index:user_miner_idx,priority:2"`
-	User       string        `gorm:"column:user;type:varchar(50);index:user_miner_idx,priority:1;not null"`
+	ID         uint64        `gorm:"column:id;primary_key;bigint(20) unsigned AUTO_INCREMENT"`
+	Miner      storedAddress `gorm:"column:miner;type:varchar(128);uniqueIndex:user_miner_idx,priority:2;NOT NULL"`
+	User       string        `gorm:"column:user;type:varchar(50);uniqueIndex:user_miner_idx,priority:1;NOT NULL"`
 	OpenMining *bool         `gorm:"column:open_mining;default:1;comment:0-false,1-true"`
 	OrmTimestamp
 }
@@ -263,11 +277,39 @@ func (m *Miner) key() []byte {
 }
 
 func (m *Miner) isDeleted() bool {
-	return !m.DeletedAt.Valid
+	return m.DeletedAt.Valid && !m.DeletedAt.Time.IsZero()
 }
 
 func (m *Miner) setDeleted() {
-	m.DeletedAt.Valid = false
+	m.DeletedAt.Valid = true
+	m.DeletedAt.Time = time.Now()
+}
+
+type Signer struct {
+	ID     uint64        `gorm:"column:id;primary_key;bigint(20) unsigned AUTO_INCREMENT;"`
+	Signer storedAddress `gorm:"column:signer;type:varchar(128);uniqueIndex:user_signer_idx,priority:2;NOT NULL"`
+	User   string        `gorm:"column:user;type:varchar(50);uniqueIndex:user_signer_idx,priority:1;NOT NULL"`
+	OrmTimestamp
+}
+
+func (m *Signer) Bytes() ([]byte, error) {
+	return json.Marshal(m)
+}
+
+func (m *Signer) FromBytes(buf []byte) error {
+	return json.Unmarshal(buf, m)
+}
+
+func (m *Signer) key() []byte {
+	return signerForUserKey(m.Signer.Address().String(), m.User)
+}
+
+func (m *Signer) isDeleted() bool {
+	return m.DeletedAt.Valid && !m.DeletedAt.Time.IsZero()
+}
+
+func (m *Signer) setDeleted() {
+	m.DeletedAt.Valid = true
 	m.DeletedAt.Time = time.Now()
 }
 
@@ -288,9 +330,11 @@ func (s *StoreVersion) Bytes() ([]byte, error) {
 	return json.Marshal(s)
 }
 
+// we are perpose to support limit user requests with `Service`/`Service.API` ferther,
+// so we add their declar in `UserRateLimit`
 type UserRateLimit struct {
 	Id       string   `gorm:"column:id;type:varchar(64);primary_key"`
-	Name     string   `gorm:"column:name;type:varchar(50);index:user_service_api_IDX;not null"`
+	Name     string   `gorm:"column:name;type:varchar(50);index:user_service_api_IDX;not null" binding:"required"`
 	Service  string   `gorm:"column:service;type:varchar(50);index:user_service_api_IDX"`
 	API      string   `gorm:"column:api;type:varchar(50);index:user_service_api_IDX"`
 	ReqLimit ReqLimit `gorm:"column:reqLimit;type:varchar(256)"`
@@ -366,8 +410,10 @@ type iBadgerObj interface {
 	iStreamableObj
 }
 
-var _ iBadgerObj = (*Miner)(nil)
-var _ iBadgerObj = (*User)(nil)
-var _ iBadgerObj = (*KeyPair)(nil)
-var _ iBadgerObj = (*mapedRatelimit)(nil)
-var _ iBadgerObj = (*StoreVersion)(nil)
+var (
+	_ iBadgerObj = (*Miner)(nil)
+	_ iBadgerObj = (*User)(nil)
+	_ iBadgerObj = (*KeyPair)(nil)
+	_ iBadgerObj = (*mapedRatelimit)(nil)
+	_ iBadgerObj = (*StoreVersion)(nil)
+)

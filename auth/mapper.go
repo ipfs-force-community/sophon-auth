@@ -9,13 +9,12 @@ type Mapper interface {
 	ToOutPutUsers(arr []*storage.User) []*OutputUser
 }
 
-type mapper struct {
-}
+type mapper struct{}
 
 func newMapper() Mapper {
-
 	return &mapper{}
 }
+
 func (o *mapper) ToOutPutUser(m *storage.User) *OutputUser {
 	if m == nil {
 		return nil
@@ -25,9 +24,9 @@ func (o *mapper) ToOutPutUser(m *storage.User) *OutputUser {
 		Name:       m.Name,
 		Comment:    m.Comment,
 		State:      m.State,
-		SourceType: m.SourceType,
 		CreateTime: m.CreateTime.Unix(),
-		UpdateTime: m.UpdateTime.Unix()}
+		UpdateTime: m.UpdateTime.Unix(),
+	}
 }
 
 func (o *mapper) ToOutPutUsers(arr []*storage.User) []*OutputUser {

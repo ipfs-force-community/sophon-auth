@@ -39,26 +39,19 @@ type GetTokensRequest struct {
 	*core.Page
 }
 
-// @sourceType: keyCode 1
-// @state: keyCode 2
-// @keySum: request params code sum, enum 1 2 4 8, to multi-select
-func NewListUsersRequest(skip, limit int64, sourceType core.SourceType, state int, keySum core.KeyCode) *ListUsersRequest {
+func NewListUsersRequest(skip, limit int64, state int) *ListUsersRequest {
 	return &ListUsersRequest{
 		Page: &core.Page{
 			Skip:  skip,
 			Limit: limit,
 		},
-		SourceType: sourceType,
-		State:      state,
-		KeySum:     keySum,
+		State: state,
 	}
 }
 
 type ListUsersRequest struct {
 	*core.Page
-	SourceType core.SourceType `form:"sourceType" json:"sourceType"` // keyCode: 1
-	State      int             `form:"state" json:"state"`           // keyCode: 2
-	KeySum     core.KeyCode    `form:"keySum"`                       // keyCode sum
+	State int `form:"state" json:"state"`
 }
 
 type ListUsersResponse = []*OutputUser
@@ -67,7 +60,7 @@ type GetTokensResponse = []*TokenInfo
 
 type GetUserRateLimitsReq struct {
 	Id   string `form:"id"`
-	Name string `form:"name"`
+	Name string `form:"name" binding:"required"`
 }
 
 type DelUserRateLimitReq struct {
@@ -75,63 +68,59 @@ type DelUserRateLimitReq struct {
 	Id   string `form:"id"`
 }
 
-type GetUserRateLimitResponse []*storage.UserRateLimit
-type UpsertUserRateLimitReq storage.UserRateLimit
+type (
+	GetUserRateLimitResponse []*storage.UserRateLimit
+	UpsertUserRateLimitReq   storage.UserRateLimit
+)
 
 type CreateUserRequest struct {
-	Name       string          `form:"name" binding:"required"`
-	Comment    string          `form:"comment"`
-	State      core.UserState  `form:"state"` // 0: disable, 1: enable
-	SourceType core.SourceType `form:"sourceType"`
+	Name    string         `form:"name" binding:"required"`
+	Comment *string        `form:"comment"`
+	State   core.UserState `form:"state"` // 0: disable, 1: enable
 }
 type CreateUserResponse = OutputUser
 
 type UpdateUserRequest struct {
-	KeySum core.KeyCode `form:"keySum"` // keyCode Sum
-	Name   string       `form:"name"`
-	// todo make miner tobe address
-	Comment    string          `form:"comment"`    // keyCode:2
-	State      core.UserState  `form:"state"`      // keyCode:4
-	SourceType core.SourceType `form:"sourceType"` // keyCode:8
+	Name    string         `form:"name"`
+	Comment *string        `form:"comment"`
+	State   core.UserState `form:"state"`
 }
 
 type OutputUser struct {
-	Id         string          `json:"id"`
-	Name       string          `json:"name"`
-	SourceType core.SourceType `json:"sourceType"`
-	Comment    string          `json:"comment"`
-	State      core.UserState  `json:"state"`
-	CreateTime int64           `json:"createTime"`
-	UpdateTime int64           `json:"updateTime"`
+	Id         string         `json:"id"`
+	Name       string         `json:"name"`
+	Comment    string         `json:"comment"`
+	State      core.UserState `json:"state"`
+	CreateTime int64          `json:"createTime"`
+	UpdateTime int64          `json:"updateTime"`
 	// the field `Miners` is used for compound api `ListUserWithMiners`
 	// which calls 'listuser' and for each 'user' calls 'listminers'
 	Miners []*OutputMiner `json:"-"`
 }
 
+type VerifyUsersReq struct {
+	Names []string `form:"names" binding:"required"`
+}
+
 type GetUserRequest struct {
-	Name string `form:"name"`
+	Name string `form:"name" binding:"required"`
 }
 
 type HasUserRequest struct {
-	Name string `form:"name"`
+	Name string `form:"name" binding:"required"`
 }
 
 type DeleteUserRequest struct {
-	Name string `form:"name"`
+	Name string `form:"name" binding:"required"`
 }
 
 type RecoverUserRequest struct {
-	Name string `form:"name"`
-}
-
-type HasMinerRequest struct {
-	// todo make miner tobe address
-	Miner string `form:"miner"`
+	Name string `form:"name" binding:"required"`
 }
 
 type GetUserByMinerRequest struct {
 	// todo make miner tobe address
-	Miner string `form:"miner"`
+	Miner string `form:"miner" binding:"required"`
 }
 
 func (ls GetUserRateLimitResponse) MatchedLimit(service, api string) *storage.UserRateLimit {
@@ -146,12 +135,22 @@ func (ls GetUserRateLimitResponse) MatchedLimit(service, api string) *storage.Us
 }
 
 type UpsertMinerReq struct {
-	User, Miner string
-	OpenMining  bool
+	User       string `binding:"required"`
+	Miner      string `binding:"required"`
+	OpenMining bool   `binding:"required"`
+}
+
+type HasMinerRequest struct {
+	Miner string `form:"miner" binding:"required"`
+}
+
+type MinerExistInUserRequest struct {
+	Miner string `form:"miner"`
+	User  string `form:"user"`
 }
 
 type ListMinerReq struct {
-	User string `form:"user"`
+	User string `form:"user" binding:"required"`
 }
 
 type OutputMiner struct {
@@ -159,9 +158,46 @@ type OutputMiner struct {
 	OpenMining           bool
 	CreatedAt, UpdatedAt time.Time
 }
-
 type ListMinerResp []*OutputMiner
 
 type DelMinerReq struct {
 	Miner string `json:"miner"`
 }
+
+// type definitions for signer
+type RegisterSignersReq struct {
+	User    string
+	Signers []string
+}
+
+type UnregisterSignersReq struct {
+	User    string
+	Signers []string
+}
+
+type SignerExistInUserReq struct {
+	Signer string `form:"signer"`
+	User   string `form:"user"`
+}
+
+type ListSignerReq struct {
+	User string `form:"user"`
+}
+
+type GetUserBySignerReq struct {
+	Signer string `form:"signer"`
+}
+
+type HasSignerReq struct {
+	Signer string `form:"signer"`
+}
+
+type DelSignerReq struct {
+	Signer string `json:"signer"`
+}
+
+type OutputSigner struct {
+	Signer, User         string
+	CreatedAt, UpdatedAt time.Time
+}
+type ListSignerResp []*OutputSigner

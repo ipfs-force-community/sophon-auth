@@ -39,5 +39,4 @@ func newApp() (app *cli.App) {
 		},
 	}
 	return app
-
 }

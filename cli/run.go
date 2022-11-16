@@ -14,7 +14,7 @@ import (
 	"go.opencensus.io/plugin/ochttp"
 )
 
-var runCmd = &cli.Command{
+var runCommand = &cli.Command{
 	Name:      "run",
 	Usage:     "run venus-auth daemon",
 	ArgsUsage: "[name]",
@@ -43,6 +43,7 @@ func MakeDir(path string) {
 		}
 	}
 }
+
 func configScan(path string) *config.Config {
 	exist, err := config.Exist(path)
 	if err != nil {

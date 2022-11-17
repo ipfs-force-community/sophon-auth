@@ -1,0 +1,32 @@
+version: 2.1
+
+orbs:
+  go: venus/go-pkg-test@1.0.1
+jobs:
+  test_all:
+    executor:
+      name: go/default
+      tag: "cimg/go:1.18.1"
+    steps:
+      - go/setup_env:
+          install_ffi: true
+      - go/test:
+          display-name: unit_test_auth
+          suite: "auth"
+          target: "./auth/..."
+      - go/test:
+          display-name: integrate_test
+          suite: "integrate_test"
+          target: "./integrate_test/..."
+      - go/test:
+          display-name: unit_test_jwtclient
+          suite: "jwtclient"
+          target: "./jwtclient/..."
+      - go/test:
+          display-name: unit_test_storage
+          suite: "storage"
+          target: "./storage/..."
+workflows:
+  ci:
+    jobs:
+      - test_all

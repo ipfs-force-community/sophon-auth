@@ -40,6 +40,6 @@ static: clean
 
 TAG:=test
 docker:
-	curl -O https://raw.githubusercontent.com/filecoin-project/venus-docs/master/script/dockerfile
+	curl -O https://raw.githubusercontent.com/filecoin-project/venus-docs/master/script/docker/dockerfile
 	docker build --build-arg https_proxy=$(BUILD_DOCKER_PROXY)  -t venus-auth .
 	docker tag venus-auth filvenus/venus-auth:$(TAG)

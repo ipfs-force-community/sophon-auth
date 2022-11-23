@@ -502,12 +502,14 @@ func (s *mysqlStore) MigrateToV2() error {
 
 func (s *mysqlStore) MigrateToV3() error {
 	return s.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("alter table `miners` drop primary key;").Error; err != nil {
-			return err
-		}
+		if bHas := tx.Migrator().HasColumn(&Miner{}, "ID"); !bHas {
+			if err := tx.Exec("alter table `miners` drop primary key;").Error; err != nil {
+				return err
+			}
 
-		if err := tx.Exec("alter table `miners` add column `id` bigint(20) not null auto_increment primary key first;").Error; err != nil {
-			return err
+			if err := tx.Exec("alter table `miners` add column `id` bigint(20) not null auto_increment primary key first;").Error; err != nil {
+				return err
+			}
 		}
 
 		return tx.Model(&StoreVersion{}).

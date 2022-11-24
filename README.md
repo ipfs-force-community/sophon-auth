@@ -1,6 +1,12 @@
-# venus-auth
-[![Go Report Card](https://goreportcard.com/badge/github.com/filecoin-project/venus-auth)](https://goreportcard.com/report/github.com/filecoin-project/venus-auth)
-![Go](https://github.com/filecoin-project/venus-auth/workflows/Go/badge.svg)
+<h1 align="center">Venus Central Authorization</h1>
+
+<p align="center">
+ <a href="https://github.com/filecoin-project/venus-auth/actions"><img src="https://github.com/filecoin-project/venus-auth/actions/workflows/build_upload.yml/badge.svg"/></a>
+ <a href="https://codecov.io/gh/filecoin-project/venus-auth"><img src="https://codecov.io/gh/filecoin-project/venus-auth/branch/master/graph/badge.svg?token=J5QWYWkgHT"/></a>
+ <a href="https://goreportcard.com/report/github.com/filecoin-project/venus-auth"><img src="https://goreportcard.com/badge/github.com/filecoin-project/venus-auth"/></a>
+ <a href="https://github.com/filecoin-project/venus-auth/tags"><img src="https://img.shields.io/github/v/tag/filecoin-project/venus-auth"/></a>
+  <br>
+</p>
 
 Unified authorization service for Venus cluster 
 - Permission Validation

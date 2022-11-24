@@ -12,22 +12,20 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/filecoin-project/venus-auth/log"
-
-	"github.com/filecoin-project/go-address"
 	"github.com/gbrlsnchs/jwt/v3"
 	"github.com/google/uuid"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/go-address"
+
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/core"
+	"github.com/filecoin-project/venus-auth/log"
 	"github.com/filecoin-project/venus-auth/storage"
 	"github.com/filecoin-project/venus-auth/util"
 )
 
 var (
-	ErrorParamsEmpty        = xerrors.New("The mail or password in customParams is empty")
-	ErrorRemoveFailed       = xerrors.New("Remove token failed")
 	ErrorNonRegisteredToken = xerrors.New("A non-registered token")
 	ErrorVerificationFailed = xerrors.New("Verification Failed")
 )
@@ -49,9 +47,8 @@ type OAuthService interface {
 
 	CreateUser(ctx context.Context, req *CreateUserRequest) (*CreateUserResponse, error)
 	GetUser(ctx context.Context, req *GetUserRequest) (*OutputUser, error)
-	GetUserByMiner(ctx context.Context, req *GetUserByMinerRequest) (*OutputUser, error)
+	VerifyUsers(ctx context.Context, req *VerifyUsersReq) error
 	ListUsers(ctx context.Context, req *ListUsersRequest) (ListUsersResponse, error)
-	HasMiner(ctx context.Context, req *HasMinerRequest) (bool, error)
 	HasUser(ctx context.Context, req *HasUserRequest) (bool, error)
 	UpdateUser(ctx context.Context, req *UpdateUserRequest) error
 	DeleteUser(ctx *gin.Context, req *DeleteUserRequest) error
@@ -62,8 +59,19 @@ type OAuthService interface {
 	DelUserRateLimit(ctx context.Context, req *DelUserRateLimitReq) error
 
 	UpsertMiner(ctx context.Context, req *UpsertMinerReq) (bool, error)
+	HasMiner(ctx context.Context, req *HasMinerRequest) (bool, error)
+	MinerExistInUser(ctx context.Context, req *MinerExistInUserRequest) (bool, error)
 	ListMiners(ctx context.Context, req *ListMinerReq) (ListMinerResp, error)
 	DelMiner(ctx context.Context, req *DelMinerReq) (bool, error)
+	GetUserByMiner(ctx context.Context, req *GetUserByMinerRequest) (*OutputUser, error)
+
+	RegisterSigners(ctx context.Context, req *RegisterSignersReq) error
+	SignerExistInUser(ctx context.Context, req *SignerExistInUserReq) (bool, error)
+	ListSigner(ctx context.Context, req *ListSignerReq) (ListSignerResp, error)
+	UnregisterSigners(ctx context.Context, req *UnregisterSignersReq) error
+	HasSigner(ctx context.Context, req *HasSignerReq) (bool, error)
+	DelSigner(ctx context.Context, req *DelSignerReq) (bool, error)
+	GetUserBySigner(ctx context.Context, req *GetUserBySignerReq) ([]*OutputUser, error)
 }
 
 type jwtOAuth struct {
@@ -138,8 +146,10 @@ func (o *jwtOAuth) GenerateToken(ctx context.Context, pl *JWTPayload) (string, e
 		return token.String(), nil
 	}
 
-	err = o.store.Put(&storage.KeyPair{Token: token, Secret: hex.EncodeToString(secret), CreateTime: time.Now(),
-		Name: pl.Name, Perm: pl.Perm, Extra: pl.Extra, IsDeleted: core.NotDelete})
+	err = o.store.Put(&storage.KeyPair{
+		Token: token, Secret: hex.EncodeToString(secret), CreateTime: time.Now(),
+		Name: pl.Name, Perm: pl.Perm, Extra: pl.Extra, IsDeleted: core.NotDelete,
+	})
 	if err != nil {
 		return core.EmptyString, xerrors.Errorf("store token failed :%s", err)
 	}
@@ -226,34 +236,19 @@ func (o *jwtOAuth) Tokens(ctx context.Context, skip, limit int64) ([]*TokenInfo,
 }
 
 func (o *jwtOAuth) RemoveToken(ctx context.Context, token string) error {
-	tk := []byte(token)
-	err := o.store.Delete(storage.Token(tk))
+	err := o.store.Delete(storage.Token(token))
 	if err != nil {
-		return ErrorRemoveFailed
+		return fmt.Errorf("remove token %s: %w", token, err)
 	}
 	return nil
 }
 
 func (o *jwtOAuth) RecoverToken(ctx context.Context, token string) error {
-	tk := storage.Token(token)
-	kp, err := o.store.GetTokenRecord(tk)
+	err := o.store.Recover(storage.Token(token))
 	if err != nil {
-		return err
+		return fmt.Errorf("recover token %s: %w", token, err)
 	}
-	if kp.IsDeleted == core.NotDelete {
-		return xerrors.Errorf("token is usable")
-	}
-	// todo: add this verify after one token must bind one user
-	//has, err := o.store.HasUser(kp.Name)
-	//if err != nil {
-	//	return xerrors.Errorf("get user %s failed %v", kp.Name, err)
-	//}
-	//if has {
-	//	return xerrors.Errorf("user %s not exist", kp.Name)
-	//}
-	kp.IsDeleted = core.NotDelete
-
-	return o.store.UpdateToken(kp)
+	return nil
 }
 
 func (o *jwtOAuth) CreateUser(ctx context.Context, req *CreateUserRequest) (*CreateUserResponse, error) {
@@ -271,12 +266,13 @@ func (o *jwtOAuth) CreateUser(ctx context.Context, req *CreateUserRequest) (*Cre
 	userNew := &storage.User{
 		Id:         uid.String(),
 		Name:       req.Name,
-		Comment:    req.Comment,
-		SourceType: req.SourceType,
 		State:      req.State,
 		CreateTime: time.Now().Local(),
 		UpdateTime: time.Now().Local(),
 		IsDeleted:  core.NotDelete,
+	}
+	if req.Comment != nil {
+		userNew.Comment = *req.Comment
 	}
 	err = o.store.PutUser(userNew)
 	if err != nil {
@@ -291,20 +287,21 @@ func (o *jwtOAuth) UpdateUser(ctx context.Context, req *UpdateUserRequest) error
 		return err
 	}
 	user.UpdateTime = time.Now().Local()
-	if req.KeySum&2 == 2 {
-		user.Comment = req.Comment
+	if req.Comment != nil {
+		user.Comment = *req.Comment
 	}
-	if req.KeySum&4 == 4 {
+	if req.State != core.UserStateUndefined {
 		user.State = req.State
-	}
-	if req.KeySum&8 == 8 {
-		user.SourceType = req.SourceType
 	}
 	return o.store.UpdateUser(user)
 }
 
+func (o *jwtOAuth) VerifyUsers(ctx context.Context, req *VerifyUsersReq) error {
+	return o.store.VerifyUsers(req.Names)
+}
+
 func (o *jwtOAuth) ListUsers(ctx context.Context, req *ListUsersRequest) (ListUsersResponse, error) {
-	users, err := o.store.ListUsers(req.GetSkip(), req.GetLimit(), req.State, req.SourceType, req.KeySum)
+	users, err := o.store.ListUsers(req.GetSkip(), req.GetLimit(), core.UserState(req.State))
 	if err != nil {
 		return nil, err
 	}
@@ -320,16 +317,7 @@ func (o *jwtOAuth) DeleteUser(ctx *gin.Context, req *DeleteUserRequest) error {
 }
 
 func (o *jwtOAuth) RecoverUser(ctx *gin.Context, req *RecoverUserRequest) error {
-	user, err := o.store.GetUserRecord(req.Name)
-	if err != nil {
-		return err
-	}
-	if user.IsDeleted == core.NotDelete {
-		return xerrors.Errorf("user is usable")
-	}
-	user.IsDeleted = core.NotDelete
-
-	return o.store.UpdateUser(user)
+	return o.store.RecoverUser(req.Name)
 }
 
 func (o *jwtOAuth) GetUserByMiner(ctx context.Context, req *GetUserByMinerRequest) (*OutputUser, error) {
@@ -344,16 +332,22 @@ func (o *jwtOAuth) GetUserByMiner(ctx context.Context, req *GetUserByMinerReques
 	return o.mp.ToOutPutUser(user), nil
 }
 
-func (o *jwtOAuth) HasMiner(ctx context.Context, req *HasMinerRequest) (bool, error) {
-	mAddr, err := address.NewFromString(req.Miner)
+func (o *jwtOAuth) GetUserBySigner(ctx context.Context, req *GetUserBySignerReq) ([]*OutputUser, error) {
+	addr, err := address.NewFromString(req.Signer)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
-	has, err := o.store.HasMiner(mAddr)
+	users, err := o.store.GetUserBySigner(addr)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
-	return has, nil
+
+	outUsers := make([]*OutputUser, len(users))
+	for idx, user := range users {
+		outUsers[idx] = o.mp.ToOutPutUser(user)
+	}
+
+	return outUsers, nil
 }
 
 func (o *jwtOAuth) GetUser(ctx context.Context, req *GetUserRequest) (*OutputUser, error) {
@@ -381,7 +375,38 @@ func (o *jwtOAuth) UpsertMiner(ctx context.Context, req *UpsertMinerReq) (bool, 
 	if err != nil || maddr.Empty() {
 		return false, xerrors.Errorf("invalid miner address:%s, error: %w", req.Miner, err)
 	}
+
+	if maddr.Protocol() != address.ID {
+		return false, fmt.Errorf("invalid protocol type: %v", maddr.Protocol())
+	}
+
 	return o.store.UpsertMiner(maddr, req.User, req.OpenMining)
+}
+
+func (o *jwtOAuth) HasMiner(ctx context.Context, req *HasMinerRequest) (bool, error) {
+	mAddr, err := address.NewFromString(req.Miner)
+	if err != nil {
+		return false, err
+	}
+
+	has, err := o.store.HasMiner(mAddr)
+	if err != nil {
+		return false, err
+	}
+	return has, nil
+}
+
+func (o *jwtOAuth) MinerExistInUser(ctx context.Context, req *MinerExistInUserRequest) (bool, error) {
+	mAddr, err := address.NewFromString(req.Miner)
+	if err != nil {
+		return false, err
+	}
+
+	exist, err := o.store.MinerExistInUser(mAddr, req.User)
+	if err != nil {
+		return false, err
+	}
+	return exist, nil
 }
 
 func (o *jwtOAuth) ListMiners(ctx context.Context, req *ListMinerReq) (ListMinerResp, error) {
@@ -412,6 +437,108 @@ func (o jwtOAuth) DelMiner(ctx context.Context, req *DelMinerReq) (bool, error) 
 	return o.store.DelMiner(miner)
 }
 
+func (o *jwtOAuth) RegisterSigners(ctx context.Context, req *RegisterSignersReq) error {
+	for _, signer := range req.Signers {
+		addr, err := address.NewFromString(signer)
+		if err != nil || addr.Empty() {
+			return fmt.Errorf("invalid signer address: %s, error: %w", signer, err)
+		}
+
+		if !isSignerAddress(addr) {
+			return fmt.Errorf("invalid protocol type: %v", addr.Protocol())
+		}
+
+		err = o.store.RegisterSigner(addr, req.User)
+		if err != nil {
+			return fmt.Errorf("unregister signer:%s, error: %w", signer, err)
+		}
+	}
+
+	return nil
+}
+
+func (o *jwtOAuth) SignerExistInUser(ctx context.Context, req *SignerExistInUserReq) (bool, error) {
+	addr, err := address.NewFromString(req.Signer)
+	if err != nil {
+		return false, err
+	}
+
+	if !isSignerAddress(addr) {
+		return false, fmt.Errorf("invalid protocol type: %v", addr.Protocol())
+	}
+
+	has, err := o.store.SignerExistInUser(addr, req.User)
+	if err != nil {
+		return false, err
+	}
+	return has, nil
+}
+
+func (o *jwtOAuth) ListSigner(ctx context.Context, req *ListSignerReq) (ListSignerResp, error) {
+	signers, err := o.store.ListSigner(req.User)
+	if err != nil {
+		return nil, xerrors.Errorf("list user:%s signer failed: %w", req.User, err)
+	}
+
+	outs := make([]*OutputSigner, len(signers))
+	for idx, m := range signers {
+		addrStr := m.Signer.Address().String()
+		outs[idx] = &OutputSigner{
+			Signer:    addrStr,
+			User:      m.User,
+			CreatedAt: m.CreatedAt,
+			UpdatedAt: m.UpdatedAt,
+		}
+	}
+	return outs, nil
+}
+
+func (o *jwtOAuth) UnregisterSigners(ctx context.Context, req *UnregisterSignersReq) error {
+	for _, signer := range req.Signers {
+		addr, err := address.NewFromString(signer)
+		if err != nil || addr.Empty() {
+			return fmt.Errorf("invalid signer address: %s, error: %w", signer, err)
+		}
+
+		if !isSignerAddress(addr) {
+			return fmt.Errorf("invalid protocol type: %v", addr.Protocol())
+		}
+
+		err = o.store.UnregisterSigner(addr, req.User)
+		if err != nil {
+			return fmt.Errorf("unregister signer:%s, error: %w", signer, err)
+		}
+	}
+
+	return nil
+}
+
+func (o jwtOAuth) HasSigner(ctx context.Context, req *HasSignerReq) (bool, error) {
+	addr, err := address.NewFromString(req.Signer)
+	if err != nil {
+		return false, xerrors.Errorf("invalid signer address:%s, %w", req.Signer, err)
+	}
+
+	if !isSignerAddress(addr) {
+		return false, fmt.Errorf("invalid protocol type: %v", addr.Protocol())
+	}
+
+	return o.store.HasSigner(addr)
+}
+
+func (o jwtOAuth) DelSigner(ctx context.Context, req *DelSignerReq) (bool, error) {
+	addr, err := address.NewFromString(req.Signer)
+	if err != nil {
+		return false, xerrors.Errorf("invalid signer address:%s, %w", req.Signer, err)
+	}
+
+	if !isSignerAddress(addr) {
+		return false, fmt.Errorf("invalid protocol type: %v", addr.Protocol())
+	}
+
+	return o.store.DelSigner(addr)
+}
+
 func DecodeToBytes(enc []byte) ([]byte, error) {
 	encoding := base64.RawURLEncoding
 	dec := make([]byte, encoding.DecodedLen(len(enc)))
@@ -425,7 +552,6 @@ func JwtUserFromToken(token string) (string, error) {
 	sks := strings.Split(token, ".")
 	if len(sks) < 1 {
 		return "", fmt.Errorf("can't parse user from input token")
-
 	}
 	dec, err := DecodeToBytes([]byte(sks[1]))
 	if err != nil {
@@ -435,4 +561,8 @@ func JwtUserFromToken(token string) (string, error) {
 	err = json.Unmarshal(dec, payload)
 
 	return payload.Name, err
+}
+
+func isSignerAddress(addr address.Address) bool {
+	return addr.Protocol() == address.SECP256K1 || addr.Protocol() == address.BLS
 }

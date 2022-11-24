@@ -5,47 +5,43 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/filecoin-project/go-address"
+	"github.com/urfave/cli/v2"
+	"golang.org/x/xerrors"
+
 	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/storage"
-	"github.com/urfave/cli/v2"
-	"golang.org/x/xerrors"
 )
 
 var userSubCommand = &cli.Command{
 	Name:  "user",
 	Usage: "user command",
 	Subcommands: []*cli.Command{
-		addUserCmd,
-		updateUserCmd,
-		listUsersCmd,
-		activeUserCmd,
-		getUserCmd,
-		hasMinerCmd,
-		removeUserCmd,
-		recoverUserCmd,
+		userAddCmd,
+		userGetCmd,
+		userUpdateCmd,
+		userActiveCmd,
+		userListCmd,
+		userDeleteCmd,
+		userRecoverCmd,
 		rateLimitSubCmds,
 		minerSubCmds,
+		signerSubCmds,
 	},
 }
 
-var addUserCmd = &cli.Command{
+var userAddCmd = &cli.Command{
 	Name:      "add",
 	Usage:     "Add user",
-	ArgsUsage: "<user>",
+	ArgsUsage: "<name>",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name: "comment",
 		},
 		&cli.IntFlag{
 			Name:  "state",
-			Usage: "1-enabled,0-disabled. if set to 0, the user cannot access the chain service normally",
+			Usage: "1-enabled,2-disabled. if set to 2, the user cannot access the chain service normally",
 			Value: 1,
-		},
-		&cli.IntFlag{
-			Name:  "sourceType",
-			Value: 0,
 		},
 	},
 	Action: func(ctx *cli.Context) error {
@@ -60,14 +56,14 @@ var addUserCmd = &cli.Command{
 		}
 
 		name := ctx.Args().Get(0)
-		comment := ctx.String("comment")
-		sourceType := ctx.Int("sourceType")
 		state := ctx.Int("state")
 		user := &auth.CreateUserRequest{
-			Name:       name,
-			Comment:    comment,
-			State:      core.UserState(state),
-			SourceType: sourceType,
+			Name:  name,
+			State: core.UserState(state),
+		}
+		if ctx.IsSet("comment") {
+			comment := ctx.String("comment")
+			user.Comment = &comment
 		}
 		res, err := client.CreateUser(user)
 		if err != nil {
@@ -79,9 +75,38 @@ var addUserCmd = &cli.Command{
 	},
 }
 
-var updateUserCmd = &cli.Command{
+var userGetCmd = &cli.Command{
+	Name:      "get",
+	Usage:     "Get user by name",
+	ArgsUsage: "<name>",
+	Action: func(ctx *cli.Context) error {
+		client, err := GetCli(ctx)
+		if err != nil {
+			return err
+		}
+		if ctx.NArg() != 1 {
+			cli.ShowSubcommandHelpAndExit(ctx, 1)
+			return nil
+		}
+		name := ctx.Args().Get(0)
+		user, err := client.GetUser(&auth.GetUserRequest{Name: name})
+		if err != nil {
+			return err
+		}
+
+		fmt.Println("name:", user.Name)
+		fmt.Println("state", user.State, "\t// 2: disable, 1: enable")
+		fmt.Println("comment:", user.Comment)
+		fmt.Println("createTime:", time.Unix(user.CreateTime, 0).Format(time.RFC1123))
+		fmt.Println("updateTime:", time.Unix(user.CreateTime, 0).Format(time.RFC1123))
+		fmt.Println()
+		return nil
+	},
+}
+
+var userUpdateCmd = &cli.Command{
 	Name:  "update",
-	Usage: "update user",
+	Usage: "Update user",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:     "name",
@@ -91,11 +116,8 @@ var updateUserCmd = &cli.Command{
 			Name: "comment",
 		},
 		&cli.IntFlag{
-			Name: "sourceType",
-		},
-		&cli.IntFlag{
 			Name:  "state",
-			Usage: "0:disabled, 1:enabled",
+			Usage: "2:disabled, 1:enabled",
 		},
 	},
 	Action: func(ctx *cli.Context) error {
@@ -107,31 +129,29 @@ var updateUserCmd = &cli.Command{
 			Name: ctx.String("name"),
 		}
 		if ctx.IsSet("comment") {
-			req.Comment = ctx.String("comment")
-			req.KeySum |= 2
+			comment := ctx.String("comment")
+			req.Comment = &comment
 		}
 		if ctx.IsSet("state") {
 			req.State = core.UserState(ctx.Int("state"))
-			req.KeySum |= 4
-		}
-		if ctx.IsSet("sourceType") {
-			req.SourceType = ctx.Int("sourceType")
-			req.KeySum |= 8
+		} else {
+			req.State = core.UserStateUndefined
 		}
 		err = client.UpdateUser(req)
 		if err != nil {
 			return err
 		}
+
 		fmt.Println("update user success")
 		return nil
 	},
 }
 
-var activeUserCmd = &cli.Command{
+var userActiveCmd = &cli.Command{
 	Name:      "active",
-	Usage:     "update user",
+	Usage:     "Active user",
 	Flags:     []cli.Flag{},
-	ArgsUsage: "name",
+	ArgsUsage: "<name>",
 	Action: func(ctx *cli.Context) error {
 		client, err := GetCli(ctx)
 		if err != nil {
@@ -143,11 +163,9 @@ var activeUserCmd = &cli.Command{
 		}
 
 		req := &auth.UpdateUserRequest{
-			Name: ctx.Args().Get(0),
+			Name:  ctx.Args().Get(0),
+			State: 1,
 		}
-
-		req.State = 1
-		req.KeySum += 4
 
 		err = client.UpdateUser(req)
 		if err != nil {
@@ -158,9 +176,9 @@ var activeUserCmd = &cli.Command{
 	},
 }
 
-var listUsersCmd = &cli.Command{
+var userListCmd = &cli.Command{
 	Name:  "list",
-	Usage: "list users",
+	Usage: "User list",
 	Flags: []cli.Flag{
 		&cli.UintFlag{
 			Name: "skip",
@@ -171,10 +189,7 @@ var listUsersCmd = &cli.Command{
 		},
 		&cli.IntFlag{
 			Name:  "state",
-			Usage: "0:disabled, 1:enabled, not-set:[show all]",
-		},
-		&cli.IntFlag{
-			Name: "sourceType",
+			Usage: "2:disabled, 1:enabled, not-set:[show all]",
 		},
 	},
 	Action: func(ctx *cli.Context) error {
@@ -187,15 +202,14 @@ var listUsersCmd = &cli.Command{
 				Limit: ctx.Int64("limit"),
 				Skip:  ctx.Int64("skip"),
 			},
-			SourceType: ctx.Int("sourceType"),
-			State:      ctx.Int("state"),
 		}
-		if ctx.IsSet("sourceType") {
-			req.KeySum++
-		}
+
 		if ctx.IsSet("state") {
-			req.KeySum += 2
+			req.State = ctx.Int("state")
+		} else {
+			req.State = int(core.UserStateUndefined)
 		}
+
 		users, err := client.ListUsersWithMiners(req)
 		if err != nil {
 			return err
@@ -205,7 +219,7 @@ var listUsersCmd = &cli.Command{
 			fmt.Println("name:", v.Name)
 			fmt.Println("state:", v.State.String())
 			if len(v.Miners) != 0 {
-				var miners = make([]string, len(v.Miners))
+				miners := make([]string, len(v.Miners))
 				for idx, m := range v.Miners {
 					miners[idx] = m.Miner
 				}
@@ -222,65 +236,9 @@ var listUsersCmd = &cli.Command{
 	},
 }
 
-var getUserCmd = &cli.Command{
-	Name:      "get",
-	Usage:     "get user by name",
-	ArgsUsage: "<name>",
-	Action: func(ctx *cli.Context) error {
-		client, err := GetCli(ctx)
-		if err != nil {
-			return err
-		}
-		if ctx.NArg() != 1 {
-			return xerrors.Errorf("specify user name")
-		}
-		name := ctx.Args().Get(0)
-		user, err := client.GetUser(&auth.GetUserRequest{Name: name})
-		if err != nil {
-			return err
-		}
-
-		fmt.Println("name:", user.Name)
-		fmt.Println("sourceType:", user.SourceType, "\t// miner:1")
-		fmt.Println("state", user.State, "\t// 0: disable, 1: enable")
-		fmt.Println("comment:", user.Comment)
-		fmt.Println("createTime:", time.Unix(user.CreateTime, 0).Format(time.RFC1123))
-		fmt.Println("updateTime:", time.Unix(user.CreateTime, 0).Format(time.RFC1123))
-		fmt.Println()
-		return nil
-	},
-}
-
-var hasMinerCmd = &cli.Command{
-	Name:      "has",
-	Usage:     "check miner exit",
-	ArgsUsage: "<miner>",
-	Action: func(ctx *cli.Context) error {
-		client, err := GetCli(ctx)
-		if err != nil {
-			return err
-		}
-		if ctx.NArg() != 1 {
-			return xerrors.Errorf("specify miner address")
-		}
-		miner := ctx.Args().Get(0)
-		addr, err := address.NewFromString(miner)
-		if err != nil {
-			return err
-		}
-
-		has, err := client.HasMiner(&auth.HasMinerRequest{Miner: addr.String()})
-		if err != nil {
-			return err
-		}
-		fmt.Println(has)
-		return nil
-	},
-}
-
-var removeUserCmd = &cli.Command{
-	Name:      "rm",
-	Usage:     "remove user",
+var userDeleteCmd = &cli.Command{
+	Name:      "delete",
+	Usage:     "Delete user",
 	ArgsUsage: "<name>",
 	Action: func(ctx *cli.Context) error {
 		client, err := GetCli(ctx)
@@ -313,7 +271,7 @@ var removeUserCmd = &cli.Command{
 	},
 }
 
-var recoverUserCmd = &cli.Command{
+var userRecoverCmd = &cli.Command{
 	Name:      "recover",
 	Usage:     "recover deleted user",
 	ArgsUsage: "name",
@@ -324,7 +282,7 @@ var recoverUserCmd = &cli.Command{
 		}
 
 		if !ctx.Args().Present() {
-			return xerrors.Errorf("must pass user name")
+			return xerrors.Errorf("expect name")
 		}
 
 		req := &auth.RecoverUserRequest{
@@ -347,7 +305,8 @@ var rateLimitSubCmds = &cli.Command{
 		rateLimitAdd,
 		rateLimitUpdate,
 		rateLimitGet,
-		rateLimitDel},
+		rateLimitDel,
+	},
 }
 
 var rateLimitGet = &cli.Command{
@@ -504,9 +463,10 @@ var rateLimitDel = &cli.Command{
 			return cli.ShowAppHelp(ctx)
 		}
 
-		var delReq = &auth.DelUserRateLimitReq{
+		delReq := &auth.DelUserRateLimitReq{
 			Name: ctx.Args().Get(0),
-			Id:   ctx.Args().Get(1)}
+			Id:   ctx.Args().Get(1),
+		}
 
 		if res, err := client.GetUserRateLimit(delReq.Name, delReq.Id); err != nil {
 			return err

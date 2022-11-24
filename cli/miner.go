@@ -2,128 +2,47 @@ package cli
 
 import (
 	"fmt"
-	"os"
-	"text/tabwriter"
-	"time"
+
+	"github.com/urfave/cli/v2"
+
+	"github.com/filecoin-project/go-address"
 
 	"github.com/filecoin-project/venus-auth/auth"
-	"github.com/urfave/cli/v2"
-	"golang.org/x/xerrors"
 )
 
-var minerSubCmds = &cli.Command{
+var minerSubCommand = &cli.Command{
 	Name:  "miner",
-	Usage: "sub cmds for managing user miners",
+	Usage: "miner command",
 	Subcommands: []*cli.Command{
-		cmdAddMiner,
-		cmdListMiners,
-		cmdRemoveMiner,
+		minerHasCommand,
 	},
 }
 
-var cmdAddMiner = &cli.Command{
-	Name:  "add",
-	Usage: "Add miner for specified user",
-	Flags: []cli.Flag{
-		&cli.BoolFlag{
-			Name:  "openMining",
-			Usage: "false/true",
-			Value: true,
-		},
-	},
-	ArgsUsage: "<user> <miner>",
-	Action: func(ctx *cli.Context) error {
-		if ctx.Args().Len() != 2 {
-			return cli.ShowAppHelp(ctx)
-		}
-		client, err := GetCli(ctx)
-		if err != nil {
-			return err
-		}
-		user, miner := ctx.Args().Get(0), ctx.Args().Get(1)
-		openMining := ctx.Bool("openMining")
-
-		var isCreate bool
-		if isCreate, err = client.UpsertMiner(user, miner, openMining); err != nil {
-			return err
-		}
-		var opStr string
-		if isCreate {
-			opStr = "create"
-		} else {
-			opStr = "update"
-		}
-
-		fmt.Printf("%s user:%s miner:%s success.\n", opStr, user, miner)
-		return nil
-	},
-}
-
-var cmdListMiners = &cli.Command{
-	Name:      "list",
-	Usage:     "list miners by user",
-	ArgsUsage: "list <user>",
-	Action: func(ctx *cli.Context) error {
-		client, err := GetCli(ctx)
-		if err != nil {
-			return err
-		}
-		args := ctx.Args()
-		if args.Len() != 1 {
-			fmt.Println("input <user> to list it's miners")
-			return nil
-		}
-		user := args.First()
-		if _, err := client.GetUser(&auth.GetUserRequest{Name: user}); err != nil {
-			return xerrors.Errorf("list user:%s miner failed:%w", user, err)
-		}
-
-		miners, err := client.ListMiners(user)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("user: %s, miner count:%d\n", user, len(miners))
-
-		if len(miners) == 0 {
-			return nil
-		}
-
-		const padding = 2
-		w := tabwriter.NewWriter(os.Stdout, 0, 0, padding, ' ', tabwriter.TabIndent)
-		fmt.Fprintln(w, "idx\tminer\topen-mining\tcreate-time\t")
-		for idx, miner := range miners {
-			fmt.Fprintf(w, "%d\t%s\t%v\t%s\t\n", idx, miner.Miner, miner.OpenMining, miner.CreatedAt.Format(time.RFC1123))
-		}
-		_ = w.Flush()
-		return nil
-	},
-}
-
-var cmdRemoveMiner = &cli.Command{
-	Name:      "rm",
-	Usage:     "remove miner",
+var minerHasCommand = &cli.Command{
+	Name:      "has",
+	Usage:     "Check if miner exists",
 	ArgsUsage: "<miner>",
 	Action: func(ctx *cli.Context) error {
+		if ctx.NArg() != 1 {
+			cli.ShowSubcommandHelpAndExit(ctx, 1)
+			return nil
+		}
+
 		client, err := GetCli(ctx)
 		if err != nil {
 			return err
 		}
-		args := ctx.Args()
-		if args.Len() != 1 {
-			fmt.Println("input <miner> to delete")
-		}
-		miner := args.First()
 
-		exists, err := client.DelMiner(miner)
+		addr, err := address.NewFromString(ctx.Args().Get(0))
 		if err != nil {
-			return xerrors.Errorf("delete miner:%s failed:%w", miner, err)
+			return err
 		}
 
-		if exists {
-			fmt.Printf("remove miner:%s success.\n", miner)
-		} else {
-			fmt.Printf("miner:%s not exists.\n", miner)
+		exist, err := client.HasMiner(&auth.HasMinerRequest{Miner: addr.String()})
+		if err != nil {
+			return err
 		}
+		fmt.Println(exist)
 		return nil
 	},
 }

@@ -84,7 +84,7 @@ func (authMux *AuthMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var perms []auth.Permission
 	var err error
-	var host = r.RemoteAddr
+	host := r.RemoteAddr
 
 	ctx = CtxWithTokenLocation(ctx, host)
 

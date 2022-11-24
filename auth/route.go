@@ -33,6 +33,7 @@ func InitRouter(app OAuthApp) http.Handler {
 	userGroup.POST("/update", app.UpdateUser)
 	userGroup.GET("/list", app.ListUsers)
 	userGroup.GET("", app.GetUser)
+	userGroup.POST("/verify", app.VerifyUsers)
 	userGroup.GET("/has", app.HasUser)
 	userGroup.POST("/del", app.DeleteUser)
 	userGroup.POST("/recover", app.RecoverUser)
@@ -42,12 +43,33 @@ func InitRouter(app OAuthApp) http.Handler {
 	rateLimitGroup.POST("/del", app.DelUserRateLimit)
 	rateLimitGroup.GET("", app.GetUserRateLimit)
 
+	// Compatible with older versions(<=v1.6.0)
 	minerGroup := router.Group("/miner")
-	minerGroup.GET("/has-miner", app.HasMiner)
 	minerGroup.GET("", app.GetUserByMiner)
+	minerGroup.GET("/has-miner", app.HasMiner)
 	minerGroup.GET("/list-by-user", app.ListMiners)
 	minerGroup.POST("/add-miner", app.UpsertMiner)
-	minerGroup.POST("/del", app.DelMiner)
+	minerGroup.POST("/del", app.DeleteMiner)
+
+	minerGroup.GET("/has", app.HasMiner)
+
+	userMinerGroup := userGroup.Group("/miner")
+	userMinerGroup.GET("", app.GetUserByMiner)
+	userMinerGroup.POST("/add", app.UpsertMiner)
+	userMinerGroup.GET("/exist", app.MinerExistInUser)
+	userMinerGroup.GET("/list", app.ListMiners)
+	userMinerGroup.POST("/del", app.DeleteMiner)
+
+	userSignerGroup := userGroup.Group("/signer")
+	userSignerGroup.GET("", app.GetUserBySigner)
+	userSignerGroup.POST("/register", app.RegisterSigners)
+	userSignerGroup.GET("/exist", app.SignerExistInUser)
+	userSignerGroup.GET("/list", app.ListSigner)
+	userSignerGroup.POST("/unregister", app.UnregisterSigners)
+
+	signerGroup := router.Group("/signer")
+	signerGroup.GET("/has", app.HasSigner)
+	signerGroup.POST("/del", app.DelSigner)
 
 	return router
 }

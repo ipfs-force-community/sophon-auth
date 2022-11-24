@@ -7,28 +7,16 @@ import (
 
 var CurrentCommit string
 
-const BuildVersion = "1.8.0"
+const BuildVersion = "1.9.0-rc1"
 
 var Version = BuildVersion + CurrentCommit
 
 const EmptyString = ""
 
-type DBPrefix = []byte
-
-var (
-	PrefixNode = DBPrefix("node")
+type (
+	DBPrefix   = []byte
+	Permission = string
 )
-
-const (
-	ServiceToken = "Authorization"
-)
-
-var (
-	// net work name set by cli
-	NameSpace string
-)
-
-type Permission = string
 
 const (
 	// When changing these, update docs/API.md too
@@ -38,11 +26,9 @@ const (
 	PermAdmin Permission = "admin" // Manage permissions
 )
 
-var (
-	PermArr = []Permission{
-		PermAdmin, PermSign, PermWrite, PermRead,
-	}
-)
+var PermArr = []Permission{
+	PermAdmin, PermSign, PermWrite, PermRead,
+}
 var ErrPermIllegal = errors.New("perm illegal")
 
 func ContainsPerm(perm Permission) error {
@@ -78,12 +64,15 @@ func WithPerm(ctx context.Context, perm Permission) context.Context {
 	return context.WithValue(ctx, PermCtxKey, AdaptOldStrategy(perm))
 }
 
-type LogField = string
-type Measurement = string
+type (
+	LogField    = string
+	Measurement = string
+)
 
 const (
 	MTMethod Measurement = "method"
 )
+
 const (
 	FieldName    LogField = "name"
 	FieldIP      LogField = "ip"
@@ -102,14 +91,6 @@ var TagFields = []LogField{
 	FieldSvcName,
 }
 
-// request params code sum,enum 1 2 4 8, to multi-select
-type KeyCode = int
-type SourceType = int
-
-const (
-	Miner SourceType = 1
-)
-
 type Page struct {
 	Skip  int64 `form:"skip" json:"skip"`
 	Limit int64 `form:"limit" json:"limit"`
@@ -121,6 +102,7 @@ func (o *Page) GetSkip() int64 {
 	}
 	return o.Skip
 }
+
 func (o *Page) GetLimit() int64 {
 	if o.Limit < 0 || o.Limit > 1000 {
 		o.Limit = 1000
@@ -130,9 +112,11 @@ func (o *Page) GetLimit() int64 {
 
 type UserState int
 
+// For compatibility with older versions of the API
 const (
-	UserStateDisabled UserState = 0
-	UserStateEnabled  UserState = 1
+	UserStateUndefined UserState = iota
+	UserStateEnabled
+	UserStateDisabled
 )
 
 var userStateStrs = map[UserState]string{

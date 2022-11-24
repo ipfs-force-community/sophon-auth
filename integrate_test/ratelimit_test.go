@@ -1,3 +1,4 @@
+// stm: #integration
 package integrate
 
 import (
@@ -10,8 +11,12 @@ import (
 )
 
 func TestRateLimitApis(t *testing.T) {
+	// stm: @VENUSAUTH_APP_ADD_USER_RATE_LIMIT_001, @VENUSAUTH_APP_ADD_USER_RATE_LIMIT_002, @VENUSAUTH_APP_ADD_USER_RATE_LIMIT_003
+	// stm: @VENUSAUTH_APP_UPSERT_USER_RATE_LIMIT_001, @VENUSAUTH_APP_UPSERT_USER_RATE_LIMIT_002
 	t.Run("upsert rate limit", testUpsertUserRateLimit)
+	// stm: @VENUSAUTH_APP_GET_USER_RATE_LIMIT_001, @VENUSAUTH_APP_GET_USER_RATE_LIMIT_002
 	t.Run("get rate limit", testGetRateLimit)
+	// stm: @VENUSAUTH_APP_DEL_USER_RATE_LIMIT_001, @VENUSAUTH_APP_DEL_USER_RATE_LIMIT_003
 	t.Run("delete rate limit", testDeleteRateLimit)
 }
 
@@ -46,7 +51,12 @@ func setupAndAddRateLimits(t *testing.T) (*jwtclient.AuthClient, string) {
 }
 
 func testUpsertUserRateLimit(t *testing.T) {
-	_, tmpDir := setupAndAddRateLimits(t)
+	c, tmpDir := setupAndAddRateLimits(t)
+
+	// `ShouldBind` failed
+	_, err := c.UpsertUserRateLimit(&auth.UpsertUserRateLimitReq{})
+	assert.Error(t, err)
+
 	shutdown(t, tmpDir)
 }
 
@@ -61,6 +71,10 @@ func testGetRateLimit(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(getResp))
 	assert.Equal(t, reqId, getResp[0].Id)
+
+	// `ShouldBind` failed
+	_, err = client.GetUserRateLimit("", "")
+	assert.Error(t, err)
 }
 
 func testDeleteRateLimit(t *testing.T) {
@@ -78,4 +92,8 @@ func testDeleteRateLimit(t *testing.T) {
 	getResp, err := client.GetUserRateLimit(userName, reqId)
 	assert.Nil(t, err)
 	assert.Equal(t, 0, len(getResp))
+
+	// if there is an error deleting user rate limits
+	_, err = client.DelUserRateLimit(&auth.DelUserRateLimitReq{})
+	assert.Error(t, err)
 }

@@ -20,9 +20,19 @@ import (
 
 type IAuthClient interface {
 	VerifyUsers(names []string) error
+	HasUser(req *auth.HasUserRequest) (bool, error)
 	GetUser(req *auth.GetUserRequest) (*auth.OutputUser, error)
 	GetUserByMiner(req *auth.GetUserByMinerRequest) (*auth.OutputUser, error)
 	GetUserBySigner(signer string) (auth.ListUsersResponse, error)
+	ListUsers(req *auth.ListUsersRequest) (auth.ListUsersResponse, error)
+	ListUsersWithMiners(req *auth.ListUsersRequest) (auth.ListUsersResponse, error)
+	GetUserRateLimit(name, id string) (auth.GetUserRateLimitResponse, error)
+
+	MinerExistInUser(user, miner string) (bool, error)
+
+	HasMiner(req *auth.HasMinerRequest) (bool, error)
+	HasSigner(signer string) (bool, error)
+	ListSigners(user string) (auth.ListSignerResp, error)
 	RegisterSigners(user string, addrs []string) error
 	UnregisterSigners(user string, addrs []string) error
 }

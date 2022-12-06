@@ -70,7 +70,7 @@ type Store interface {
 
 	// miner-user(1-1)
 	// first returned bool, 'miner' is created(true) or updated(false)
-	UpsertMiner(maddr address.Address, userName string, openMining bool) (bool, error)
+	UpsertMiner(maddr address.Address, userName string, openMining *bool) (bool, error)
 	HasMiner(maddr address.Address) (bool, error)
 	MinerExistInUser(maddr address.Address, userName string) (bool, error)
 	GetUserByMiner(maddr address.Address) (*User, error)

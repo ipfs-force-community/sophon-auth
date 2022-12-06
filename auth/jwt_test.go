@@ -447,11 +447,12 @@ func addUsersAndMiners(t *testing.T, userMiners map[string][]string) {
 		// Create users.
 		_, _ = jwtOAuthInstance.CreateUser(ctx, createUserReq)
 		// Add miners
+		openMining := true
 		for _, minerID := range miners {
 			ifCreate, err := jwtOAuthInstance.UpsertMiner(ctx, &UpsertMinerReq{
 				User:       userName,
 				Miner:      minerID,
-				OpenMining: true,
+				OpenMining: &openMining,
 			})
 			assert.Nil(t, err)
 			assert.True(t, ifCreate)

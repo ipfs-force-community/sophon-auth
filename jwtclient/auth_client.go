@@ -325,7 +325,7 @@ func (lc *AuthClient) UpsertMiner(user, miner string, openMining bool) (bool, er
 	}
 
 	var isCreate bool
-	resp, err := lc.cli.R().SetBody(&auth.UpsertMinerReq{Miner: miner, User: user, OpenMining: openMining}).
+	resp, err := lc.cli.R().SetBody(&auth.UpsertMinerReq{Miner: miner, User: user, OpenMining: &openMining}).
 		SetResult(&isCreate).SetError(&errcode.ErrMsg{}).Post("/user/miner/add")
 	if err != nil {
 		return false, err

@@ -598,7 +598,7 @@ func testMySQLUpsertMiner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.Sql
 
 	mock.ExpectCommit()
 
-	isCreate, err := mySQLStore.UpsertMiner(addr, user, openMining)
+	isCreate, err := mySQLStore.UpsertMiner(addr, user, &openMining)
 	assert.Nil(t, err)
 	assert.False(t, isCreate)
 }

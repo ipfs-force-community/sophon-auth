@@ -301,7 +301,7 @@ func (s *mysqlStore) GetUserByMiner(miner address.Address) (*User, error) {
 	return &user, nil
 }
 
-func (s *mysqlStore) UpsertMiner(maddr address.Address, userName string, openMining bool) (bool, error) {
+func (s *mysqlStore) UpsertMiner(maddr address.Address, userName string, openMining *bool) (bool, error) {
 	var isCreate bool
 	stoMiner := storedAddress(maddr)
 	return isCreate, s.db.Transaction(func(tx *gorm.DB) error {
@@ -322,7 +322,7 @@ func (s *mysqlStore) UpsertMiner(maddr address.Address, userName string, openMin
 			Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "miner"}},
 				UpdateAll: true,
 			}).
-			Create(&Miner{Miner: stoMiner, User: user.Name, OpenMining: &openMining}).Error
+			Create(&Miner{Miner: stoMiner, User: user.Name, OpenMining: openMining}).Error
 	}, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false})
 }
 

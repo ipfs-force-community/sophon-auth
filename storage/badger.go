@@ -381,7 +381,7 @@ func (s *badgerStore) GetUserByMiner(mAddr address.Address) (*User, error) {
 	return s.GetUser(miner.User)
 }
 
-func (s *badgerStore) UpsertMiner(maddr address.Address, userName string, openMining bool) (bool, error) {
+func (s *badgerStore) UpsertMiner(maddr address.Address, userName string, openMining *bool) (bool, error) {
 	miner := &Miner{}
 	now := time.Now()
 	var isCreate bool
@@ -412,7 +412,7 @@ func (s *badgerStore) UpsertMiner(maddr address.Address, userName string, openMi
 			}
 		}
 		miner.User = userName
-		miner.OpenMining = &openMining
+		miner.OpenMining = openMining
 		miner.UpdatedAt = now
 		// update miner to valid
 		miner.DeletedAt.Valid = true

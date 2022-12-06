@@ -137,7 +137,7 @@ func (ls GetUserRateLimitResponse) MatchedLimit(service, api string) *storage.Us
 type UpsertMinerReq struct {
 	User       string `binding:"required"`
 	Miner      string `binding:"required"`
-	OpenMining bool   `binding:"required"`
+	OpenMining *bool  `binding:"required"`
 }
 
 type HasMinerRequest struct {

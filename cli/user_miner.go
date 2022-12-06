@@ -134,9 +134,9 @@ var minerListCmd = &cli.Command{
 
 		const padding = 2
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, padding, ' ', tabwriter.TabIndent)
-		fmt.Fprintln(w, "idx\tminer\tcreate-time\t")
+		fmt.Fprintln(w, "idx\tminer\topenMining\tcreate-time\t")
 		for idx, miner := range miners {
-			fmt.Fprintf(w, "%d\t%s\t%s\t\n", idx, miner.Miner, miner.CreatedAt.Format(time.RFC1123))
+			fmt.Fprintf(w, "%d\t%s\t%v\t%s\t\n", idx, miner.Miner, miner.OpenMining, miner.CreatedAt.Format(time.RFC1123))
 		}
 		_ = w.Flush()
 		return nil

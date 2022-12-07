@@ -29,8 +29,11 @@ type IAuthClient interface {
 	GetUserRateLimit(name, id string) (auth.GetUserRateLimitResponse, error)
 
 	MinerExistInUser(user, miner string) (bool, error)
+	SignerExistInUser(user, signer string) (bool, error)
 
 	HasMiner(req *auth.HasMinerRequest) (bool, error)
+	ListMiners(user string) (auth.ListMinerResp, error)
+
 	HasSigner(signer string) (bool, error)
 	ListSigners(user string) (auth.ListSignerResp, error)
 	RegisterSigners(user string, addrs []string) error

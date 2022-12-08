@@ -34,7 +34,7 @@ func newApp() (app *cli.App) {
 				Name:    "repo",
 				EnvVars: []string{"VENUS_AUTH_PATH"},
 				Hidden:  true,
-				Value:   "~/.venus-auth",
+				Value:   "~/.venusauth",
 			},
 		},
 	}

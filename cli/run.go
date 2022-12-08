@@ -7,6 +7,7 @@ import (
 	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/log"
+	"github.com/filecoin-project/venus-auth/util"
 	"github.com/gin-gonic/gin"
 	"github.com/ipfs-force-community/metrics"
 	"github.com/mitchellh/go-homedir"
@@ -71,7 +72,16 @@ func run(cliCtx *cli.Context) error {
 	gin.SetMode(gin.ReleaseMode)
 	cnfPath := cliCtx.String("config")
 	repo := cliCtx.String("repo")
-	repo, err := homedir.Expand(repo)
+
+	var err error
+	if !cliCtx.IsSet("repo") {
+		repo, err = util.MigrateRepo(repo, "~/.venus-auth", "~/.venusauth")
+		if err != nil {
+			log.Fatalf("migrate repo failed %v", err)
+		}
+	}
+
+	repo, err = homedir.Expand(repo)
 	if err != nil {
 		log.Fatal(err)
 	}

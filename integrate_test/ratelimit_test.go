@@ -2,6 +2,7 @@
 package integrate
 
 import (
+	"context"
 	"testing"
 
 	"github.com/filecoin-project/venus-auth/auth"
@@ -67,13 +68,13 @@ func testGetRateLimit(t *testing.T) {
 	userName := "Rennbon"
 	reqId := "794fc9a4-2b80-4503-835a-7e8e27360b3d"
 	// Get user rate limit
-	getResp, err := client.GetUserRateLimit(userName, reqId)
+	getResp, err := client.GetUserRateLimit(context.Background(), userName, reqId)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(getResp))
 	assert.Equal(t, reqId, getResp[0].Id)
 
 	// `ShouldBind` failed
-	_, err = client.GetUserRateLimit("", "")
+	_, err = client.GetUserRateLimit(context.Background(), "", "")
 	assert.Error(t, err)
 }
 
@@ -89,7 +90,7 @@ func testDeleteRateLimit(t *testing.T) {
 	assert.Equal(t, deleteResp, reqId)
 
 	// Try to get deleted rate limit
-	getResp, err := client.GetUserRateLimit(userName, reqId)
+	getResp, err := client.GetUserRateLimit(context.Background(), userName, reqId)
 	assert.Nil(t, err)
 	assert.Equal(t, 0, len(getResp))
 

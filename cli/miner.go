@@ -6,8 +6,6 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/filecoin-project/go-address"
-
-	"github.com/filecoin-project/venus-auth/auth"
 )
 
 var minerSubCommand = &cli.Command{
@@ -38,7 +36,7 @@ var minerHasCommand = &cli.Command{
 			return err
 		}
 
-		exist, err := client.HasMiner(&auth.HasMinerRequest{Miner: addr.String()})
+		exist, err := client.HasMiner(ctx.Context, addr)
 		if err != nil {
 			return err
 		}

@@ -3,6 +3,7 @@ package auth
 import (
 	"time"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/storage"
 )
@@ -119,8 +120,7 @@ type RecoverUserRequest struct {
 }
 
 type GetUserByMinerRequest struct {
-	// todo make miner tobe address
-	Miner string `form:"miner" binding:"required"`
+	Miner address.Address `form:"miner" binding:"required"`
 }
 
 func (ls GetUserRateLimitResponse) MatchedLimit(service, api string) *storage.UserRateLimit {
@@ -135,18 +135,18 @@ func (ls GetUserRateLimitResponse) MatchedLimit(service, api string) *storage.Us
 }
 
 type UpsertMinerReq struct {
-	User       string `binding:"required"`
-	Miner      string `binding:"required"`
-	OpenMining *bool  `binding:"required"`
+	User       string          `binding:"required"`
+	Miner      address.Address `binding:"required"`
+	OpenMining *bool           `binding:"required"`
 }
 
 type HasMinerRequest struct {
-	Miner string `form:"miner" binding:"required"`
+	Miner address.Address `form:"miner" binding:"required"`
 }
 
 type MinerExistInUserRequest struct {
-	Miner string `form:"miner"`
-	User  string `form:"user"`
+	Miner address.Address `form:"miner"`
+	User  string          `form:"user"`
 }
 
 type ListMinerReq struct {
@@ -154,30 +154,31 @@ type ListMinerReq struct {
 }
 
 type OutputMiner struct {
-	Miner, User          string
+	Miner                address.Address
+	User                 string
 	OpenMining           bool
 	CreatedAt, UpdatedAt time.Time
 }
 type ListMinerResp []*OutputMiner
 
 type DelMinerReq struct {
-	Miner string `json:"miner"`
+	Miner address.Address `json:"miner"`
 }
 
 // type definitions for signer
 type RegisterSignersReq struct {
 	User    string
-	Signers []string
+	Signers []address.Address
 }
 
 type UnregisterSignersReq struct {
 	User    string
-	Signers []string
+	Signers []address.Address
 }
 
 type SignerExistInUserReq struct {
-	Signer string `form:"signer"`
-	User   string `form:"user"`
+	Signer address.Address `form:"signer"`
+	User   string          `form:"user"`
 }
 
 type ListSignerReq struct {
@@ -185,19 +186,20 @@ type ListSignerReq struct {
 }
 
 type GetUserBySignerReq struct {
-	Signer string `form:"signer"`
+	Signer address.Address `form:"signer"`
 }
 
 type HasSignerReq struct {
-	Signer string `form:"signer"`
+	Signer address.Address `form:"signer"`
 }
 
 type DelSignerReq struct {
-	Signer string `json:"signer"`
+	Signer address.Address `json:"signer"`
 }
 
 type OutputSigner struct {
-	Signer, User         string
+	Signer               address.Address
+	User                 string
 	CreatedAt, UpdatedAt time.Time
 }
 type ListSignerResp []*OutputSigner

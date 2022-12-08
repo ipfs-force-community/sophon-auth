@@ -2,6 +2,7 @@
 package integrate
 
 import (
+	"context"
 	"testing"
 
 	"github.com/filecoin-project/venus-auth/auth"
@@ -61,13 +62,13 @@ func testGetUser(t *testing.T) {
 	shutdown(t, tmpDir)
 
 	// Get a user
-	getResp, err := client.GetUser(&auth.GetUserRequest{Name: createResp.Name})
+	getResp, err := client.GetUser(context.Background(), createResp.Name)
 	assert.Nil(t, err)
 	assert.Equal(t, createResp.Name, getResp.Name)
 	assert.Equal(t, createResp.Id, getResp.Id)
 	assert.Equal(t, createResp.CreateTime, getResp.CreateTime)
 
-	_, err = client.GetUser(&auth.GetUserRequest{Name: "not-exist-user"})
+	_, err = client.GetUser(context.Background(), "not-exist-user")
 	assert.Error(t, err)
 }
 
@@ -96,12 +97,9 @@ func testHasUser(t *testing.T) {
 	shutdown(t, tmpDir)
 
 	// Has a user
-	has, err := client.HasUser(&auth.HasUserRequest{Name: createResp.Name})
+	has, err := client.HasUser(context.Background(), createResp.Name)
 	assert.Nil(t, err)
 	assert.True(t, has)
-	// `ShouldBind` failed
-	_, err = client.HasUser(&auth.HasUserRequest{})
-	assert.Error(t, err)
 }
 
 func testListUser(t *testing.T) {
@@ -109,7 +107,7 @@ func testListUser(t *testing.T) {
 	shutdown(t, tmpDir)
 
 	// List users
-	listResp, err := client.ListUsers(auth.NewListUsersRequest(0, 10, int(core.UserStateUndefined)))
+	listResp, err := client.ListUsers(context.Background(), auth.NewListUsersRequest(0, 10, int(core.UserStateUndefined)))
 	assert.Nil(t, err)
 	assert.Equal(t, len(listResp), 1)
 }
@@ -124,17 +122,17 @@ func testDeleteUser(t *testing.T) {
 	err := client.DeleteUser(&auth.DeleteUserRequest{Name: userName})
 	assert.Nil(t, err)
 	// Get should fail
-	_, err = client.GetUser(&auth.GetUserRequest{Name: userName})
+	_, err = client.GetUser(context.Background(), userName)
 	assert.NotNil(t, err)
 	// Has should return false
-	has, err := client.HasUser(&auth.HasUserRequest{Name: userName})
+	has, err := client.HasUser(context.Background(), userName)
 	assert.Nil(t, err)
 	assert.False(t, has)
 
 	// Recover the user and check
 	err = client.RecoverUser(&auth.RecoverUserRequest{Name: userName})
 	assert.Nil(t, err)
-	has, err = client.HasUser(&auth.HasUserRequest{Name: userName})
+	has, err = client.HasUser(context.Background(), userName)
 	assert.Nil(t, err)
 	assert.True(t, has)
 

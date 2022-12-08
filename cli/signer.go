@@ -37,7 +37,7 @@ var signerHasCommand = &cli.Command{
 			return err
 		}
 
-		exist, err := client.HasSigner(addr.String())
+		exist, err := client.HasSigner(ctx.Context, addr)
 		if err != nil {
 			return err
 		}

@@ -154,7 +154,7 @@ func TestUserBusiness(t *testing.T) {
 		if err != nil {
 			// user already exists error is ok
 			if strings.Index(err.Error(), "already exists") > 0 {
-				resp, err := cli.GetUser(&auth.GetUserRequest{Name: req.Name})
+				resp, err := cli.GetUser(context.Background(), req.Name)
 				assert.NilError(t, err)
 				originUsers[resp.Id] = resp
 				continue
@@ -164,7 +164,7 @@ func TestUserBusiness(t *testing.T) {
 		originUsers[resp.Id] = resp
 	}
 
-	users, err := cli.ListUsers(&auth.ListUsersRequest{
+	users, err := cli.ListUsers(context.Background(), &auth.ListUsersRequest{
 		Page: &core.Page{
 			Limit: 10,
 		},
@@ -202,50 +202,47 @@ func TestUserBusiness(t *testing.T) {
 		break
 	}
 
-	user, err := cli.GetUserByMiner(&auth.GetUserByMinerRequest{
-		Miner: "f02345",
-	})
+	mAddr1, err := address.NewFromString("f02345")
+	assert.NilError(t, err)
+	mAddr2, err := address.NewFromString("f023452")
+	assert.NilError(t, err)
+
+	user, err := cli.GetUserByMiner(context.Background(), mAddr1)
 	if err != nil {
 		t.Fatalf("get miner err:%s", err)
 	}
 
-	has, err := cli.HasMiner(&auth.HasMinerRequest{
-		Miner: "f02345",
-	})
+	has, err := cli.HasMiner(context.Background(), mAddr1)
 	if err != nil {
 		fmt.Printf("err: %s\n", err.Error())
 	}
 	assert.DeepEqual(t, true, has)
 
-	has, err = cli.HasMiner(&auth.HasMinerRequest{
-		Miner: "f023452",
-	})
+	has, err = cli.HasMiner(context.Background(), mAddr2)
 	if err != nil {
 		t.Fatalf("has miner err:%s", err)
 	}
 	assert.DeepEqual(t, false, has)
 
-	exist, err := cli.MinerExistInUser(user.Name, "f02345")
+	exist, err := cli.MinerExistInUser(context.Background(), user.Name, mAddr1)
 	if err != nil {
 		t.Fatalf("check miner exist in user err:%s", err)
 	}
 	assert.DeepEqual(t, true, exist)
 
-	exist, err = cli.MinerExistInUser(user.Name, "f023452")
+	exist, err = cli.MinerExistInUser(context.Background(), user.Name, mAddr2)
 	if err != nil {
 		t.Fatalf("check miner exist in user err:%s", err)
 	}
 	assert.DeepEqual(t, false, exist)
 
-	user, err = cli.GetUser(&auth.GetUserRequest{
-		Name: "name2",
-	})
+	user, err = cli.GetUser(context.Background(), "name2")
 	if err != nil {
 		t.Fatalf("get user err:%s", err)
 	}
 	assert.DeepEqual(t, users[1].Name, user.Name)
 
-	err = cli.VerifyUsers([]string{"name1", "name2"})
+	err = cli.VerifyUsers(context.Background(), []string{"name1", "name2"})
 	if err != nil {
 		t.Fatalf("verify users err:%s", err)
 	}
@@ -280,7 +277,7 @@ func TestJWTClient_ListUsers(t *testing.T) {
 	if os.Getenv("CI") == "test" {
 		t.Skip()
 	}
-	res, err := cli.ListUsers(auth.NewListUsersRequest(0, 20, 1))
+	res, err := cli.ListUsers(context.Background(), auth.NewListUsersRequest(0, 20, 1))
 	if err != nil {
 		t.Fatal(err)
 	}

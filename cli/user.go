@@ -8,6 +8,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"golang.org/x/xerrors"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/storage"
@@ -89,7 +90,7 @@ var userGetCmd = &cli.Command{
 			return nil
 		}
 		name := ctx.Args().Get(0)
-		user, err := client.GetUser(&auth.GetUserRequest{Name: name})
+		user, err := client.GetUser(ctx.Context, name)
 		if err != nil {
 			return err
 		}
@@ -210,7 +211,7 @@ var userListCmd = &cli.Command{
 			req.State = int(core.UserStateUndefined)
 		}
 
-		users, err := client.ListUsersWithMiners(req)
+		users, err := client.ListUsersWithMiners(ctx.Context, req)
 		if err != nil {
 			return err
 		}
@@ -219,7 +220,7 @@ var userListCmd = &cli.Command{
 			fmt.Println("name:", v.Name)
 			fmt.Println("state:", v.State.String())
 			if len(v.Miners) != 0 {
-				miners := make([]string, len(v.Miners))
+				miners := make([]address.Address, len(v.Miners))
 				for idx, m := range v.Miners {
 					miners[idx] = m.Miner
 				}
@@ -250,7 +251,7 @@ var userDeleteCmd = &cli.Command{
 			return xerrors.New("expect name")
 		}
 
-		has, err := client.HasUser(&auth.HasUserRequest{Name: ctx.Args().First()})
+		has, err := client.HasUser(ctx.Context, ctx.Args().First())
 		if err != nil {
 			return err
 		}
@@ -326,7 +327,7 @@ var rateLimitGet = &cli.Command{
 
 		name := ctx.Args().Get(0)
 		var limits []*storage.UserRateLimit
-		limits, err = client.GetUserRateLimit(name, "")
+		limits, err = client.GetUserRateLimit(ctx.Context, name, "")
 		if err != nil {
 			return err
 		}
@@ -362,7 +363,7 @@ var rateLimitAdd = &cli.Command{
 
 		name := ctx.Args().Get(0)
 
-		if res, _ := client.GetUserRateLimit(name, ""); len(res) > 0 {
+		if res, _ := client.GetUserRateLimit(ctx.Context, name, ""); len(res) > 0 {
 			return fmt.Errorf("user rate limit:%s exists", res[0].Id)
 		}
 
@@ -415,7 +416,7 @@ var rateLimitUpdate = &cli.Command{
 		name := ctx.Args().Get(0)
 		id := ctx.Args().Get(1)
 
-		if res, err := client.GetUserRateLimit(name, id); err != nil {
+		if res, err := client.GetUserRateLimit(ctx.Context, name, id); err != nil {
 			return err
 		} else if len(res) == 0 {
 			return fmt.Errorf("user rate limit:%s NOT exists", id)
@@ -468,7 +469,7 @@ var rateLimitDel = &cli.Command{
 			Id:   ctx.Args().Get(1),
 		}
 
-		if res, err := client.GetUserRateLimit(delReq.Name, delReq.Id); err != nil {
+		if res, err := client.GetUserRateLimit(ctx.Context, delReq.Name, delReq.Id); err != nil {
 			return err
 		} else if len(res) == 0 {
 			fmt.Printf("user:%s, rate-limit-id:%s Not exits\n", delReq.Name, delReq.Id)

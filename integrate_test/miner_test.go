@@ -2,6 +2,7 @@
 package integrate
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,7 +34,11 @@ func setupAndAddMiners(t *testing.T) (*jwtclient.AuthClient, *auth.OutputUser, s
 
 	userName := "Rennbon"
 	miner1 := "t01000"
+	m1Addr, err := address.NewFromString(miner1)
+	assert.Nil(t, err)
 	miner2 := "t01002"
+	m2Addr, err := address.NewFromString(miner2)
+	assert.Nil(t, err)
 
 	// Create a user
 	user, err := client.CreateUser(&auth.CreateUserRequest{Name: userName})
@@ -46,8 +51,8 @@ func setupAndAddMiners(t *testing.T) (*jwtclient.AuthClient, *auth.OutputUser, s
 	assert.Nil(t, err)
 	assert.True(t, success)
 
-	user.Miners = append(user.Miners, &auth.OutputMiner{Miner: miner1, User: userName},
-		&auth.OutputMiner{Miner: miner2, User: userName})
+	user.Miners = append(user.Miners, &auth.OutputMiner{Miner: m1Addr, User: userName},
+		&auth.OutputMiner{Miner: m2Addr, User: userName})
 
 	return client, user, tmpDir
 }
@@ -71,12 +76,12 @@ func testListMinerByUser(t *testing.T) {
 	defer shutdown(t, tmpDir)
 
 	// List miner by user
-	listResp, err := client.ListMiners(user.Name)
+	listResp, err := client.ListMiners(context.Background(), user.Name)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(listResp))
 
 	// `ShouldBind` failed
-	_, err = client.ListMiners("")
+	_, err = client.ListMiners(context.Background(), "")
 	assert.Error(t, err)
 }
 
@@ -85,21 +90,20 @@ func testHasMiner(t *testing.T) {
 	defer shutdown(t, tmpDir)
 
 	miner2 := "t01002"
+	m2Addr, err := address.NewFromString(miner2)
+	assert.Nil(t, err)
 	miner3 := "t01004"
+	m3Addr, err := address.NewFromString(miner3)
+	assert.Nil(t, err)
 
 	// Has miner
-	has, err := client.HasMiner(&auth.HasMinerRequest{Miner: miner2})
+	has, err := client.HasMiner(context.Background(), m2Addr)
 	assert.Nil(t, err)
 	assert.True(t, has)
 
 	// Has invalid miner
-	has, err = client.HasMiner(&auth.HasMinerRequest{Miner: miner3})
+	has, err = client.HasMiner(context.Background(), m3Addr)
 	assert.Nil(t, err)
-	assert.False(t, has)
-
-	// `ShouldBind` failed
-	has, err = client.HasMiner(&auth.HasMinerRequest{})
-	assert.Error(t, err)
 	assert.False(t, has)
 }
 
@@ -108,12 +112,14 @@ func testMinerExistInUser(t *testing.T) {
 	defer shutdown(t, tmpDir)
 
 	notExistMiner := "t010010"
+	notExistMinerAddr, err := address.NewFromString(notExistMiner)
+	assert.Nil(t, err)
 
-	exist, err := client.MinerExistInUser(user.Name, user.Miners[0].Miner)
+	exist, err := client.MinerExistInUser(context.Background(), user.Name, user.Miners[0].Miner)
 	assert.Nil(t, err)
 	assert.True(t, exist)
 
-	exist, err = client.MinerExistInUser(user.Name, notExistMiner)
+	exist, err = client.MinerExistInUser(context.Background(), user.Name, notExistMinerAddr)
 	assert.Nil(t, err)
 	assert.False(t, exist)
 }
@@ -123,17 +129,9 @@ func testGetUserByMiner(t *testing.T) {
 	defer shutdown(t, tmpDir)
 
 	// Get user by miner
-	getUserInfo, err := client.GetUserByMiner(&auth.GetUserByMinerRequest{Miner: user.Miners[0].Miner})
+	getUserInfo, err := client.GetUserByMiner(context.Background(), user.Miners[0].Miner)
 	assert.Nil(t, err)
 	assert.Equal(t, user.Name, getUserInfo.Name)
-
-	// `ShouldBind` failed
-	_, err = client.GetUserByMiner(&auth.GetUserByMinerRequest{})
-	assert.Error(t, err)
-
-	// miner not exists error
-	_, err = client.GetUserByMiner(&auth.GetUserByMinerRequest{Miner: "f011112222233333"})
-	assert.Error(t, err)
 }
 
 func testDeleteMiner(t *testing.T) {
@@ -142,12 +140,12 @@ func testDeleteMiner(t *testing.T) {
 
 	notExistMiner := "t01004"
 	// Delete a miner
-	success, err := client.DelMiner(user.Miners[0].Miner)
+	success, err := client.DelMiner(user.Miners[0].Miner.String())
 	assert.Nil(t, err)
 	assert.True(t, success)
 
 	// Check this miner
-	has, err := client.HasMiner(&auth.HasMinerRequest{Miner: user.Miners[0].Miner})
+	has, err := client.HasMiner(context.Background(), user.Miners[0].Miner)
 	assert.Nil(t, err)
 	assert.False(t, has)
 

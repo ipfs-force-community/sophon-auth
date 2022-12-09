@@ -497,10 +497,6 @@ func (lc *AuthClient) HasSigner(ctx context.Context, signer address.Address) (bo
 }
 
 func (lc *AuthClient) DelSigner(ctx context.Context, signer string) (bool, error) {
-	if _, err := address.NewFromString(signer); err != nil {
-		return false, xerrors.Errorf("invalid signer address:%s", signer)
-	}
-
 	var has bool
 	sAddr, err := address.NewFromString(signer)
 	if err != nil {

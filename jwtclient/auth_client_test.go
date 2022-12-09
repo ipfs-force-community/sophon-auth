@@ -164,12 +164,7 @@ func TestUserBusiness(t *testing.T) {
 		originUsers[resp.Id] = resp
 	}
 
-	users, err := cli.ListUsers(context.Background(), &auth.ListUsersRequest{
-		Page: &core.Page{
-			Limit: 10,
-		},
-		State: int(core.UserStateUndefined),
-	})
+	users, err := cli.ListUsers(context.Background(), 0, 10, core.UserStateUndefined)
 	if err != nil {
 		t.Fatalf("get tokens err:%s", err)
 	}
@@ -277,7 +272,7 @@ func TestJWTClient_ListUsers(t *testing.T) {
 	if os.Getenv("CI") == "test" {
 		t.Skip()
 	}
-	res, err := cli.ListUsers(context.Background(), auth.NewListUsersRequest(0, 20, 1))
+	res, err := cli.ListUsers(context.Background(), 0, 20, 1)
 	if err != nil {
 		t.Fatal(err)
 	}

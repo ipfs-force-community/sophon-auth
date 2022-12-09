@@ -107,7 +107,7 @@ func testListUser(t *testing.T) {
 	shutdown(t, tmpDir)
 
 	// List users
-	listResp, err := client.ListUsers(context.Background(), auth.NewListUsersRequest(0, 10, int(core.UserStateUndefined)))
+	listResp, err := client.ListUsers(context.Background(), 0, 10, core.UserStateUndefined)
 	assert.Nil(t, err)
 	assert.Equal(t, len(listResp), 1)
 }

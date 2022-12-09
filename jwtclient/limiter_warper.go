@@ -1,6 +1,7 @@
 package jwtclient
 
 import (
+	"context"
 	"errors"
 
 	"github.com/ipfs-force-community/metrics/ratelimit"
@@ -23,7 +24,7 @@ func (l *limitFinder) GetUserLimit(name, service, api string) (*ratelimit.Limit,
 		return nil, errNilJwtClient
 	}
 
-	res, err := l.GetUserRateLimit(name, "")
+	res, err := l.GetUserRateLimit(context.Background(), name, "")
 	if err != nil {
 		return nil, err
 	}

@@ -321,10 +321,7 @@ func (o *jwtOAuth) RecoverUser(ctx *gin.Context, req *RecoverUserRequest) error 
 }
 
 func (o *jwtOAuth) GetUserByMiner(ctx context.Context, req *GetUserByMinerRequest) (*OutputUser, error) {
-	mAddr, err := address.NewFromString(req.Miner)
-	if err != nil {
-		return nil, err
-	}
+	mAddr := req.Miner
 	user, err := o.store.GetUserByMiner(mAddr)
 	if err != nil {
 		return nil, err
@@ -333,11 +330,7 @@ func (o *jwtOAuth) GetUserByMiner(ctx context.Context, req *GetUserByMinerReques
 }
 
 func (o *jwtOAuth) GetUserBySigner(ctx context.Context, req *GetUserBySignerReq) ([]*OutputUser, error) {
-	addr, err := address.NewFromString(req.Signer)
-	if err != nil {
-		return nil, err
-	}
-	users, err := o.store.GetUserBySigner(addr)
+	users, err := o.store.GetUserBySigner(req.Signer)
 	if err != nil {
 		return nil, err
 	}
@@ -371,10 +364,7 @@ func (o jwtOAuth) DelUserRateLimit(ctx context.Context, req *DelUserRateLimitReq
 }
 
 func (o *jwtOAuth) UpsertMiner(ctx context.Context, req *UpsertMinerReq) (bool, error) {
-	maddr, err := address.NewFromString(req.Miner)
-	if err != nil || maddr.Empty() {
-		return false, xerrors.Errorf("invalid miner address:%s, error: %w", req.Miner, err)
-	}
+	maddr := req.Miner
 
 	if maddr.Protocol() != address.ID {
 		return false, fmt.Errorf("invalid protocol type: %v", maddr.Protocol())
@@ -384,11 +374,7 @@ func (o *jwtOAuth) UpsertMiner(ctx context.Context, req *UpsertMinerReq) (bool, 
 }
 
 func (o *jwtOAuth) HasMiner(ctx context.Context, req *HasMinerRequest) (bool, error) {
-	mAddr, err := address.NewFromString(req.Miner)
-	if err != nil {
-		return false, err
-	}
-
+	mAddr := req.Miner
 	has, err := o.store.HasMiner(mAddr)
 	if err != nil {
 		return false, err
@@ -397,10 +383,7 @@ func (o *jwtOAuth) HasMiner(ctx context.Context, req *HasMinerRequest) (bool, er
 }
 
 func (o *jwtOAuth) MinerExistInUser(ctx context.Context, req *MinerExistInUserRequest) (bool, error) {
-	mAddr, err := address.NewFromString(req.Miner)
-	if err != nil {
-		return false, err
-	}
+	mAddr := req.Miner
 
 	exist, err := o.store.MinerExistInUser(mAddr, req.User)
 	if err != nil {
@@ -417,9 +400,8 @@ func (o *jwtOAuth) ListMiners(ctx context.Context, req *ListMinerReq) (ListMiner
 
 	outs := make([]*OutputMiner, len(miners))
 	for idx, m := range miners {
-		addrStr := m.Miner.Address().String()
 		outs[idx] = &OutputMiner{
-			Miner:      addrStr,
+			Miner:      m.Miner.Address(),
 			User:       m.User,
 			OpenMining: *m.OpenMining,
 			CreatedAt:  m.CreatedAt,
@@ -430,25 +412,19 @@ func (o *jwtOAuth) ListMiners(ctx context.Context, req *ListMinerReq) (ListMiner
 }
 
 func (o jwtOAuth) DelMiner(ctx context.Context, req *DelMinerReq) (bool, error) {
-	miner, err := address.NewFromString(req.Miner)
-	if err != nil {
-		return false, xerrors.Errorf("invalid miner address:%s, %w", req.Miner, err)
-	}
+	miner := req.Miner
 	return o.store.DelMiner(miner)
 }
 
 func (o *jwtOAuth) RegisterSigners(ctx context.Context, req *RegisterSignersReq) error {
 	for _, signer := range req.Signers {
-		addr, err := address.NewFromString(signer)
-		if err != nil || addr.Empty() {
-			return fmt.Errorf("invalid signer address: %s, error: %w", signer, err)
-		}
+		addr := signer
 
 		if !isSignerAddress(addr) {
 			return fmt.Errorf("invalid protocol type: %v", addr.Protocol())
 		}
 
-		err = o.store.RegisterSigner(addr, req.User)
+		err := o.store.RegisterSigner(addr, req.User)
 		if err != nil {
 			return fmt.Errorf("unregister signer:%s, error: %w", signer, err)
 		}
@@ -458,10 +434,7 @@ func (o *jwtOAuth) RegisterSigners(ctx context.Context, req *RegisterSignersReq)
 }
 
 func (o *jwtOAuth) SignerExistInUser(ctx context.Context, req *SignerExistInUserReq) (bool, error) {
-	addr, err := address.NewFromString(req.Signer)
-	if err != nil {
-		return false, err
-	}
+	addr := req.Signer
 
 	if !isSignerAddress(addr) {
 		return false, fmt.Errorf("invalid protocol type: %v", addr.Protocol())
@@ -482,9 +455,8 @@ func (o *jwtOAuth) ListSigner(ctx context.Context, req *ListSignerReq) (ListSign
 
 	outs := make([]*OutputSigner, len(signers))
 	for idx, m := range signers {
-		addrStr := m.Signer.Address().String()
 		outs[idx] = &OutputSigner{
-			Signer:    addrStr,
+			Signer:    m.Signer.Address(),
 			User:      m.User,
 			CreatedAt: m.CreatedAt,
 			UpdatedAt: m.UpdatedAt,
@@ -495,16 +467,13 @@ func (o *jwtOAuth) ListSigner(ctx context.Context, req *ListSignerReq) (ListSign
 
 func (o *jwtOAuth) UnregisterSigners(ctx context.Context, req *UnregisterSignersReq) error {
 	for _, signer := range req.Signers {
-		addr, err := address.NewFromString(signer)
-		if err != nil || addr.Empty() {
-			return fmt.Errorf("invalid signer address: %s, error: %w", signer, err)
-		}
+		addr := signer
 
 		if !isSignerAddress(addr) {
 			return fmt.Errorf("invalid protocol type: %v", addr.Protocol())
 		}
 
-		err = o.store.UnregisterSigner(addr, req.User)
+		err := o.store.UnregisterSigner(addr, req.User)
 		if err != nil {
 			return fmt.Errorf("unregister signer:%s, error: %w", signer, err)
 		}
@@ -514,10 +483,7 @@ func (o *jwtOAuth) UnregisterSigners(ctx context.Context, req *UnregisterSigners
 }
 
 func (o jwtOAuth) HasSigner(ctx context.Context, req *HasSignerReq) (bool, error) {
-	addr, err := address.NewFromString(req.Signer)
-	if err != nil {
-		return false, xerrors.Errorf("invalid signer address:%s, %w", req.Signer, err)
-	}
+	addr := req.Signer
 
 	if !isSignerAddress(addr) {
 		return false, fmt.Errorf("invalid protocol type: %v", addr.Protocol())
@@ -527,10 +493,7 @@ func (o jwtOAuth) HasSigner(ctx context.Context, req *HasSignerReq) (bool, error
 }
 
 func (o jwtOAuth) DelSigner(ctx context.Context, req *DelSignerReq) (bool, error) {
-	addr, err := address.NewFromString(req.Signer)
-	if err != nil {
-		return false, xerrors.Errorf("invalid signer address:%s, %w", req.Signer, err)
-	}
+	addr := req.Signer
 
 	if !isSignerAddress(addr) {
 		return false, fmt.Errorf("invalid protocol type: %v", addr.Protocol())

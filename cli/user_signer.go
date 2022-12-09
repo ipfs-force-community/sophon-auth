@@ -10,8 +10,6 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/go-address"
-
-	"github.com/filecoin-project/venus-auth/auth"
 )
 
 var signerSubCmds = &cli.Command{
@@ -40,7 +38,11 @@ var signerRegisterCmd = &cli.Command{
 		}
 
 		user, addr := ctx.Args().Get(0), ctx.Args().Get(1)
-		if err = client.RegisterSigners(user, []string{addr}); err != nil {
+		mAddr, err := address.NewFromString(addr)
+		if err != nil {
+			return err
+		}
+		if err = client.RegisterSigners(ctx.Context, user, []address.Address{mAddr}); err != nil {
 			return err
 		}
 
@@ -77,7 +79,7 @@ var signerExistCmd = &cli.Command{
 			return err
 		}
 
-		has, err := client.SignerExistInUser(user, addr.String())
+		has, err := client.SignerExistInUser(ctx.Context, user, addr)
 		if err != nil {
 			return err
 		}
@@ -103,11 +105,11 @@ var signerListCmd = &cli.Command{
 		}
 
 		user := args.First()
-		if _, err := client.GetUser(&auth.GetUserRequest{Name: user}); err != nil {
+		if _, err := client.GetUser(ctx.Context, user); err != nil {
 			return xerrors.Errorf("list user:%s signer failed: %w", user, err)
 		}
 
-		signers, err := client.ListSigners(user)
+		signers, err := client.ListSigners(ctx.Context, user)
 		if err != nil {
 			return err
 		}
@@ -152,7 +154,11 @@ var signerUnregisterCmd = &cli.Command{
 
 		signer := args.First()
 		user := ctx.String("user")
-		err = client.UnregisterSigners(user, []string{signer})
+		sAddr, err := address.NewFromString(signer)
+		if err != nil {
+			return err
+		}
+		err = client.UnregisterSigners(ctx.Context, user, []address.Address{sAddr})
 		if err != nil {
 			return xerrors.Errorf("unregister signer:%s failed: %w", signer, err)
 		}

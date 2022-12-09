@@ -2,6 +2,7 @@
 package integrate
 
 import (
+	"context"
 	"testing"
 
 	"github.com/filecoin-project/venus-auth/auth"
@@ -35,7 +36,7 @@ func setupAndAddUser(t *testing.T) (*jwtclient.AuthClient, string, *auth.CreateU
 
 	userName := "Rennbon"
 	// Create a user
-	createResp, err := client.CreateUser(&auth.CreateUserRequest{Name: userName})
+	createResp, err := client.CreateUser(context.TODO(), &auth.CreateUserRequest{Name: userName})
 	assert.Nil(t, err)
 	assert.Equal(t, userName, createResp.Name)
 
@@ -46,11 +47,11 @@ func testCreateUser(t *testing.T) {
 	c, tmpDir, userResp := setupAndAddUser(t)
 
 	// user already exist error, and `BadResponse`
-	_, err := c.CreateUser(&auth.CreateUserRequest{Name: userResp.Name})
+	_, err := c.CreateUser(context.TODO(), &auth.CreateUserRequest{Name: userResp.Name})
 	assert.Error(t, err)
 
 	// `ShouldBind` failed
-	_, err = c.CreateUser(&auth.CreateUserRequest{})
+	_, err = c.CreateUser(context.TODO(), &auth.CreateUserRequest{})
 	assert.Error(t, err)
 
 	shutdown(t, tmpDir)
@@ -61,13 +62,13 @@ func testGetUser(t *testing.T) {
 	shutdown(t, tmpDir)
 
 	// Get a user
-	getResp, err := client.GetUser(&auth.GetUserRequest{Name: createResp.Name})
+	getResp, err := client.GetUser(context.Background(), createResp.Name)
 	assert.Nil(t, err)
 	assert.Equal(t, createResp.Name, getResp.Name)
 	assert.Equal(t, createResp.Id, getResp.Id)
 	assert.Equal(t, createResp.CreateTime, getResp.CreateTime)
 
-	_, err = client.GetUser(&auth.GetUserRequest{Name: "not-exist-user"})
+	_, err = client.GetUser(context.Background(), "not-exist-user")
 	assert.Error(t, err)
 }
 
@@ -77,15 +78,15 @@ func testUpdateUser(t *testing.T) {
 	comment := "updated user comment"
 
 	updateReq := &auth.UpdateUserRequest{Name: user.Name, Comment: &comment, State: core.UserStateEnabled}
-	err := c.UpdateUser(updateReq)
+	err := c.UpdateUser(context.TODO(), updateReq)
 	assert.NoError(t, err)
 
 	// `ShouldBind` failed
-	err = c.UpdateUser(&auth.UpdateUserRequest{})
+	err = c.UpdateUser(context.TODO(), &auth.UpdateUserRequest{})
 	assert.Error(t, err)
 
 	// user not exist error
-	err = c.UpdateUser(&auth.UpdateUserRequest{Name: "not-exist-user-name"})
+	err = c.UpdateUser(context.TODO(), &auth.UpdateUserRequest{Name: "not-exist-user-name"})
 	assert.Error(t, err)
 
 	shutdown(t, tmpDir)
@@ -96,12 +97,9 @@ func testHasUser(t *testing.T) {
 	shutdown(t, tmpDir)
 
 	// Has a user
-	has, err := client.HasUser(&auth.HasUserRequest{Name: createResp.Name})
+	has, err := client.HasUser(context.Background(), createResp.Name)
 	assert.Nil(t, err)
 	assert.True(t, has)
-	// `ShouldBind` failed
-	_, err = client.HasUser(&auth.HasUserRequest{})
-	assert.Error(t, err)
 }
 
 func testListUser(t *testing.T) {
@@ -109,7 +107,7 @@ func testListUser(t *testing.T) {
 	shutdown(t, tmpDir)
 
 	// List users
-	listResp, err := client.ListUsers(auth.NewListUsersRequest(0, 10, int(core.UserStateUndefined)))
+	listResp, err := client.ListUsers(context.Background(), 0, 10, core.UserStateUndefined)
 	assert.Nil(t, err)
 	assert.Equal(t, len(listResp), 1)
 }
@@ -121,32 +119,32 @@ func testDeleteUser(t *testing.T) {
 	userName := createResp.Name
 
 	// Delete user and then try to call get and has
-	err := client.DeleteUser(&auth.DeleteUserRequest{Name: userName})
+	err := client.DeleteUser(context.TODO(), &auth.DeleteUserRequest{Name: userName})
 	assert.Nil(t, err)
 	// Get should fail
-	_, err = client.GetUser(&auth.GetUserRequest{Name: userName})
+	_, err = client.GetUser(context.Background(), userName)
 	assert.NotNil(t, err)
 	// Has should return false
-	has, err := client.HasUser(&auth.HasUserRequest{Name: userName})
+	has, err := client.HasUser(context.Background(), userName)
 	assert.Nil(t, err)
 	assert.False(t, has)
 
 	// Recover the user and check
-	err = client.RecoverUser(&auth.RecoverUserRequest{Name: userName})
+	err = client.RecoverUser(context.TODO(), &auth.RecoverUserRequest{Name: userName})
 	assert.Nil(t, err)
-	has, err = client.HasUser(&auth.HasUserRequest{Name: userName})
+	has, err = client.HasUser(context.Background(), userName)
 	assert.Nil(t, err)
 	assert.True(t, has)
 
 	// Recover not exist user.
-	err = client.RecoverUser(&auth.RecoverUserRequest{Name: "not-exist-user"})
+	err = client.RecoverUser(context.TODO(), &auth.RecoverUserRequest{Name: "not-exist-user"})
 	assert.Error(t, err)
 
 	// `ShouldBind` failed
-	err = client.DeleteUser(&auth.DeleteUserRequest{})
+	err = client.DeleteUser(context.TODO(), &auth.DeleteUserRequest{})
 	assert.Error(t, err)
 
 	// Delete a not exists user
-	err = client.DeleteUser(&auth.DeleteUserRequest{Name: "not-exist-user"})
+	err = client.DeleteUser(context.TODO(), &auth.DeleteUserRequest{Name: "not-exist-user"})
 	assert.Error(t, err)
 }

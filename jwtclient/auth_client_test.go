@@ -83,20 +83,21 @@ func TestMain(m *testing.M) {
 }
 
 func TestTokenBusiness(t *testing.T) {
+	ctx := context.TODO()
 	var originTks []string
-	tk1, err := cli.GenerateToken("Rennbon1", core.PermAdmin, "custom params")
+	tk1, err := cli.GenerateToken(context.TODO(), "Rennbon1", core.PermAdmin, "custom params")
 	if err != nil {
 		t.Fatalf("gen token err:%s", err)
 	}
 	originTks = append(originTks, tk1)
 
-	tk2, err := cli.GenerateToken("Rennbon2", core.PermRead, "custom params")
+	tk2, err := cli.GenerateToken(context.TODO(), "Rennbon2", core.PermRead, "custom params")
 	if err != nil {
 		t.Fatalf("gen token err:%s", err)
 	}
 	originTks = append(originTks, tk2)
 
-	tks, err := cli.Tokens(0, 0)
+	tks, err := cli.Tokens(ctx, 0, 0)
 	if err != nil {
 		t.Fatalf("get tokens err:%s", err)
 	}
@@ -112,11 +113,11 @@ func TestTokenBusiness(t *testing.T) {
 		assert.Equal(t, find, true)
 	}
 
-	err = cli.RemoveToken(tk1)
+	err = cli.RemoveToken(ctx, tk1)
 	if err != nil {
 		t.Fatalf("remove token err:%s", err)
 	}
-	tks2, err := cli.Tokens(0, 0)
+	tks2, err := cli.Tokens(ctx, 0, 0)
 	if err != nil {
 		t.Fatalf("get tokens err:%s", err)
 	}
@@ -150,7 +151,7 @@ func TestUserBusiness(t *testing.T) {
 	originUsers := make(map[string]*auth.CreateUserResponse, len(createReqs))
 	var err error
 	for _, req := range createReqs {
-		resp, err := cli.CreateUser(req)
+		resp, err := cli.CreateUser(context.TODO(), req)
 		if err != nil {
 			// user already exists error is ok
 			if strings.Index(err.Error(), "already exists") > 0 {
@@ -184,7 +185,7 @@ func TestUserBusiness(t *testing.T) {
 
 	newComment := "this is a new comment"
 	for _, res1 := range originUsers {
-		err = cli.UpdateUser(&auth.UpdateUserRequest{
+		err = cli.UpdateUser(context.TODO(), &auth.UpdateUserRequest{
 			Name:    res1.Name,
 			Comment: &newComment,
 			State:   1,
@@ -192,7 +193,7 @@ func TestUserBusiness(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, err = cli.UpsertMiner(res1.Name, "f02345", true)
+		_, err = cli.UpsertMiner(context.TODO(), res1.Name, "f02345", true)
 		assert.NilError(t, err)
 		break
 	}
@@ -248,7 +249,7 @@ func TestClient_Verify(t *testing.T) {
 		t.Skip()
 	}
 
-	kps, err := cli.Tokens(0, 10)
+	kps, err := cli.Tokens(context.TODO(), 0, 10)
 	if err != nil {
 		t.Fatalf("get key-pars failed:%s", err.Error())
 	}

@@ -2,7 +2,6 @@ package jwtclient
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -353,7 +352,7 @@ func (lc *AuthClient) UpsertMiner(user, miner string, openMining bool) (bool, er
 func (lc *AuthClient) HasMiner(ctx context.Context, miner address.Address) (bool, error) {
 	var has bool
 	resp, err := lc.cli.R().SetContext(ctx).SetQueryParams(map[string]string{
-		"miner": toJsonStr(miner),
+		"miner": miner.String(),
 	}).SetResult(&has).SetError(&errcode.ErrMsg{}).Get("/miner/has")
 	if err != nil {
 		return false, err
@@ -368,7 +367,7 @@ func (lc *AuthClient) HasMiner(ctx context.Context, miner address.Address) (bool
 func (lc *AuthClient) MinerExistInUser(ctx context.Context, user string, miner address.Address) (bool, error) {
 	var has bool
 	resp, err := lc.cli.R().SetContext(ctx).SetQueryParams(map[string]string{
-		"miner": toJsonStr(miner),
+		"miner": miner.String(),
 		"user":  user,
 	}).SetResult(&has).SetError(&errcode.ErrMsg{}).Get("/user/miner/exist")
 	if err != nil {
@@ -417,7 +416,7 @@ func (lc *AuthClient) DelMiner(miner string) (bool, error) {
 
 func (lc *AuthClient) GetUserByMiner(ctx context.Context, miner address.Address) (*auth.OutputUser, error) {
 	resp, err := lc.cli.R().SetContext(ctx).SetQueryParams(map[string]string{
-		"miner": toJsonStr(miner),
+		"miner": miner.String(),
 	}).SetResult(&auth.OutputUser{}).SetError(&errcode.ErrMsg{}).Get("/user/miner")
 	if err != nil {
 		return nil, err
@@ -443,7 +442,7 @@ func (lc *AuthClient) RegisterSigners(ctx context.Context, user string, addrs []
 func (lc *AuthClient) SignerExistInUser(ctx context.Context, user string, signer address.Address) (bool, error) {
 	var has bool
 	resp, err := lc.cli.R().SetContext(ctx).SetQueryParams(map[string]string{
-		"signer": toJsonStr(signer),
+		"signer": signer.String(),
 		"user":   user,
 	}).SetResult(&has).SetError(&errcode.ErrMsg{}).Get("/user/signer/exist")
 	if err != nil {
@@ -484,7 +483,7 @@ func (lc *AuthClient) UnregisterSigners(ctx context.Context, user string, addrs 
 func (lc *AuthClient) HasSigner(ctx context.Context, signer address.Address) (bool, error) {
 	var has bool
 	resp, err := lc.cli.R().SetContext(ctx).SetQueryParams(map[string]string{
-		"signer": toJsonStr(signer),
+		"signer": signer.String(),
 	}).SetResult(&has).SetError(&errcode.ErrMsg{}).Get("/signer/has")
 	if err != nil {
 		return false, err
@@ -519,7 +518,7 @@ func (lc *AuthClient) DelSigner(signer string) (bool, error) {
 
 func (lc *AuthClient) GetUserBySigner(ctx context.Context, signer address.Address) (auth.ListUsersResponse, error) {
 	resp, err := lc.cli.R().SetContext(ctx).SetQueryParams(map[string]string{
-		"signer": toJsonStr(signer),
+		"signer": signer.String(),
 	}).SetResult(&auth.ListUsersResponse{}).SetError(&errcode.ErrMsg{}).Get("/user/signer")
 	if err != nil {
 		return nil, err
@@ -528,12 +527,4 @@ func (lc *AuthClient) GetUserBySigner(ctx context.Context, signer address.Addres
 		return *(resp.Result().(*auth.ListUsersResponse)), nil
 	}
 	return nil, resp.Error().(*errcode.ErrMsg).Err()
-}
-
-func toJsonStr(v interface{}) string {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return ""
-	}
-	return string(b)
 }

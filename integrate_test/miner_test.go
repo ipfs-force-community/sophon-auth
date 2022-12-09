@@ -105,6 +105,11 @@ func testHasMiner(t *testing.T) {
 	has, err = client.HasMiner(context.Background(), m3Addr)
 	assert.Nil(t, err)
 	assert.False(t, has)
+
+	// `ShouldBind` failed
+	has, err = client.HasMiner(context.Background(), address.Undef)
+	assert.Nil(t, err)
+	assert.False(t, has)
 }
 
 func testMinerExistInUser(t *testing.T) {
@@ -132,6 +137,16 @@ func testGetUserByMiner(t *testing.T) {
 	getUserInfo, err := client.GetUserByMiner(context.Background(), user.Miners[0].Miner)
 	assert.Nil(t, err)
 	assert.Equal(t, user.Name, getUserInfo.Name)
+
+	// should be not found
+	_, err = client.GetUserByMiner(context.Background(), address.Undef)
+	assert.Error(t, err)
+
+	// miner not exists error
+	mAddr, err := address.NewFromString("f011112222233333")
+	assert.Nil(t, err)
+	_, err = client.GetUserByMiner(context.Background(), mAddr)
+	assert.Error(t, err)
 }
 
 func testDeleteMiner(t *testing.T) {

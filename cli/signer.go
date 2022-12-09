@@ -78,7 +78,7 @@ var signerDelCommand = &cli.Command{
 			return err
 		}
 
-		_, err = client.DelSigner(addr.String())
+		_, err = client.DelSigner(ctx.Context, addr.String())
 		if err != nil {
 			return err
 		}

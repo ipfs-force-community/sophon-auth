@@ -66,7 +66,7 @@ var userAddCmd = &cli.Command{
 			comment := ctx.String("comment")
 			user.Comment = &comment
 		}
-		res, err := client.CreateUser(user)
+		res, err := client.CreateUser(ctx.Context, user)
 		if err != nil {
 			return err
 		}
@@ -138,7 +138,7 @@ var userUpdateCmd = &cli.Command{
 		} else {
 			req.State = core.UserStateUndefined
 		}
-		err = client.UpdateUser(req)
+		err = client.UpdateUser(ctx.Context, req)
 		if err != nil {
 			return err
 		}
@@ -168,7 +168,7 @@ var userActiveCmd = &cli.Command{
 			State: 1,
 		}
 
-		err = client.UpdateUser(req)
+		err = client.UpdateUser(ctx.Context, req)
 		if err != nil {
 			return err
 		}
@@ -263,7 +263,7 @@ var userDeleteCmd = &cli.Command{
 			Name: ctx.Args().First(),
 		}
 
-		err = client.DeleteUser(req)
+		err = client.DeleteUser(ctx.Context, req)
 		if err != nil {
 			return err
 		}
@@ -290,7 +290,7 @@ var userRecoverCmd = &cli.Command{
 			Name: ctx.Args().First(),
 		}
 
-		err = client.RecoverUser(req)
+		err = client.RecoverUser(ctx.Context, req)
 		if err != nil {
 			return err
 		}
@@ -388,7 +388,7 @@ var rateLimitAdd = &cli.Command{
 			userLimit.Id = ctx.String("id")
 		}
 
-		if userLimit.Id, err = client.UpsertUserRateLimit(userLimit); err != nil {
+		if userLimit.Id, err = client.UpsertUserRateLimit(ctx.Context, userLimit); err != nil {
 			return err
 		}
 
@@ -439,7 +439,7 @@ var rateLimitUpdate = &cli.Command{
 			ReqLimit: storage.ReqLimit{Cap: int64(limitAmount), ResetDur: resetDuration},
 		}
 
-		if userLimit.Id, err = client.UpsertUserRateLimit(userLimit); err != nil {
+		if userLimit.Id, err = client.UpsertUserRateLimit(ctx.Context, userLimit); err != nil {
 			return err
 		}
 
@@ -477,7 +477,7 @@ var rateLimitDel = &cli.Command{
 		}
 
 		var id string
-		if id, err = client.DelUserRateLimit(delReq); err != nil {
+		if id, err = client.DelUserRateLimit(ctx.Context, delReq); err != nil {
 			return err
 		}
 		fmt.Printf("delete rate limit success, %s\n", id)

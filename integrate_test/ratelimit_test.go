@@ -29,7 +29,7 @@ func setupAndAddRateLimits(t *testing.T) (*jwtclient.AuthClient, string) {
 
 	// Create a user
 	userName := "Rennbon"
-	_, err = client.CreateUser(&auth.CreateUserRequest{Name: userName})
+	_, err = client.CreateUser(context.TODO(), &auth.CreateUserRequest{Name: userName})
 	assert.Nil(t, err)
 
 	// Insert rate limit
@@ -44,7 +44,7 @@ func setupAndAddRateLimits(t *testing.T) (*jwtclient.AuthClient, string) {
 		},
 	}
 
-	upsertResp, err := client.UpsertUserRateLimit(&upsertReq)
+	upsertResp, err := client.UpsertUserRateLimit(context.TODO(), &upsertReq)
 	assert.Nil(t, err)
 	assert.Equal(t, upsertReq.Id, upsertResp)
 
@@ -55,7 +55,7 @@ func testUpsertUserRateLimit(t *testing.T) {
 	c, tmpDir := setupAndAddRateLimits(t)
 
 	// `ShouldBind` failed
-	_, err := c.UpsertUserRateLimit(&auth.UpsertUserRateLimitReq{})
+	_, err := c.UpsertUserRateLimit(context.TODO(), &auth.UpsertUserRateLimitReq{})
 	assert.Error(t, err)
 
 	shutdown(t, tmpDir)
@@ -85,7 +85,7 @@ func testDeleteRateLimit(t *testing.T) {
 	userName := "Rennbon"
 	reqId := "794fc9a4-2b80-4503-835a-7e8e27360b3d"
 	// Delete rate limit
-	deleteResp, err := client.DelUserRateLimit(&auth.DelUserRateLimitReq{Name: userName, Id: reqId})
+	deleteResp, err := client.DelUserRateLimit(context.TODO(), &auth.DelUserRateLimitReq{Name: userName, Id: reqId})
 	assert.Nil(t, err)
 	assert.Equal(t, deleteResp, reqId)
 
@@ -95,6 +95,6 @@ func testDeleteRateLimit(t *testing.T) {
 	assert.Equal(t, 0, len(getResp))
 
 	// if there is an error deleting user rate limits
-	_, err = client.DelUserRateLimit(&auth.DelUserRateLimitReq{})
+	_, err = client.DelUserRateLimit(context.TODO(), &auth.DelUserRateLimitReq{})
 	assert.Error(t, err)
 }

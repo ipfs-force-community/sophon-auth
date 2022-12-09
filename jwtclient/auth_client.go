@@ -25,8 +25,8 @@ type IAuthClient interface {
 	GetUser(ctx context.Context, name string) (*auth.OutputUser, error)
 	GetUserByMiner(ctx context.Context, miner address.Address) (*auth.OutputUser, error)
 	GetUserBySigner(ctx context.Context, signer address.Address) (auth.ListUsersResponse, error)
-	ListUsers(ctx context.Context, req *auth.ListUsersRequest) (auth.ListUsersResponse, error)
-	ListUsersWithMiners(ctx context.Context, req *auth.ListUsersRequest) (auth.ListUsersResponse, error)
+	ListUsers(ctx context.Context, skip, limit int64, state core.UserState) (auth.ListUsersResponse, error)
+	ListUsersWithMiners(ctx context.Context, skip, limit int64, state core.UserState) (auth.ListUsersResponse, error)
 	GetUserRateLimit(ctx context.Context, name, id string) (auth.GetUserRateLimitResponse, error)
 
 	MinerExistInUser(ctx context.Context, user string, miner address.Address) (bool, error)
@@ -180,7 +180,8 @@ func (lc *AuthClient) UpdateUser(req *auth.UpdateUserRequest) error {
 	return resp.Error().(*errcode.ErrMsg).Err()
 }
 
-func (lc *AuthClient) ListUsers(ctx context.Context, req *auth.ListUsersRequest) (auth.ListUsersResponse, error) {
+func (lc *AuthClient) ListUsers(ctx context.Context, skip, limit int64, state core.UserState) (auth.ListUsersResponse, error) {
+	req := auth.NewListUsersRequest(skip, limit, int(state))
 	resp, err := lc.cli.R().SetContext(ctx).SetQueryParams(map[string]string{
 		"skip":  strconv.FormatInt(req.Skip, 10),
 		"limit": strconv.FormatInt(req.Limit, 10),
@@ -195,8 +196,8 @@ func (lc *AuthClient) ListUsers(ctx context.Context, req *auth.ListUsersRequest)
 	return nil, resp.Error().(*errcode.ErrMsg).Err()
 }
 
-func (lc *AuthClient) ListUsersWithMiners(ctx context.Context, req *auth.ListUsersRequest) (auth.ListUsersResponse, error) {
-	resp, err := lc.ListUsers(ctx, req)
+func (lc *AuthClient) ListUsersWithMiners(ctx context.Context, skip, limit int64, state core.UserState) (auth.ListUsersResponse, error) {
+	resp, err := lc.ListUsers(ctx, skip, limit, state)
 	if err != nil {
 		return nil, err
 	}

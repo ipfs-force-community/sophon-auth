@@ -211,7 +211,7 @@ var userListCmd = &cli.Command{
 			req.State = int(core.UserStateUndefined)
 		}
 
-		users, err := client.ListUsersWithMiners(ctx.Context, req)
+		users, err := client.ListUsersWithMiners(ctx.Context, req.Skip, req.Limit, core.UserState(req.State))
 		if err != nil {
 			return err
 		}

@@ -450,11 +450,11 @@ func addUsersAndMiners(t *testing.T, userMiners map[string][]string) {
 		// Add miners
 		openMining := true
 		for _, minerID := range miners {
-			maddr, err := address.NewFromString(minerID)
+			mAddr, err := address.NewFromString(minerID)
 			assert.Nil(t, err)
 			ifCreate, err := jwtOAuthInstance.UpsertMiner(ctx, &UpsertMinerReq{
 				User:       userName,
-				Miner:      maddr,
+				Miner:      mAddr,
 				OpenMining: &openMining,
 			})
 			assert.Nil(t, err)
@@ -475,17 +475,17 @@ func testUpsertMiner(t *testing.T, userMiners map[string][]string) {
 		Name:  "user_01",
 		State: 1,
 	})
-	maddr, err := address.NewFromString("f01034")
+	mAddr, err := address.NewFromString("f01034")
 	assert.Nil(t, err)
-	isCreate, err := jwtOAuthInstance.UpsertMiner(ctx, &UpsertMinerReq{User: "user_01", Miner: maddr})
+	isCreate, err := jwtOAuthInstance.UpsertMiner(ctx, &UpsertMinerReq{User: "user_01", Miner: mAddr})
 	assert.Nil(t, err)
 	assert.True(t, isCreate)
 
-	maddr, err = address.NewFromString("f1mpvdqt2acgihevibd4greavlsfn3dfph5sckc2a")
+	mAddr, err = address.NewFromString("f1mpvdqt2acgihevibd4greavlsfn3dfph5sckc2a")
 	assert.Nil(t, err)
 	_, err = jwtOAuthInstance.UpsertMiner(ctx, &UpsertMinerReq{
 		User:  "user_01",
-		Miner: maddr,
+		Miner: mAddr,
 	})
 	assert.NotNil(t, err)
 	require.Contains(t, err.Error(), "invalid protocol type")

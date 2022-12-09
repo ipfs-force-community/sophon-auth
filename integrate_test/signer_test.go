@@ -52,7 +52,7 @@ func setupAndAddSigners(t *testing.T) (*jwtclient.AuthClient, string) {
 	client, err := jwtclient.NewAuthClient(server.URL)
 	assert.Nil(t, err)
 	for username, signers := range userSignerAddrs {
-		_, err = client.CreateUser(&auth.CreateUserRequest{Name: username})
+		_, err = client.CreateUser(context.TODO(), &auth.CreateUserRequest{Name: username})
 		assert.Nil(t, err)
 		err = client.RegisterSigners(context.Background(), username, signers)
 		assert.Nil(t, err)
@@ -150,7 +150,7 @@ func testDeleteSigner(t *testing.T) {
 	signerAddr, err := address.NewFromString("t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua")
 	assert.Nil(t, err)
 
-	bDel, err := client.DelSigner(signer)
+	bDel, err := client.DelSigner(context.TODO(), signer)
 	assert.Nil(t, err)
 	assert.True(t, bDel)
 
@@ -159,7 +159,7 @@ func testDeleteSigner(t *testing.T) {
 	assert.False(t, has)
 
 	// delete again
-	bDel, err = client.DelSigner(signer)
+	bDel, err = client.DelSigner(context.TODO(), signer)
 	assert.Nil(t, err)
 	assert.False(t, bDel)
 }

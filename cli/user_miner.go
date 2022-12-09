@@ -47,7 +47,7 @@ var minerAddCmd = &cli.Command{
 		openMining := ctx.Bool("openMining")
 
 		var isCreate bool
-		if isCreate, err = client.UpsertMiner(user, miner, openMining); err != nil {
+		if isCreate, err = client.UpsertMiner(ctx.Context, user, miner, openMining); err != nil {
 			return err
 		}
 		var opStr string
@@ -158,7 +158,7 @@ var minerDeleteCmd = &cli.Command{
 		}
 
 		miner := args.First()
-		exists, err := client.DelMiner(miner)
+		exists, err := client.DelMiner(ctx.Context, miner)
 		if err != nil {
 			return xerrors.Errorf("delete miner:%s failed: %w", miner, err)
 		}

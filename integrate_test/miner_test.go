@@ -41,13 +41,13 @@ func setupAndAddMiners(t *testing.T) (*jwtclient.AuthClient, *auth.OutputUser, s
 	assert.Nil(t, err)
 
 	// Create a user
-	user, err := client.CreateUser(&auth.CreateUserRequest{Name: userName})
+	user, err := client.CreateUser(context.TODO(), &auth.CreateUserRequest{Name: userName})
 	assert.Nil(t, err)
 	// Add 2 miners
-	success, err := client.UpsertMiner(userName, miner1, true)
+	success, err := client.UpsertMiner(context.TODO(), userName, miner1, true)
 	assert.Nil(t, err)
 	assert.True(t, success)
-	success, err = client.UpsertMiner(userName, miner2, true)
+	success, err = client.UpsertMiner(context.TODO(), userName, miner2, true)
 	assert.Nil(t, err)
 	assert.True(t, success)
 
@@ -61,11 +61,11 @@ func testUpsertMiners(t *testing.T) {
 	c, user, tmpDir := setupAndAddMiners(t)
 
 	// `ShouldBind` failed
-	_, err := c.UpsertMiner("", "f01034", true)
+	_, err := c.UpsertMiner(context.TODO(), "", "f01034", true)
 	assert.Error(t, err)
 
 	// invalid address error
-	_, err = c.UpsertMiner(user.Name, address.Undef.String(), true)
+	_, err = c.UpsertMiner(context.TODO(), user.Name, address.Undef.String(), true)
 	assert.Error(t, err)
 
 	shutdown(t, tmpDir)
@@ -155,7 +155,7 @@ func testDeleteMiner(t *testing.T) {
 
 	notExistMiner := "t01004"
 	// Delete a miner
-	success, err := client.DelMiner(user.Miners[0].Miner.String())
+	success, err := client.DelMiner(context.TODO(), user.Miners[0].Miner.String())
 	assert.Nil(t, err)
 	assert.True(t, success)
 
@@ -165,11 +165,11 @@ func testDeleteMiner(t *testing.T) {
 	assert.False(t, has)
 
 	// Try to delete not exist miner
-	success, err = client.DelMiner(notExistMiner)
+	success, err = client.DelMiner(context.TODO(), notExistMiner)
 	assert.Nil(t, err)
 	assert.False(t, success)
 
 	// Try to delete a invalid miner
-	_, err = client.DelMiner("abcdfghijk")
+	_, err = client.DelMiner(context.TODO(), "abcdfghijk")
 	assert.Error(t, err)
 }

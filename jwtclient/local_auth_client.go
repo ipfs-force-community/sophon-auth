@@ -14,17 +14,12 @@ type LocalAuthClient struct {
 }
 
 func NewLocalAuthClient() (*LocalAuthClient, []byte, error) {
-	payload := venusauth.JWTPayload{
-		Perm: core.PermAdmin,
-		Name: "defaultLocalToken",
-	}
-
 	secret, err := RandSecret()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return NewLocalAuthClientWithSecret(secret, payload)
+	return NewLocalAuthClientWithSecret(secret)
 }
 
 func (c *LocalAuthClient) Verify(ctx context.Context, token string) ([]auth.Permission, error) {
@@ -40,7 +35,12 @@ func (c *LocalAuthClient) Verify(ctx context.Context, token string) ([]auth.Perm
 	return perms, nil
 }
 
-func NewLocalAuthClientWithSecret(secret []byte, payload venusauth.JWTPayload) (*LocalAuthClient, []byte, error) {
+func NewLocalAuthClientWithSecret(secret []byte) (*LocalAuthClient, []byte, error) {
+	payload := venusauth.JWTPayload{
+		Perm: core.PermAdmin,
+		Name: "defaultLocalToken",
+	}
+
 	client := &LocalAuthClient{
 		alg: jwt3.NewHS256(secret),
 	}

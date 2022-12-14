@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	venusauth "github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/stretchr/testify/assert"
@@ -14,12 +13,7 @@ func TestLocalAuthClient(t *testing.T) {
 	secret, err := config.RandSecret()
 	assert.NoError(t, err)
 
-	payload := venusauth.JWTPayload{
-		Perm: core.PermAdmin,
-		Name: "defaultLocalToken",
-	}
-
-	clientFromSecret, token, err := NewLocalAuthClientWithSecret(secret, payload)
+	clientFromSecret, token, err := NewLocalAuthClientWithSecret(secret)
 	if err != nil {
 		t.Fatal(err)
 	}

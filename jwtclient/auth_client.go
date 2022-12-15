@@ -18,6 +18,8 @@ import (
 	"github.com/filecoin-project/venus-auth/errcode"
 )
 
+//go:generate mockgen -destination=mocks/mock_auth_client.go -package=mocks github.com/filecoin-project/venus-auth/jwtclient IAuthClient
+
 type IAuthClient interface {
 	Verify(ctx context.Context, token string) (*auth.VerifyResponse, error)
 	VerifyUsers(ctx context.Context, names []string) error

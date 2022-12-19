@@ -69,28 +69,3 @@ func CheckPermissionByMiner(ctx context.Context, client IAuthClient, addrs ...ad
 	}
 	return nil
 }
-
-// isAdmin check if the user is admin and return signers of the user
-func IsAdmin(ctx context.Context, client IAuthClient) (isAdmin bool, signers []address.Address, err error) {
-
-	signers = []address.Address{}
-	err = nil
-
-	if auth.HasPerm(ctx, []auth.Permission{}, core.PermAdmin) {
-		return true, nil, nil
-	}
-	user, exit := CtxGetName(ctx)
-	if !exit && !isAdmin {
-		err = ErrorUserNotFound
-		return false, nil, err
-	}
-	resp, err := client.ListSigners(ctx, user)
-	if err != nil {
-		return false, nil, err
-	}
-	for _, res := range resp {
-		signers = append(signers, res.Signer)
-	}
-
-	return false, signers, nil
-}

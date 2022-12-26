@@ -510,6 +510,15 @@ func (s *mysqlStore) MigrateToV3() error {
 			if err := tx.Exec("alter table `miners` add column `id` bigint(20) not null auto_increment primary key first;").Error; err != nil {
 				return err
 			}
+
+			// normal index to unique index
+			if err := tx.Exec("alter table `miners` drop index `user_miner_idx`;").Error; err != nil {
+				return err
+			}
+
+			if err := tx.Exec("alter table `miners` add unique index `user_miner_idx` (`user`, `miner`);").Error; err != nil {
+				return err
+			}
 		}
 
 		return tx.Model(&StoreVersion{}).

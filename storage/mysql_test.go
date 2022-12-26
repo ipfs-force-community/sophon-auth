@@ -531,8 +531,8 @@ func testMySQLGetUserByMiner(t *testing.T, mySQLStore *mysqlStore, mock sqlmock.
 	userId := "id"
 
 	mock.ExpectQuery(regexp.QuoteMeta(
-		"SELECT users.* FROM `miners` inner join users on miners.`miner` = ? and users.`name` = miners.`user` and users.`is_deleted` IS NULL WHERE `miners`.`deleted_at` IS NULL")).
-		WithArgs(storedAddress(addr)).
+		"SELECT users.* FROM `miners` inner join users on miners.`miner` = ? and users.`name` = miners.`user` and users.`is_deleted` = ? WHERE `miners`.`deleted_at` IS NULL")).
+		WithArgs(storedAddress(addr), core.NotDelete).
 		WillReturnRows(sqlmock.NewRows([]string{"name", "id"}).AddRow(userName, userId))
 
 	user, err := mySQLStore.GetUserByMiner(addr)

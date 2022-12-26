@@ -293,7 +293,7 @@ func (s *mysqlStore) DelRateLimit(name, id string) error {
 func (s *mysqlStore) GetUserByMiner(miner address.Address) (*User, error) {
 	var user User
 	if err := s.db.Model(&Miner{}).Select("users.*").
-		Joins("inner join users on miners.`miner` = ? and users.`name` = miners.`user` and users.`is_deleted` IS NULL", storedAddress(miner)).
+		Joins("inner join users on miners.`miner` = ? and users.`name` = miners.`user` and users.`is_deleted` = ?", storedAddress(miner), core.NotDelete).
 		Scan(&user).Error; err != nil {
 		return nil, err
 	}

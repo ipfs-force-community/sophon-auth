@@ -258,8 +258,8 @@ func (sa storedAddress) Value() (driver.Value, error) {
 
 type Miner struct {
 	ID         uint64        `gorm:"column:id;primary_key;bigint(20) unsigned AUTO_INCREMENT"`
-	Miner      storedAddress `gorm:"column:miner;type:varchar(128);uniqueIndex:user_miner_idx,priority:2;NOT NULL"`
-	User       string        `gorm:"column:user;type:varchar(50);uniqueIndex:user_miner_idx,priority:1;NOT NULL"`
+	Miner      storedAddress `gorm:"column:miner;type:varchar(128);uniqueIndex:miner_idx;NOT NULL"`
+	User       string        `gorm:"column:user;type:varchar(50);NOT NULL"`
 	OpenMining *bool         `gorm:"column:open_mining;default:1;comment:0-false,1-true"`
 	OrmTimestamp
 }

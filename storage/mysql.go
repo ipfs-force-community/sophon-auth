@@ -516,7 +516,7 @@ func (s *mysqlStore) MigrateToV3() error {
 				return err
 			}
 
-			if err := tx.Exec("alter table `miners` add unique index `user_miner_idx` (`user`, `miner`);").Error; err != nil {
+			if err := tx.Exec("alter table `miners` add unique index `miner_idx` (`miner`);").Error; err != nil {
 				return err
 			}
 		}

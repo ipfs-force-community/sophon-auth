@@ -36,6 +36,7 @@ type IAuthClient interface {
 
 	HasMiner(ctx context.Context, miner address.Address) (bool, error)
 	ListMiners(ctx context.Context, user string) (auth.ListMinerResp, error)
+	UpsertMiner(ctx context.Context, user, miner string, openMining bool) (bool, error)
 
 	HasSigner(ctx context.Context, signer address.Address) (bool, error)
 	ListSigners(ctx context.Context, user string) (auth.ListSignerResp, error)

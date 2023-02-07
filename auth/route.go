@@ -2,17 +2,26 @@ package auth
 
 import (
 	"bytes"
+	"context"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/log"
+	"github.com/filecoin-project/venus/venus-shared/api"
 	"github.com/gin-gonic/gin"
 )
 
-func InitRouter(app OAuthApp) http.Handler {
+func InitRouter(app OAuthApp, checkPermission bool) http.Handler {
 	router := gin.New()
 	router.Use(CorsMiddleWare())
+
+	if checkPermission {
+		router.Use(PermMiddleWare(app))
+	} else {
+		router.Use(NoPermMiddleWare())
+	}
 
 	router.GET("/version", func(c *gin.Context) {
 		type version struct {
@@ -128,4 +137,81 @@ func CorsMiddleWare() gin.HandlerFunc {
 		}
 		c.Next()
 	}
+}
+
+func PermMiddleWare(app OAuthApp) gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		token := c.Request.Header.Get(api.AuthorizationHeader)
+
+		if token == "" {
+			token = c.Request.FormValue("token")
+			if token != "" {
+				token = "Bearer " + token
+			}
+		}
+
+		if !strings.HasPrefix(token, "Bearer ") {
+			log.Warnf("missing Bearer prefix in venus-auth header")
+			c.Writer.WriteHeader(401)
+			return
+		}
+
+		token = strings.TrimPrefix(token, "Bearer ")
+
+		jwtPayload, err := app.verify(AdminCtx, token)
+		if err != nil {
+			log.Warnf("verify token failed: %s", err)
+			c.Writer.WriteHeader(401)
+			return
+		}
+
+		ginCtxWithPerm(c, core.AdaptOldStrategy(jwtPayload.Perm))
+
+		if len(jwtPayload.Name) != 0 {
+			ginCtxWithName(c, jwtPayload.Name)
+		}
+
+		c.Next()
+	}
+}
+
+func NoPermMiddleWare() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ginCtxWithPerm(c, core.AdaptOldStrategy(core.PermAdmin))
+		c.Next()
+	}
+}
+
+type ginCtxKey = string
+
+const (
+	nameCtxKey = ginCtxKey("name")
+	permCtxKey = ginCtxKey("perm")
+)
+
+var AdminCtx = context.WithValue(context.Background(), permCtxKey, core.AdaptOldStrategy(core.PermAdmin)) //nolint
+
+func ginCtxWithPerm(ctx *gin.Context, perm []core.Permission) {
+	ctx.Set(permCtxKey, perm)
+}
+
+func ctxGetPerm(ctx context.Context) []core.Permission {
+	perm, ok := ctx.Value(permCtxKey).([]core.Permission)
+	if !ok {
+		return nil
+	}
+	return perm
+}
+
+func ginCtxWithName(ctx *gin.Context, name string) {
+	ctx.Set(nameCtxKey, name)
+}
+
+func ctxGetName(ctx context.Context) string {
+	name, ok := ctx.Value(nameCtxKey).(string)
+	if !ok {
+		return ""
+	}
+	return name
 }

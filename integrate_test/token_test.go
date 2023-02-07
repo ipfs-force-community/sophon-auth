@@ -16,9 +16,9 @@ func TestTokenApis(t *testing.T) {
 }
 
 func setupAndGenerateToken(t *testing.T, name string, perm string) (*jwtclient.AuthClient, string, string) {
-	server, tmpDir := setup(t)
+	server, tmpDir, adminToken := setup(t)
 
-	client, err := jwtclient.NewAuthClient(server.URL)
+	client, err := jwtclient.NewAuthClient(server.URL, adminToken)
 	assert.Nil(t, err)
 
 	// Generate a token
@@ -57,8 +57,8 @@ func testListToken(t *testing.T) {
 
 	listResp, err := client.Tokens(int64(0), int64(10))
 	assert.Nil(t, err)
-	assert.Equal(t, 1, len(listResp))
-	assert.Equal(t, token, listResp[0].Token)
+	assert.Equal(t, 2, len(listResp))
+	assert.Equal(t, token, listResp[1].Token)
 }
 
 func testRemoveAndRecoverToken(t *testing.T) {

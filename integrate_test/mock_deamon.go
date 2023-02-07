@@ -14,7 +14,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 )
 
-func setup(t *testing.T) (server *httptest.Server, dir string) {
+func setup(t *testing.T) (server *httptest.Server, dir string, token string) {
 	tempDir, err := ioutil.TempDir("/var/tmp", "venus-auth")
 	if err != nil {
 		t.Fatal(err)
@@ -40,10 +40,15 @@ func setup(t *testing.T) (server *httptest.Server, dir string) {
 	if err != nil {
 		t.Fatalf("Failed to init venus-auth: %s", err)
 	}
+	token, err = app.GetDefaultAdminToken()
+	if err != nil {
+		t.Fatalf("Failed to get default admin token: %s", err)
+	}
+	cnf.Token = token
 
-	router := auth.InitRouter(app)
+	router := auth.InitRouter(app, false)
 	srv := httptest.NewServer(router)
-	return srv, tempDir
+	return srv, tempDir, token
 }
 
 func shutdown(t *testing.T, tempDir string) {

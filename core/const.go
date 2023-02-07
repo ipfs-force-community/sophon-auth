@@ -31,7 +31,7 @@ var PermArr = []Permission{
 }
 var ErrPermIllegal = errors.New("perm illegal")
 
-func ContainsPerm(perm Permission) error {
+func IsValid(perm Permission) error {
 	for _, v := range PermArr {
 		if v == perm {
 			return nil

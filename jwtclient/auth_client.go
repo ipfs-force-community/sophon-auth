@@ -16,6 +16,7 @@ import (
 	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/errcode"
+	"github.com/filecoin-project/venus/venus-shared/api"
 )
 
 type IAuthClient interface {
@@ -46,10 +47,14 @@ type AuthClient struct {
 	cli *resty.Client
 }
 
-func NewAuthClient(url string) (*AuthClient, error) {
+func NewAuthClient(url string, token string) (*AuthClient, error) {
+	if len(token) == 0 {
+		return nil, xerrors.Errorf("token is empty")
+	}
 	client := resty.New().
 		SetHostURL(url).
-		SetHeader("Accept", "application/json")
+		SetHeader("Accept", "application/json").
+		SetHeader(api.AuthorizationHeader, "Bearer "+token)
 	return &AuthClient{cli: client}, nil
 }
 

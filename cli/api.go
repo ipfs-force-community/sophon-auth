@@ -27,5 +27,5 @@ func GetCli(ctx *cli.Context) (*jwtclient.AuthClient, error) {
 	if err != nil {
 		return nil, xerrors.Errorf("failed to decode config err: %w", err)
 	}
-	return jwtclient.NewAuthClient("http://localhost:" + cnf.Port)
+	return jwtclient.NewAuthClient("http://localhost:"+cnf.Port, cnf.Token)
 }

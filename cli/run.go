@@ -27,6 +27,10 @@ var runCommand = &cli.Command{
 			Name:  "db-type",
 			Usage: "which db to use. sqlite/mysql",
 		},
+		&cli.StringFlag{
+			Name:  "disable-perm-check",
+			Usage: "disable permission check for compatible with old version",
+		},
 	},
 	Action: run,
 }
@@ -91,16 +95,21 @@ func run(cliCtx *cli.Context) error {
 		cnf.DB.Type = cliCtx.String("db-type")
 	}
 
+	app, err := auth.NewOAuthApp(cnf.Secret, dataPath, cnf.DB)
+	if err != nil {
+		log.Fatalf("Failed to init venus-auth: %s", err)
+	}
+	token, err := app.GetDefaultAdminToken()
+	if err != nil {
+		log.Fatalf("Failed to get default admin token: %s", err)
+	}
+	cnf.Token = token
 	err = config.Cover(cnfPath, cnf)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	app, err := auth.NewOAuthApp(cnf.Secret, dataPath, cnf.DB)
-	if err != nil {
-		log.Fatalf("Failed to init venus-auth: %s", err)
-	}
-	router := auth.InitRouter(app)
+	router := auth.InitRouter(app, !cliCtx.Bool("disable-perm-check"))
 
 	if cnf.Trace != nil && cnf.Trace.JaegerTracingEnabled {
 		log.Infof("register jaeger-tracing exporter to %s, with node-name:%s",

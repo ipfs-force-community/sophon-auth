@@ -61,7 +61,7 @@ func TestMain(m *testing.M) {
 	}
 	cnf.Token = token
 
-	router := auth.InitRouter(app, false)
+	router := auth.InitRouter(app, true)
 	server := &http.Server{
 		Addr:         ":" + cnf.Port,
 		Handler:      router,

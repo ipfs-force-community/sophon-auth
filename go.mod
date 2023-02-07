@@ -8,7 +8,7 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/filecoin-project/go-address v1.0.0
 	github.com/filecoin-project/go-jsonrpc v0.1.5
-	github.com/filecoin-project/venus v1.9.0
+	github.com/filecoin-project/venus v1.9.0-rc1.0.20230110072447-c4bf086f7bc9
 	github.com/fsnotify/fsnotify v1.5.4
 	github.com/gbrlsnchs/jwt/v3 v3.0.1
 	github.com/gin-gonic/gin v1.7.0
@@ -53,7 +53,7 @@ require (
 	github.com/filecoin-project/go-hamt-ipld v0.1.5 // indirect
 	github.com/filecoin-project/go-hamt-ipld/v2 v2.0.0 // indirect
 	github.com/filecoin-project/go-hamt-ipld/v3 v3.1.0 // indirect
-	github.com/filecoin-project/go-state-types v0.9.8 // indirect
+	github.com/filecoin-project/go-state-types v0.9.9 // indirect
 	github.com/filecoin-project/specs-actors v0.9.15 // indirect
 	github.com/filecoin-project/specs-actors/v2 v2.3.6 // indirect
 	github.com/filecoin-project/specs-actors/v3 v3.1.2 // indirect

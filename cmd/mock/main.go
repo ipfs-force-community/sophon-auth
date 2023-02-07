@@ -34,7 +34,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to init venus-auth: %s", err)
 	}
-	router := auth.InitRouter(app, false)
+	router := auth.InitRouter(app, true)
 	server := &http.Server{
 		Addr:         ":8989",
 		Handler:      router,

@@ -46,7 +46,7 @@ func setup(t *testing.T) (server *httptest.Server, dir string, token string) {
 	}
 	cnf.Token = token
 
-	router := auth.InitRouter(app, false)
+	router := auth.InitRouter(app, true )
 	srv := httptest.NewServer(router)
 	return srv, tempDir, token
 }

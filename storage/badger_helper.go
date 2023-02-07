@@ -2,6 +2,7 @@ package storage
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -88,7 +89,7 @@ func (s *badgerStore) isExist(obj deleteVerify) (bool, error) {
 		key := obj.key()
 		val, err := txn.Get(key)
 		if err != nil {
-			if xerrors.Is(err, badger.ErrKeyNotFound) {
+			if errors.Is(err, badger.ErrKeyNotFound) {
 				exist = false
 				return nil
 			}
@@ -174,7 +175,7 @@ func (s *badgerStore) Version() (uint64, error) {
 	var version StoreVersion
 	err := s.getObj(storeVersionKey, &version)
 	if err != nil {
-		if xerrors.Is(err, badger.ErrKeyNotFound) {
+		if errors.Is(err, badger.ErrKeyNotFound) {
 			return 0, nil
 		}
 		return 0, err

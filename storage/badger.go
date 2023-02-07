@@ -291,7 +291,7 @@ func (s *badgerStore) RecoverUser(name string) error {
 func (s *badgerStore) GetRateLimits(name, id string) ([]*UserRateLimit, error) {
 	mRateLimits, err := s.listRateLimits(name, id)
 	if err != nil {
-		if xerrors.Is(err, badger.ErrKeyNotFound) {
+		if errors.Is(err, badger.ErrKeyNotFound) {
 			return nil, nil
 		}
 		return nil, err
@@ -313,7 +313,7 @@ func (s *badgerStore) PutRateLimit(limit *UserRateLimit) (string, error) {
 	}
 	limits, err := s.listRateLimits(limit.Name, "")
 	if err != nil {
-		if !xerrors.Is(err, badger.ErrKeyNotFound) {
+		if !errors.Is(err, badger.ErrKeyNotFound) {
 			return "", err
 		}
 		limits = make(map[string]*UserRateLimit)
@@ -389,7 +389,7 @@ func (s *badgerStore) UpsertMiner(maddr address.Address, userName string, openMi
 	return isCreate, s.db.Update(func(txn *badger.Txn) error {
 		// this 'get(userKey)' purpose to makesure 'user' exist
 		if _, err := txn.Get(userkey); err != nil {
-			if xerrors.Is(err, badger.ErrKeyNotFound) {
+			if errors.Is(err, badger.ErrKeyNotFound) {
 				return xerrors.Errorf("can't bind miner:%s to not exist user:%s",
 					maddr.String(), userName)
 			}
@@ -399,7 +399,7 @@ func (s *badgerStore) UpsertMiner(maddr address.Address, userName string, openMi
 
 		// if miner already exists, update it
 		if item, err := txn.Get(minerkey); err != nil {
-			if xerrors.Is(err, badger.ErrKeyNotFound) {
+			if errors.Is(err, badger.ErrKeyNotFound) {
 				miner.Miner = storedAddress(maddr)
 				miner.CreatedAt = now
 				isCreate = true
@@ -482,7 +482,7 @@ func (s *badgerStore) DelMiner(miner address.Address) (bool, error) {
 	m := &Miner{Miner: storedAddress(miner)}
 	err := s.softDelObj(m)
 	if err != nil {
-		if xerrors.Is(err, badger.ErrKeyNotFound) {
+		if errors.Is(err, badger.ErrKeyNotFound) {
 			return false, nil
 		}
 		return false, err
@@ -497,7 +497,7 @@ func (s *badgerStore) RegisterSigner(addr address.Address, userName string) erro
 	return s.db.Update(func(txn *badger.Txn) error {
 		// this 'get(userKey)' purpose to make sure 'user' exist
 		if _, err := txn.Get(userKey); err != nil {
-			if xerrors.Is(err, badger.ErrKeyNotFound) {
+			if errors.Is(err, badger.ErrKeyNotFound) {
 				return xerrors.Errorf("can't bind signer:%s to not exist user:%s",
 					addr.String(), userName)
 			}
@@ -507,7 +507,7 @@ func (s *badgerStore) RegisterSigner(addr address.Address, userName string) erro
 
 		// if user-signer key already exists, update it
 		if item, err := txn.Get(signerForUserKey); err != nil {
-			if xerrors.Is(err, badger.ErrKeyNotFound) {
+			if errors.Is(err, badger.ErrKeyNotFound) {
 				signer.Signer = storedAddress(addr)
 				signer.CreatedAt = now
 			} else {
@@ -561,7 +561,7 @@ func (s *badgerStore) ListSigner(userName string) ([]*Signer, error) {
 func (s *badgerStore) innerUnregisterSigner(addr address.Address, userName string) error {
 	signer := &Signer{Signer: storedAddress(addr), User: userName}
 	err := s.softDelObj(signer)
-	if err != nil && !xerrors.Is(err, badger.ErrKeyNotFound) {
+	if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
 		return err
 	}
 

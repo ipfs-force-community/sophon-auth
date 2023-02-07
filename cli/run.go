@@ -27,7 +27,7 @@ var runCommand = &cli.Command{
 			Name:  "db-type",
 			Usage: "which db to use. sqlite/mysql",
 		},
-		&cli.StringFlag{
+		&cli.BoolFlag{
 			Name:  "disable-perm-check",
 			Usage: "disable permission check for compatible with old version",
 		},

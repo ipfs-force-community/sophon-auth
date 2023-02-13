@@ -26,7 +26,7 @@ import (
 var (
 	ErrorNonRegisteredToken = xerrors.New("A non-registered token")
 	ErrorVerificationFailed = xerrors.New("Verification Failed")
-	ErrorPermissionDeny     = xerrors.New("Permission Deny")
+	ErrorPermissionDenied   = xerrors.New("Permission Deny")
 )
 
 var jwtOAuthInstance *jwtOAuth
@@ -128,7 +128,7 @@ func NewOAuthService(secret string, dbPath string, cnf *config.DBConfig) (OAuthS
 
 func (o *jwtOAuth) GenerateToken(ctx context.Context, pl *JWTPayload) (string, error) {
 	if !isAdmin(ctx) {
-		return "", ErrorPermissionDeny
+		return "", ErrorPermissionDenied
 	}
 
 	// one token, one secret
@@ -161,7 +161,7 @@ func (o *jwtOAuth) GenerateToken(ctx context.Context, pl *JWTPayload) (string, e
 
 func (o *jwtOAuth) Verify(ctx context.Context, token string) (*JWTPayload, error) {
 	if !hasPerm(ctx, core.PermRead) {
-		return nil, ErrorPermissionDeny
+		return nil, ErrorPermissionDenied
 	}
 
 	p := new(JWTPayload)
@@ -204,7 +204,7 @@ func toTokenInfo(kp *storage.KeyPair) (*TokenInfo, error) {
 
 func (o *jwtOAuth) GetToken(c context.Context, token string) (*TokenInfo, error) {
 	if !isAdmin(c) {
-		return nil, ErrorPermissionDeny
+		return nil, ErrorPermissionDenied
 	}
 
 	pair, err := o.store.Get(storage.Token(token))
@@ -215,8 +215,8 @@ func (o *jwtOAuth) GetToken(c context.Context, token string) (*TokenInfo, error)
 }
 
 func (o *jwtOAuth) GetTokenByName(c context.Context, name string) ([]*TokenInfo, error) {
-	if !isAdmin(c) {
-		return nil, ErrorPermissionDeny
+	if !isAdmin(c) && !isUserOwner(c, name) {
+		return nil, ErrorPermissionDenied
 	}
 
 	pairs, err := o.store.ByName(name)
@@ -236,7 +236,7 @@ func (o *jwtOAuth) GetTokenByName(c context.Context, name string) ([]*TokenInfo,
 
 func (o *jwtOAuth) Tokens(ctx context.Context, skip, limit int64) ([]*TokenInfo, error) {
 	if !isAdmin(ctx) {
-		return nil, ErrorPermissionDeny
+		return nil, ErrorPermissionDenied
 	}
 
 	pairs, err := o.store.List(skip, limit)
@@ -256,7 +256,7 @@ func (o *jwtOAuth) Tokens(ctx context.Context, skip, limit int64) ([]*TokenInfo,
 
 func (o *jwtOAuth) RemoveToken(ctx context.Context, token string) error {
 	if !isAdmin(ctx) && !isTokenOwner(ctx, token) {
-		return ErrorPermissionDeny
+		return ErrorPermissionDenied
 	}
 
 	err := o.store.Delete(storage.Token(token))
@@ -268,7 +268,7 @@ func (o *jwtOAuth) RemoveToken(ctx context.Context, token string) error {
 
 func (o *jwtOAuth) RecoverToken(ctx context.Context, token string) error {
 	if !isAdmin(ctx) && !isTokenOwner(ctx, token) {
-		return ErrorPermissionDeny
+		return ErrorPermissionDenied
 	}
 
 	err := o.store.Recover(storage.Token(token))
@@ -280,7 +280,7 @@ func (o *jwtOAuth) RecoverToken(ctx context.Context, token string) error {
 
 func (o *jwtOAuth) CreateUser(ctx context.Context, req *CreateUserRequest) (*CreateUserResponse, error) {
 	if !isAdmin(ctx) {
-		return nil, ErrorPermissionDeny
+		return nil, ErrorPermissionDenied
 	}
 
 	exist, err := o.store.HasUser(req.Name)
@@ -314,7 +314,7 @@ func (o *jwtOAuth) CreateUser(ctx context.Context, req *CreateUserRequest) (*Cre
 
 func (o *jwtOAuth) UpdateUser(ctx context.Context, req *UpdateUserRequest) error {
 	if !isAdmin(ctx) {
-		return ErrorPermissionDeny
+		return ErrorPermissionDenied
 	}
 
 	user, err := o.store.GetUser(req.Name)
@@ -333,14 +333,14 @@ func (o *jwtOAuth) UpdateUser(ctx context.Context, req *UpdateUserRequest) error
 
 func (o *jwtOAuth) VerifyUsers(ctx context.Context, req *VerifyUsersReq) error {
 	if !isAdmin(ctx) {
-		return ErrorPermissionDeny
+		return ErrorPermissionDenied
 	}
 	return o.store.VerifyUsers(req.Names)
 }
 
 func (o *jwtOAuth) ListUsers(ctx context.Context, req *ListUsersRequest) (ListUsersResponse, error) {
 	if !isAdmin(ctx) {
-		return nil, ErrorPermissionDeny
+		return nil, ErrorPermissionDenied
 	}
 
 	users, err := o.store.ListUsers(req.GetSkip(), req.GetLimit(), core.UserState(req.State))
@@ -352,7 +352,7 @@ func (o *jwtOAuth) ListUsers(ctx context.Context, req *ListUsersRequest) (ListUs
 
 func (o *jwtOAuth) HasUser(ctx context.Context, req *HasUserRequest) (bool, error) {
 	if !isAdmin(ctx) {
-		return false, ErrorPermissionDeny
+		return false, ErrorPermissionDenied
 	}
 
 	return o.store.HasUser(req.Name)
@@ -360,14 +360,14 @@ func (o *jwtOAuth) HasUser(ctx context.Context, req *HasUserRequest) (bool, erro
 
 func (o *jwtOAuth) DeleteUser(ctx context.Context, req *DeleteUserRequest) error {
 	if !isAdmin(ctx) {
-		return ErrorPermissionDeny
+		return ErrorPermissionDenied
 	}
 	return o.store.DeleteUser(req.Name)
 }
 
 func (o *jwtOAuth) RecoverUser(ctx context.Context, req *RecoverUserRequest) error {
 	if !isAdmin(ctx) {
-		return ErrorPermissionDeny
+		return ErrorPermissionDenied
 	}
 
 	return o.store.RecoverUser(req.Name)
@@ -375,7 +375,7 @@ func (o *jwtOAuth) RecoverUser(ctx context.Context, req *RecoverUserRequest) err
 
 func (o *jwtOAuth) GetUserByMiner(ctx context.Context, req *GetUserByMinerRequest) (*OutputUser, error) {
 	if !isAdmin(ctx) {
-		return nil, ErrorPermissionDeny
+		return nil, ErrorPermissionDenied
 	}
 
 	mAddr, err := address.NewFromString(req.Miner)
@@ -391,7 +391,7 @@ func (o *jwtOAuth) GetUserByMiner(ctx context.Context, req *GetUserByMinerReques
 
 func (o *jwtOAuth) GetUserBySigner(ctx context.Context, req *GetUserBySignerReq) ([]*OutputUser, error) {
 	if !isAdmin(ctx) {
-		return nil, ErrorPermissionDeny
+		return nil, ErrorPermissionDenied
 	}
 
 	addr, err := address.NewFromString(req.Signer)
@@ -413,7 +413,7 @@ func (o *jwtOAuth) GetUserBySigner(ctx context.Context, req *GetUserBySignerReq)
 
 func (o *jwtOAuth) GetUser(ctx context.Context, req *GetUserRequest) (*OutputUser, error) {
 	if !isAdmin(ctx) && !isUserOwner(ctx, req.Name) {
-		return nil, ErrorPermissionDeny
+		return nil, ErrorPermissionDenied
 	}
 	user, err := o.store.GetUser(req.Name)
 	if err != nil {
@@ -424,7 +424,7 @@ func (o *jwtOAuth) GetUser(ctx context.Context, req *GetUserRequest) (*OutputUse
 
 func (o jwtOAuth) GetUserRateLimits(ctx context.Context, req *GetUserRateLimitsReq) (GetUserRateLimitResponse, error) {
 	if !isAdmin(ctx) {
-		return nil, ErrorPermissionDeny
+		return nil, ErrorPermissionDenied
 	}
 
 	return o.store.GetRateLimits(req.Name, req.Id)
@@ -432,7 +432,7 @@ func (o jwtOAuth) GetUserRateLimits(ctx context.Context, req *GetUserRateLimitsR
 
 func (o *jwtOAuth) UpsertUserRateLimit(ctx context.Context, req *UpsertUserRateLimitReq) (string, error) {
 	if !isAdmin(ctx) {
-		return "", ErrorPermissionDeny
+		return "", ErrorPermissionDenied
 	}
 
 	return o.store.PutRateLimit((*storage.UserRateLimit)(req))
@@ -440,15 +440,15 @@ func (o *jwtOAuth) UpsertUserRateLimit(ctx context.Context, req *UpsertUserRateL
 
 func (o jwtOAuth) DelUserRateLimit(ctx context.Context, req *DelUserRateLimitReq) error {
 	if !isAdmin(ctx) {
-		return ErrorPermissionDeny
+		return ErrorPermissionDenied
 	}
 
 	return o.store.DelRateLimit(req.Name, req.Id)
 }
 
 func (o *jwtOAuth) UpsertMiner(ctx context.Context, req *UpsertMinerReq) (bool, error) {
-	if !isAdmin(ctx) && !isUserOwner(ctx, req.User) {
-		return false, ErrorPermissionDeny
+	if !isAdmin(ctx) {
+		return false, ErrorPermissionDenied
 	}
 
 	maddr, err := address.NewFromString(req.Miner)
@@ -465,7 +465,7 @@ func (o *jwtOAuth) UpsertMiner(ctx context.Context, req *UpsertMinerReq) (bool, 
 
 func (o *jwtOAuth) HasMiner(ctx context.Context, req *HasMinerRequest) (bool, error) {
 	if !isAdmin(ctx) {
-		return false, ErrorPermissionDeny
+		return false, ErrorPermissionDenied
 	}
 
 	mAddr, err := address.NewFromString(req.Miner)
@@ -482,7 +482,7 @@ func (o *jwtOAuth) HasMiner(ctx context.Context, req *HasMinerRequest) (bool, er
 
 func (o *jwtOAuth) MinerExistInUser(ctx context.Context, req *MinerExistInUserRequest) (bool, error) {
 	if !isAdmin(ctx) && !isUserOwner(ctx, req.User) {
-		return false, ErrorPermissionDeny
+		return false, ErrorPermissionDenied
 	}
 
 	mAddr, err := address.NewFromString(req.Miner)
@@ -499,7 +499,7 @@ func (o *jwtOAuth) MinerExistInUser(ctx context.Context, req *MinerExistInUserRe
 
 func (o *jwtOAuth) ListMiners(ctx context.Context, req *ListMinerReq) (ListMinerResp, error) {
 	if !isAdmin(ctx) && !isUserOwner(ctx, req.User) {
-		return nil, ErrorPermissionDeny
+		return nil, ErrorPermissionDenied
 	}
 
 	miners, err := o.store.ListMiners(req.User)
@@ -528,7 +528,7 @@ func (o jwtOAuth) DelMiner(ctx context.Context, req *DelMinerReq) (bool, error) 
 	}
 
 	if !isAdmin(ctx) && !isMinerOwner(ctx, o.store, miner) {
-		return false, ErrorPermissionDeny
+		return false, ErrorPermissionDenied
 	}
 
 	return o.store.DelMiner(miner)
@@ -536,7 +536,7 @@ func (o jwtOAuth) DelMiner(ctx context.Context, req *DelMinerReq) (bool, error) 
 
 func (o *jwtOAuth) RegisterSigners(ctx context.Context, req *RegisterSignersReq) error {
 	if !isAdmin(ctx) {
-		return ErrorPermissionDeny
+		return ErrorPermissionDenied
 	}
 
 	for _, signer := range req.Signers {
@@ -560,7 +560,7 @@ func (o *jwtOAuth) RegisterSigners(ctx context.Context, req *RegisterSignersReq)
 
 func (o *jwtOAuth) SignerExistInUser(ctx context.Context, req *SignerExistInUserReq) (bool, error) {
 	if !isAdmin(ctx) && !isUserOwner(ctx, req.User) {
-		return false, ErrorPermissionDeny
+		return false, ErrorPermissionDenied
 	}
 
 	addr, err := address.NewFromString(req.Signer)
@@ -581,7 +581,7 @@ func (o *jwtOAuth) SignerExistInUser(ctx context.Context, req *SignerExistInUser
 
 func (o *jwtOAuth) ListSigner(ctx context.Context, req *ListSignerReq) (ListSignerResp, error) {
 	if !isAdmin(ctx) && !isUserOwner(ctx, req.User) {
-		return nil, ErrorPermissionDeny
+		return nil, ErrorPermissionDenied
 	}
 
 	signers, err := o.store.ListSigner(req.User)
@@ -604,7 +604,7 @@ func (o *jwtOAuth) ListSigner(ctx context.Context, req *ListSignerReq) (ListSign
 
 func (o *jwtOAuth) UnregisterSigners(ctx context.Context, req *UnregisterSignersReq) error {
 	if !isAdmin(ctx) {
-		return ErrorPermissionDeny
+		return ErrorPermissionDenied
 	}
 
 	for _, signer := range req.Signers {
@@ -628,7 +628,7 @@ func (o *jwtOAuth) UnregisterSigners(ctx context.Context, req *UnregisterSigners
 
 func (o jwtOAuth) HasSigner(ctx context.Context, req *HasSignerReq) (bool, error) {
 	if !isAdmin(ctx) {
-		return false, ErrorPermissionDeny
+		return false, ErrorPermissionDenied
 	}
 
 	addr, err := address.NewFromString(req.Signer)
@@ -650,7 +650,7 @@ func (o jwtOAuth) DelSigner(ctx context.Context, req *DelSignerReq) (bool, error
 	}
 
 	if !isAdmin(ctx) && !isSignerOwner(ctx, o.store, addr) {
-		return false, ErrorPermissionDeny
+		return false, ErrorPermissionDenied
 	}
 
 	if !isSignerAddress(addr) {

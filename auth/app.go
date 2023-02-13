@@ -14,7 +14,7 @@ import (
 )
 
 // DefaultAdminToken is the default admin token which is for local client user
-const DefaultAdminTokenName = "DefaultAdminToken"
+const DefaultAdminTokenName = "defaultLocalToken"
 
 type OAuthApp interface {
 	verify(ctx context.Context, token string) (*JWTPayload, error)
@@ -94,7 +94,7 @@ func (o *oauthApp) verify(ctx context.Context, token string) (*JWTPayload, error
 
 func (o *oauthApp) GetDefaultAdminToken() (string, error) {
 	// if not found, create one
-	token, err := o.srv.GetTokenByName(AdminCtx, DefaultAdminTokenName)
+	token, err := o.srv.GetTokenByName(adminCtx, DefaultAdminTokenName)
 	if err != nil {
 		return "", err
 	}
@@ -104,7 +104,7 @@ func (o *oauthApp) GetDefaultAdminToken() (string, error) {
 		}
 	}
 	// create one
-	ret, err := o.srv.GenerateToken(AdminCtx, &JWTPayload{
+	ret, err := o.srv.GenerateToken(adminCtx, &JWTPayload{
 		Name: DefaultAdminTokenName,
 		Perm: core.PermAdmin,
 	})

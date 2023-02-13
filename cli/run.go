@@ -27,6 +27,7 @@ var runCommand = &cli.Command{
 			Name:  "db-type",
 			Usage: "which db to use. sqlite/mysql",
 		},
+		// todo: rm flag disable-perm-check after v1.13.0
 		&cli.BoolFlag{
 			Name:  "disable-perm-check",
 			Usage: "disable permission check for compatible with old version",

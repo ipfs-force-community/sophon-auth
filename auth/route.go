@@ -13,14 +13,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// todo: rm checkPermission after v1.13.0
 func InitRouter(app OAuthApp, checkPermission bool) http.Handler {
 	router := gin.New()
 	router.Use(CorsMiddleWare())
 
 	if checkPermission {
-		router.Use(PermMiddleWare(app))
+		router.Use(permMiddleWare(app))
 	} else {
-		router.Use(NoPermMiddleWare())
+		router.Use(noPermMiddleWare())
 	}
 
 	router.GET("/version", func(c *gin.Context) {
@@ -139,9 +140,8 @@ func CorsMiddleWare() gin.HandlerFunc {
 	}
 }
 
-func PermMiddleWare(app OAuthApp) gin.HandlerFunc {
+func permMiddleWare(app OAuthApp) gin.HandlerFunc {
 	return func(c *gin.Context) {
-
 		token := c.Request.Header.Get(api.AuthorizationHeader)
 
 		if token == "" {
@@ -159,7 +159,7 @@ func PermMiddleWare(app OAuthApp) gin.HandlerFunc {
 
 		token = strings.TrimPrefix(token, "Bearer ")
 
-		jwtPayload, err := app.verify(AdminCtx, token)
+		jwtPayload, err := app.verify(adminCtx, token)
 		if err != nil {
 			log.Warnf("verify token failed: %s", err)
 			c.Writer.WriteHeader(401)
@@ -176,7 +176,7 @@ func PermMiddleWare(app OAuthApp) gin.HandlerFunc {
 	}
 }
 
-func NoPermMiddleWare() gin.HandlerFunc {
+func noPermMiddleWare() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ginCtxWithPerm(c, core.AdaptOldStrategy(core.PermAdmin))
 		c.Next()
@@ -190,7 +190,9 @@ const (
 	permCtxKey = ginCtxKey("perm")
 )
 
-var AdminCtx = context.WithValue(context.Background(), permCtxKey, core.AdaptOldStrategy(core.PermAdmin)) //nolint
+var adminCtx = context.WithValue(context.Background(), permCtxKey, core.AdaptOldStrategy(core.PermAdmin)) //nolint
+var signCtx = context.WithValue(context.Background(), permCtxKey, core.AdaptOldStrategy(core.PermSign))   //nolint
+var readCtx = context.WithValue(context.Background(), permCtxKey, core.AdaptOldStrategy(core.PermRead))   //nolint
 
 func ginCtxWithPerm(ctx *gin.Context, perm []core.Permission) {
 	ctx.Set(permCtxKey, perm)

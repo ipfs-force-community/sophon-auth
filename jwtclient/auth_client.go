@@ -20,6 +20,8 @@ import (
 
 type IAuthClient interface {
 	VerifyUsers(names []string) error
+
+	CreateUser(req *auth.CreateUserRequest) (*auth.CreateUserResponse, error)
 	HasUser(req *auth.HasUserRequest) (bool, error)
 	GetUser(req *auth.GetUserRequest) (*auth.OutputUser, error)
 	GetUserByMiner(req *auth.GetUserByMinerRequest) (*auth.OutputUser, error)

@@ -17,7 +17,6 @@ import (
 type Config struct {
 	Port         string               `json:"port"`
 	Secret       string               `json:"secret"`
-	Token        string               `json:"token"`
 	ReadTimeout  time.Duration        `json:"readTimeout"`
 	WriteTimeout time.Duration        `json:"writeTimeout"`
 	IdleTimeout  time.Duration        `json:"idleTimeout"`
@@ -60,7 +59,6 @@ func DefaultConfig() (*Config, error) {
 	return &Config{
 		Port:         "8989",
 		Secret:       hex.EncodeToString(secret),
-		Token:        "",
 		ReadTimeout:  time.Minute,
 		WriteTimeout: time.Minute,
 		IdleTimeout:  time.Minute,
@@ -121,16 +119,6 @@ func DecodeConfig(path string) (c *Config, err error) {
 		return nil, err
 	}
 	return
-}
-
-func Exist(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	} else if !os.IsNotExist(err) {
-		return false, err
-	}
-	return false, nil
 }
 
 func Cover(path string, config *Config) error {

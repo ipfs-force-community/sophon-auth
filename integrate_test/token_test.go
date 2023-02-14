@@ -58,7 +58,7 @@ func testListToken(t *testing.T) {
 	listResp, err := client.Tokens(int64(0), int64(10))
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(listResp))
-	assert.Equal(t, token, listResp[1].Token)
+	assert.Contains(t, []string{listResp[0].Token, listResp[1].Token}, token)
 }
 
 func testRemoveAndRecoverToken(t *testing.T) {

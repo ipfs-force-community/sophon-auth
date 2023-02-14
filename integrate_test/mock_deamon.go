@@ -44,7 +44,6 @@ func setup(t *testing.T) (server *httptest.Server, dir string, token string) {
 	if err != nil {
 		t.Fatalf("Failed to get default admin token: %s", err)
 	}
-	cnf.Token = token
 
 	router := auth.InitRouter(app, true)
 	srv := httptest.NewServer(router)

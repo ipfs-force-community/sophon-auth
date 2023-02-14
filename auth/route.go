@@ -159,7 +159,7 @@ func permMiddleWare(app OAuthApp) gin.HandlerFunc {
 
 		token = strings.TrimPrefix(token, "Bearer ")
 
-		jwtPayload, err := app.verify(adminCtx, token)
+		jwtPayload, err := app.verify(token)
 		if err != nil {
 			log.Warnf("verify token failed: %s", err)
 			c.Writer.WriteHeader(401)

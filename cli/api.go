@@ -1,31 +1,28 @@
 package cli
 
 import (
-	"path"
+	"fmt"
 
-	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/jwtclient"
-	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/xerrors"
 )
 
 // nolint
 func GetCli(ctx *cli.Context) (*jwtclient.AuthClient, error) {
-	p, err := homedir.Expand(ctx.String("repo"))
+	repo, err := NewFsRepo(ctx.String("repo"))
 	if err != nil {
-		return nil, xerrors.Errorf("could not expand home dir (repo): %w", err)
+		return nil, fmt.Errorf("create repo: %w", err)
 	}
-	cnfPath, err := homedir.Expand(ctx.String("config"))
+
+	cnf, err := repo.GetConfig()
 	if err != nil {
-		return nil, xerrors.Errorf("could not expand home dir (config): %w", err)
+		return nil, fmt.Errorf("get config: %w", err)
 	}
-	if len(cnfPath) == 0 {
-		cnfPath = path.Join(p, "config.toml")
-	}
-	cnf, err := config.DecodeConfig(cnfPath)
+
+	token, err := repo.GetToken()
 	if err != nil {
-		return nil, xerrors.Errorf("failed to decode config err: %w", err)
+		return nil, fmt.Errorf("get token: %w", err)
 	}
-	return jwtclient.NewAuthClient("http://localhost:"+cnf.Port, cnf.Token)
+
+	return jwtclient.NewAuthClient("http://localhost:"+cnf.Port, token)
 }

@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 
@@ -17,7 +16,7 @@ import (
 const DefaultAdminTokenName = "defaultLocalToken"
 
 type OAuthApp interface {
-	verify(ctx context.Context, token string) (*JWTPayload, error)
+	verify(token string) (*JWTPayload, error)
 	GetDefaultAdminToken() (string, error)
 
 	Verify(c *gin.Context)
@@ -88,8 +87,9 @@ func Response(c *gin.Context, err error) {
 	c.AbortWithStatus(http.StatusOK)
 }
 
-func (o *oauthApp) verify(ctx context.Context, token string) (*JWTPayload, error) {
-	return o.srv.Verify(ctx, token)
+// verify only called by inner, so use readCtx constant to bypass perm check
+func (o *oauthApp) verify(token string) (*JWTPayload, error) {
+	return o.srv.Verify(readCtx, token)
 }
 
 func (o *oauthApp) GetDefaultAdminToken() (string, error) {
@@ -109,7 +109,7 @@ func (o *oauthApp) GetDefaultAdminToken() (string, error) {
 		Perm: core.PermAdmin,
 	})
 	if err != nil {
-		return "", fmt.Errorf("create default admin token : %w", err)
+		return "", fmt.Errorf("create default admin token: %w", err)
 	}
 
 	return ret, nil

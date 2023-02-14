@@ -59,7 +59,6 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("Failed to get default admin token : %s", err)
 	}
-	cnf.Token = token
 
 	router := auth.InitRouter(app, true)
 	server := &http.Server{
@@ -75,7 +74,7 @@ func TestMain(m *testing.M) {
 		_ = server.ListenAndServe()
 	}() //nolint
 
-	if cli, err = NewAuthClient("http://localhost:"+cnf.Port, cnf.Token); err != nil {
+	if cli, err = NewAuthClient("http://localhost:"+cnf.Port, token); err != nil {
 		log.Fatalf("create auth client failed:%s\n", err.Error())
 		return
 	}

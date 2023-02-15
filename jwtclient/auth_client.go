@@ -40,6 +40,9 @@ type IAuthClient interface {
 	ListSigners(user string) (auth.ListSignerResp, error)
 	RegisterSigners(user string, addrs []string) error
 	UnregisterSigners(user string, addrs []string) error
+
+	GenerateToken(name, perm, extra string) (string, error)
+	Tokens(skip, limit int64) (auth.GetTokensResponse, error)
 }
 
 var _ IAuthClient = (*AuthClient)(nil)

@@ -10,7 +10,7 @@ require (
 	github.com/filecoin-project/go-jsonrpc v0.1.3
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/gbrlsnchs/jwt/v3 v3.0.0
-	github.com/gin-gonic/gin v1.7.0
+	github.com/gin-gonic/gin v1.7.7
 	github.com/go-resty/resty/v2 v2.4.0
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/google/uuid v1.2.0

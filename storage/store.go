@@ -70,13 +70,13 @@ type Store interface {
 
 	// miner-user(1-1)
 	// first returned bool, 'miner' is created(true) or updated(false)
-	UpsertMiner(maddr address.Address, userName string, openMining *bool) (bool, error)
-	HasMiner(maddr address.Address) (bool, error)
-	MinerExistInUser(maddr address.Address, userName string) (bool, error)
-	GetUserByMiner(maddr address.Address) (*User, error)
+	UpsertMiner(mAddr address.Address, userName string, openMining *bool) (bool, error)
+	HasMiner(mAddr address.Address) (bool, error)
+	MinerExistInUser(mAddr address.Address, userName string) (bool, error)
+	GetUserByMiner(mAddr address.Address) (*User, error)
 	ListMiners(user string) ([]*Miner, error)
 	// first returned bool, if miner exists(true) or false
-	DelMiner(maddr address.Address) (bool, error)
+	DelMiner(mAddr address.Address) (bool, error)
 
 	// signer-user(n-n)
 	RegisterSigner(addr address.Address, userName string) error

@@ -2,7 +2,9 @@ package auth
 
 import (
 	"bytes"
+	"errors"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/filecoin-project/venus-auth/core"
@@ -13,6 +15,7 @@ import (
 func InitRouter(app OAuthApp) http.Handler {
 	router := gin.New()
 	router.Use(CorsMiddleWare())
+	router.Use(RewriteAddressInUrl())
 
 	router.GET("/version", func(c *gin.Context) {
 		type version struct {
@@ -125,6 +128,26 @@ func CorsMiddleWare() gin.HandlerFunc {
 		c.Header("Content-Type", "application/json")
 		if c.Request.Method == "OPTIONS" {
 			c.JSON(http.StatusOK, "ok!")
+		}
+		c.Next()
+	}
+}
+
+func RewriteAddressInUrl() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		queryParams := c.Request.URL.Query()
+		for key, params := range queryParams {
+			if key == "miner" || key == "signer" {
+				for index, v := range params {
+					params[index] = "\"" + v + "\""
+				}
+			}
+		}
+		c.Request.RequestURI = c.FullPath() + "?" + queryParams.Encode()
+		var err error
+		c.Request.URL, err = url.ParseRequestURI(c.Request.RequestURI)
+		if err != nil {
+			_ = c.AbortWithError(http.StatusInternalServerError, errors.New("fail when rewrite request url"))
 		}
 		c.Next()
 	}

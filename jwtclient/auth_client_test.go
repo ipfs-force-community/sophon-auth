@@ -83,20 +83,21 @@ func TestMain(m *testing.M) {
 }
 
 func TestTokenBusiness(t *testing.T) {
+	ctx := context.TODO()
 	var originTks []string
-	tk1, err := cli.GenerateToken("Rennbon1", core.PermAdmin, "custom params")
+	tk1, err := cli.GenerateToken(context.TODO(), "Rennbon1", core.PermAdmin, "custom params")
 	if err != nil {
 		t.Fatalf("gen token err:%s", err)
 	}
 	originTks = append(originTks, tk1)
 
-	tk2, err := cli.GenerateToken("Rennbon2", core.PermRead, "custom params")
+	tk2, err := cli.GenerateToken(context.TODO(), "Rennbon2", core.PermRead, "custom params")
 	if err != nil {
 		t.Fatalf("gen token err:%s", err)
 	}
 	originTks = append(originTks, tk2)
 
-	tks, err := cli.Tokens(0, 0)
+	tks, err := cli.Tokens(ctx, 0, 0)
 	if err != nil {
 		t.Fatalf("get tokens err:%s", err)
 	}
@@ -112,11 +113,11 @@ func TestTokenBusiness(t *testing.T) {
 		assert.Equal(t, find, true)
 	}
 
-	err = cli.RemoveToken(tk1)
+	err = cli.RemoveToken(ctx, tk1)
 	if err != nil {
 		t.Fatalf("remove token err:%s", err)
 	}
-	tks2, err := cli.Tokens(0, 0)
+	tks2, err := cli.Tokens(ctx, 0, 0)
 	if err != nil {
 		t.Fatalf("get tokens err:%s", err)
 	}
@@ -150,11 +151,11 @@ func TestUserBusiness(t *testing.T) {
 	originUsers := make(map[string]*auth.CreateUserResponse, len(createReqs))
 	var err error
 	for _, req := range createReqs {
-		resp, err := cli.CreateUser(req)
+		resp, err := cli.CreateUser(context.TODO(), req)
 		if err != nil {
 			// user already exists error is ok
 			if strings.Index(err.Error(), "already exists") > 0 {
-				resp, err := cli.GetUser(&auth.GetUserRequest{Name: req.Name})
+				resp, err := cli.GetUser(context.Background(), req.Name)
 				assert.NilError(t, err)
 				originUsers[resp.Id] = resp
 				continue
@@ -164,12 +165,7 @@ func TestUserBusiness(t *testing.T) {
 		originUsers[resp.Id] = resp
 	}
 
-	users, err := cli.ListUsers(&auth.ListUsersRequest{
-		Page: &core.Page{
-			Limit: 10,
-		},
-		State: int(core.UserStateUndefined),
-	})
+	users, err := cli.ListUsers(context.Background(), 0, 10, core.UserStateUndefined)
 	if err != nil {
 		t.Fatalf("get tokens err:%s", err)
 	}
@@ -189,7 +185,7 @@ func TestUserBusiness(t *testing.T) {
 
 	newComment := "this is a new comment"
 	for _, res1 := range originUsers {
-		err = cli.UpdateUser(&auth.UpdateUserRequest{
+		err = cli.UpdateUser(context.TODO(), &auth.UpdateUserRequest{
 			Name:    res1.Name,
 			Comment: &newComment,
 			State:   1,
@@ -197,55 +193,52 @@ func TestUserBusiness(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, err = cli.UpsertMiner(res1.Name, "f02345", true)
+		_, err = cli.UpsertMiner(context.TODO(), res1.Name, "f02345", true)
 		assert.NilError(t, err)
 		break
 	}
 
-	user, err := cli.GetUserByMiner(&auth.GetUserByMinerRequest{
-		Miner: "f02345",
-	})
+	mAddr1, err := address.NewFromString("f02345")
+	assert.NilError(t, err)
+	mAddr2, err := address.NewFromString("f023452")
+	assert.NilError(t, err)
+
+	user, err := cli.GetUserByMiner(context.Background(), mAddr1)
 	if err != nil {
 		t.Fatalf("get miner err:%s", err)
 	}
 
-	has, err := cli.HasMiner(&auth.HasMinerRequest{
-		Miner: "f02345",
-	})
+	has, err := cli.HasMiner(context.Background(), mAddr1)
 	if err != nil {
 		fmt.Printf("err: %s\n", err.Error())
 	}
 	assert.DeepEqual(t, true, has)
 
-	has, err = cli.HasMiner(&auth.HasMinerRequest{
-		Miner: "f023452",
-	})
+	has, err = cli.HasMiner(context.Background(), mAddr2)
 	if err != nil {
 		t.Fatalf("has miner err:%s", err)
 	}
 	assert.DeepEqual(t, false, has)
 
-	exist, err := cli.MinerExistInUser(user.Name, "f02345")
+	exist, err := cli.MinerExistInUser(context.Background(), user.Name, mAddr1)
 	if err != nil {
 		t.Fatalf("check miner exist in user err:%s", err)
 	}
 	assert.DeepEqual(t, true, exist)
 
-	exist, err = cli.MinerExistInUser(user.Name, "f023452")
+	exist, err = cli.MinerExistInUser(context.Background(), user.Name, mAddr2)
 	if err != nil {
 		t.Fatalf("check miner exist in user err:%s", err)
 	}
 	assert.DeepEqual(t, false, exist)
 
-	user, err = cli.GetUser(&auth.GetUserRequest{
-		Name: "name2",
-	})
+	user, err = cli.GetUser(context.Background(), "name2")
 	if err != nil {
 		t.Fatalf("get user err:%s", err)
 	}
 	assert.DeepEqual(t, users[1].Name, user.Name)
 
-	err = cli.VerifyUsers([]string{"name1", "name2"})
+	err = cli.VerifyUsers(context.Background(), []string{"name1", "name2"})
 	if err != nil {
 		t.Fatalf("verify users err:%s", err)
 	}
@@ -256,7 +249,7 @@ func TestClient_Verify(t *testing.T) {
 		t.Skip()
 	}
 
-	kps, err := cli.Tokens(0, 10)
+	kps, err := cli.Tokens(context.TODO(), 0, 10)
 	if err != nil {
 		t.Fatalf("get key-pars failed:%s", err.Error())
 	}
@@ -280,7 +273,7 @@ func TestJWTClient_ListUsers(t *testing.T) {
 	if os.Getenv("CI") == "test" {
 		t.Skip()
 	}
-	res, err := cli.ListUsers(auth.NewListUsersRequest(0, 20, 1))
+	res, err := cli.ListUsers(context.Background(), 0, 20, 1)
 	if err != nil {
 		t.Fatal(err)
 	}

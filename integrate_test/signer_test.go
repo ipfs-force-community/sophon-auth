@@ -1,18 +1,39 @@
 package integrate
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/jwtclient"
 )
 
-var userSigners = map[string][]string{
-	"test_user01": {"t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua", "t1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q"},
-	"test_user02": {"t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua", "t3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha"},
+var userSignerAddrs = getUserSignerAddrs()
+
+func getUserSignerAddrs() map[string][]address.Address {
+	ret := make(map[string][]address.Address)
+
+	user2signerCase := map[string][]string{
+		"test_user01": {"t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua", "t1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q"},
+		"test_user02": {"t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua", "t3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha"},
+	}
+
+	for user, signers := range user2signerCase {
+		var sAddrs []address.Address
+		for _, s := range signers {
+			addr, err := address.NewFromString(s)
+			if err != nil {
+				panic(err)
+			}
+			sAddrs = append(sAddrs, addr)
+		}
+		ret[user] = sAddrs
+	}
+	return ret
 }
 
 func TestSignerAPI(t *testing.T) {
@@ -30,12 +51,10 @@ func setupAndAddSigners(t *testing.T) (*jwtclient.AuthClient, string) {
 
 	client, err := jwtclient.NewAuthClient(server.URL)
 	assert.Nil(t, err)
-
-	for username, signers := range userSigners {
-		_, err = client.CreateUser(&auth.CreateUserRequest{Name: username})
+	for username, signers := range userSignerAddrs {
+		_, err = client.CreateUser(context.TODO(), &auth.CreateUserRequest{Name: username})
 		assert.Nil(t, err)
-
-		err = client.RegisterSigners(username, signers)
+		err = client.RegisterSigners(context.Background(), username, signers)
 		assert.Nil(t, err)
 	}
 
@@ -50,10 +69,9 @@ func testRegisterSigners(t *testing.T) {
 func testSignerExistInUser(t *testing.T) {
 	client, tmpDir := setupAndAddSigners(t)
 	defer shutdown(t, tmpDir)
-
-	for user, signers := range userSigners {
+	for user, signers := range userSignerAddrs {
 		for _, signer := range signers {
-			bExist, err := client.SignerExistInUser(user, signer)
+			bExist, err := client.SignerExistInUser(context.Background(), user, signer)
 			assert.Nil(t, err)
 			assert.True(t, bExist)
 		}
@@ -64,11 +82,11 @@ func testListSignerByUser(t *testing.T) {
 	client, tmpDir := setupAndAddSigners(t)
 	defer shutdown(t, tmpDir)
 
-	for user, signers := range userSigners {
-		ss, err := client.ListSigners(user)
+	for user, signers := range userSignerAddrs {
+		ss, err := client.ListSigners(context.Background(), user)
 		assert.Nil(t, err)
 
-		ns := make([]string, len(ss))
+		ns := make([]address.Address, len(ss))
 		for idx, s := range ss {
 			ns[idx] = s.Signer
 		}
@@ -82,10 +100,9 @@ func testListSignerByUser(t *testing.T) {
 func testHasSigner(t *testing.T) {
 	client, tmpDir := setupAndAddSigners(t)
 	defer shutdown(t, tmpDir)
-
-	for _, signers := range userSigners {
+	for _, signers := range userSignerAddrs {
 		for _, signer := range signers {
-			bExist, err := client.HasSigner(signer)
+			bExist, err := client.HasSigner(context.Background(), signer)
 			assert.Nil(t, err)
 			assert.True(t, bExist)
 		}
@@ -96,8 +113,9 @@ func testGetUserBySigner(t *testing.T) {
 	client, tmpDir := setupAndAddSigners(t)
 	defer shutdown(t, tmpDir)
 
-	signer := "t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua"
-	users, err := client.GetUserBySigner(signer)
+	signer, err := address.NewFromString("t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua")
+	assert.Nil(t, err)
+	users, err := client.GetUserBySigner(context.Background(), signer)
 	assert.Nil(t, err)
 
 	names := make([]string, len(users))
@@ -113,12 +131,13 @@ func testUnregisterSigner(t *testing.T) {
 	defer shutdown(t, tmpDir)
 
 	userName := "test_user01"
-	signer := "t1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q"
-
-	err := client.UnregisterSigners(userName, []string{signer})
+	signer, err := address.NewFromString("t1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q")
 	assert.Nil(t, err)
 
-	bExist, err := client.SignerExistInUser(userName, signer)
+	err = client.UnregisterSigners(context.Background(), userName, []address.Address{signer})
+	assert.Nil(t, err)
+
+	bExist, err := client.SignerExistInUser(context.Background(), userName, signer)
 	assert.Nil(t, err)
 	assert.False(t, bExist)
 }
@@ -128,17 +147,19 @@ func testDeleteSigner(t *testing.T) {
 	defer shutdown(t, tmpDir)
 
 	signer := "t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua"
+	signerAddr, err := address.NewFromString("t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua")
+	assert.Nil(t, err)
 
-	bDel, err := client.DelSigner(signer)
+	bDel, err := client.DelSigner(context.TODO(), signer)
 	assert.Nil(t, err)
 	assert.True(t, bDel)
 
-	has, err := client.HasSigner(signer)
+	has, err := client.HasSigner(context.Background(), signerAddr)
 	assert.Nil(t, err)
 	assert.False(t, has)
 
 	// delete again
-	bDel, err = client.DelSigner(signer)
+	bDel, err = client.DelSigner(context.TODO(), signer)
 	assert.Nil(t, err)
 	assert.False(t, bDel)
 }

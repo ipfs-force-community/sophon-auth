@@ -1,5 +1,12 @@
 # venus-auth changelog
 
+## v1.10.0-rc2
+
+* 简化 authClient 接口，并增加 context [[#126](https://github.com/filecoin-project/venus-auth/pull/126)]
+* 重写 url 中的地址参数 [[#127](https://github.com/filecoin-project/venus-auth/pull/127)]
+* 增加用户数据隔离的工具 [[#130](https://github.com/filecoin-project/venus-auth/pull/130)]
+* 调整 jwtclient.IAtuhClient 接口 [[#137](https://github.com/filecoin-project/venus-auth/pull/137)]
+
 ## v1.10.0-rc1
 
 * github action 增加 dispatch 事件 [[#138](https://github.com/filecoin-project/venus-auth/pull/138)]

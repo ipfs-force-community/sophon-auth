@@ -17,6 +17,9 @@ func InitRouter(app OAuthApp) http.Handler {
 	router.Use(CorsMiddleWare())
 	router.Use(RewriteAddressInUrl())
 
+	router.GET("/status", func(c *gin.Context) {
+		c.String(http.StatusOK, "OK")
+	})
 	router.GET("/version", func(c *gin.Context) {
 		type version struct {
 			Version string

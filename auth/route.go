@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/etherlabsio/healthcheck/v2"
+
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/log"
 	"github.com/gin-gonic/gin"
@@ -17,9 +19,11 @@ func InitRouter(app OAuthApp) http.Handler {
 	router.Use(CorsMiddleWare())
 	router.Use(RewriteAddressInUrl())
 
-	router.GET("/status", func(c *gin.Context) {
-		c.String(http.StatusOK, "OK")
+	headlerFunc := healthcheck.HandlerFunc()
+	router.GET("/healthcheck", func(c *gin.Context) {
+		headlerFunc(c.Writer, c.Request)
 	})
+
 	router.GET("/version", func(c *gin.Context) {
 		type version struct {
 			Version string

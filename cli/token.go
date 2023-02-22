@@ -51,8 +51,8 @@ var genTokenCmd = &cli.Command{
 		}
 
 		perm := ctx.String("perm")
-		if err = core.ContainsPerm(perm); err != nil {
-			return fmt.Errorf("`perm` flag: %w", err)
+		if !core.IsValid(perm) {
+			return fmt.Errorf("`perm` flag invalid")
 		}
 
 		extra := ctx.String("extra")

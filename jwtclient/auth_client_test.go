@@ -55,7 +55,12 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("Failed to init oauthApp : %s", err)
 	}
-	router := auth.InitRouter(app)
+	token, err := app.GetDefaultAdminToken()
+	if err != nil {
+		log.Fatalf("Failed to get default admin token : %s", err)
+	}
+
+	router := auth.InitRouter(app, true)
 	server := &http.Server{
 		Addr:         ":" + cnf.Port,
 		Handler:      router,
@@ -69,7 +74,7 @@ func TestMain(m *testing.M) {
 		_ = server.ListenAndServe()
 	}() //nolint
 
-	if cli, err = NewAuthClient("http://localhost:" + cnf.Port); err != nil {
+	if cli, err = NewAuthClient("http://localhost:"+cnf.Port, token); err != nil {
 		log.Fatalf("create auth client failed:%s\n", err.Error())
 		return
 	}

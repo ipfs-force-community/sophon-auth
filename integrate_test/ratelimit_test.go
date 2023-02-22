@@ -21,9 +21,9 @@ func TestRateLimitApis(t *testing.T) {
 }
 
 func setupAndAddRateLimits(t *testing.T) (*jwtclient.AuthClient, string) {
-	server, tmpDir := setup(t)
+	server, tmpDir, token := setup(t)
 
-	client, err := jwtclient.NewAuthClient(server.URL)
+	client, err := jwtclient.NewAuthClient(server.URL, token)
 	assert.Nil(t, err)
 
 	// Create a user

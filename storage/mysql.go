@@ -307,7 +307,7 @@ func (s *mysqlStore) UpsertMiner(maddr address.Address, userName string, openMin
 	return isCreate, s.db.Transaction(func(tx *gorm.DB) error {
 		var user User
 		if err := tx.Model(&user).First(&user, "name = ?", userName).Error; err != nil {
-			if xerrors.Is(err, gorm.ErrRecordNotFound) {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return xerrors.Errorf("can't bind miner:%s to not exist user:%s", maddr.String(), userName)
 			}
 			return xerrors.Errorf("bind miner:%s to user:%s failed:%w", maddr.String(), userName, err)
@@ -371,7 +371,7 @@ func (s *mysqlStore) RegisterSigner(addr address.Address, userName string) error
 	return s.db.Transaction(func(tx *gorm.DB) error {
 		var user User
 		if err := tx.Model(&user).First(&user, "`name` = ?", userName).Error; err != nil {
-			if xerrors.Is(err, gorm.ErrRecordNotFound) {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return xerrors.Errorf("can't bind signer:%s to not exist user:%s", addr.String(), userName)
 			}
 			return xerrors.Errorf("bind signer:%s to user:%s failed:%w", addr.String(), userName, err)
@@ -449,7 +449,7 @@ func (s *mysqlStore) innerDelSignerOfUser(tx *gorm.DB, userName string) (int64, 
 func (s *mysqlStore) Version() (uint64, error) {
 	var v StoreVersion
 	if err := s.db.Model(&StoreVersion{}).First(&v).Error; err != nil {
-		if xerrors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return 0, nil
 		}
 		return 0, err

@@ -121,16 +121,6 @@ func DecodeConfig(path string) (c *Config, err error) {
 	return
 }
 
-func Exist(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	} else if !os.IsNotExist(err) {
-		return false, err
-	}
-	return false, nil
-}
-
 func Cover(path string, config *Config) error {
 	c, err := os.Create(path)
 	if err != nil {

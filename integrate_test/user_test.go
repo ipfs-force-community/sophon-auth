@@ -29,9 +29,9 @@ func TestUserApis(t *testing.T) {
 }
 
 func setupAndAddUser(t *testing.T) (*jwtclient.AuthClient, string, *auth.CreateUserResponse) {
-	server, tmpDir := setup(t)
+	server, tmpDir, token := setup(t)
 
-	client, err := jwtclient.NewAuthClient(server.URL)
+	client, err := jwtclient.NewAuthClient(server.URL, token)
 	assert.Nil(t, err)
 
 	userName := "Rennbon"

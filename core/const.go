@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"errors"
 )
 
 var CurrentCommit string
@@ -29,15 +28,14 @@ const (
 var PermArr = []Permission{
 	PermAdmin, PermSign, PermWrite, PermRead,
 }
-var ErrPermIllegal = errors.New("perm illegal")
 
-func ContainsPerm(perm Permission) error {
+func IsValid(perm Permission) bool {
 	for _, v := range PermArr {
 		if v == perm {
-			return nil
+			return true
 		}
 	}
-	return ErrPermIllegal
+	return false
 }
 
 func AdaptOldStrategy(perm Permission) []Permission {

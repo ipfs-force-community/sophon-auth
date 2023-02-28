@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/gbrlsnchs/jwt/v3"
 	"github.com/google/uuid"
 	"golang.org/x/xerrors"
@@ -28,6 +26,7 @@ import (
 var (
 	ErrorNonRegisteredToken = xerrors.New("A non-registered token")
 	ErrorVerificationFailed = xerrors.New("Verification Failed")
+	ErrorPermissionDenied   = xerrors.New("Permission Deny")
 )
 
 var jwtOAuthInstance *jwtOAuth
@@ -51,8 +50,8 @@ type OAuthService interface {
 	ListUsers(ctx context.Context, req *ListUsersRequest) (ListUsersResponse, error)
 	HasUser(ctx context.Context, req *HasUserRequest) (bool, error)
 	UpdateUser(ctx context.Context, req *UpdateUserRequest) error
-	DeleteUser(ctx *gin.Context, req *DeleteUserRequest) error
-	RecoverUser(ctx *gin.Context, req *RecoverUserRequest) error
+	DeleteUser(ctx context.Context, req *DeleteUserRequest) error
+	RecoverUser(ctx context.Context, req *RecoverUserRequest) error
 
 	GetUserRateLimits(ctx context.Context, req *GetUserRateLimitsReq) (GetUserRateLimitResponse, error)
 	UpsertUserRateLimit(ctx context.Context, req *UpsertUserRateLimitReq) (string, error)
@@ -128,6 +127,10 @@ func NewOAuthService(secret string, dbPath string, cnf *config.DBConfig) (OAuthS
 }
 
 func (o *jwtOAuth) GenerateToken(ctx context.Context, pl *JWTPayload) (string, error) {
+	if !isAdmin(ctx) {
+		return "", ErrorPermissionDenied
+	}
+
 	// one token, one secret
 	secret, err := config.RandSecret()
 	if err != nil {
@@ -157,6 +160,10 @@ func (o *jwtOAuth) GenerateToken(ctx context.Context, pl *JWTPayload) (string, e
 }
 
 func (o *jwtOAuth) Verify(ctx context.Context, token string) (*JWTPayload, error) {
+	if !hasPerm(ctx, core.PermRead) {
+		return nil, ErrorPermissionDenied
+	}
+
 	p := new(JWTPayload)
 	tk := []byte(token)
 
@@ -196,6 +203,10 @@ func toTokenInfo(kp *storage.KeyPair) (*TokenInfo, error) {
 }
 
 func (o *jwtOAuth) GetToken(c context.Context, token string) (*TokenInfo, error) {
+	if !isAdmin(c) {
+		return nil, ErrorPermissionDenied
+	}
+
 	pair, err := o.store.Get(storage.Token(token))
 	if err != nil {
 		return nil, err
@@ -204,6 +215,10 @@ func (o *jwtOAuth) GetToken(c context.Context, token string) (*TokenInfo, error)
 }
 
 func (o *jwtOAuth) GetTokenByName(c context.Context, name string) ([]*TokenInfo, error) {
+	if !isAdmin(c) && !isUserOwner(c, name) {
+		return nil, ErrorPermissionDenied
+	}
+
 	pairs, err := o.store.ByName(name)
 	if err != nil {
 		return nil, err
@@ -220,6 +235,10 @@ func (o *jwtOAuth) GetTokenByName(c context.Context, name string) ([]*TokenInfo,
 }
 
 func (o *jwtOAuth) Tokens(ctx context.Context, skip, limit int64) ([]*TokenInfo, error) {
+	if !isAdmin(ctx) {
+		return nil, ErrorPermissionDenied
+	}
+
 	pairs, err := o.store.List(skip, limit)
 	if err != nil {
 		return nil, err
@@ -236,6 +255,10 @@ func (o *jwtOAuth) Tokens(ctx context.Context, skip, limit int64) ([]*TokenInfo,
 }
 
 func (o *jwtOAuth) RemoveToken(ctx context.Context, token string) error {
+	if !isAdmin(ctx) && !isTokenOwner(ctx, token) {
+		return ErrorPermissionDenied
+	}
+
 	err := o.store.Delete(storage.Token(token))
 	if err != nil {
 		return fmt.Errorf("remove token %s: %w", token, err)
@@ -244,6 +267,10 @@ func (o *jwtOAuth) RemoveToken(ctx context.Context, token string) error {
 }
 
 func (o *jwtOAuth) RecoverToken(ctx context.Context, token string) error {
+	if !isAdmin(ctx) && !isTokenOwner(ctx, token) {
+		return ErrorPermissionDenied
+	}
+
 	err := o.store.Recover(storage.Token(token))
 	if err != nil {
 		return fmt.Errorf("recover token %s: %w", token, err)
@@ -252,6 +279,10 @@ func (o *jwtOAuth) RecoverToken(ctx context.Context, token string) error {
 }
 
 func (o *jwtOAuth) CreateUser(ctx context.Context, req *CreateUserRequest) (*CreateUserResponse, error) {
+	if !isAdmin(ctx) {
+		return nil, ErrorPermissionDenied
+	}
+
 	exist, err := o.store.HasUser(req.Name)
 	if err != nil {
 		return nil, err
@@ -282,6 +313,10 @@ func (o *jwtOAuth) CreateUser(ctx context.Context, req *CreateUserRequest) (*Cre
 }
 
 func (o *jwtOAuth) UpdateUser(ctx context.Context, req *UpdateUserRequest) error {
+	if !isAdmin(ctx) {
+		return ErrorPermissionDenied
+	}
+
 	user, err := o.store.GetUser(req.Name)
 	if err != nil {
 		return err
@@ -297,10 +332,17 @@ func (o *jwtOAuth) UpdateUser(ctx context.Context, req *UpdateUserRequest) error
 }
 
 func (o *jwtOAuth) VerifyUsers(ctx context.Context, req *VerifyUsersReq) error {
+	if !isAdmin(ctx) {
+		return ErrorPermissionDenied
+	}
 	return o.store.VerifyUsers(req.Names)
 }
 
 func (o *jwtOAuth) ListUsers(ctx context.Context, req *ListUsersRequest) (ListUsersResponse, error) {
+	if !isAdmin(ctx) {
+		return nil, ErrorPermissionDenied
+	}
+
 	users, err := o.store.ListUsers(req.GetSkip(), req.GetLimit(), core.UserState(req.State))
 	if err != nil {
 		return nil, err
@@ -309,18 +351,33 @@ func (o *jwtOAuth) ListUsers(ctx context.Context, req *ListUsersRequest) (ListUs
 }
 
 func (o *jwtOAuth) HasUser(ctx context.Context, req *HasUserRequest) (bool, error) {
+	if !isAdmin(ctx) {
+		return false, ErrorPermissionDenied
+	}
+
 	return o.store.HasUser(req.Name)
 }
 
-func (o *jwtOAuth) DeleteUser(ctx *gin.Context, req *DeleteUserRequest) error {
+func (o *jwtOAuth) DeleteUser(ctx context.Context, req *DeleteUserRequest) error {
+	if !isAdmin(ctx) {
+		return ErrorPermissionDenied
+	}
 	return o.store.DeleteUser(req.Name)
 }
 
-func (o *jwtOAuth) RecoverUser(ctx *gin.Context, req *RecoverUserRequest) error {
+func (o *jwtOAuth) RecoverUser(ctx context.Context, req *RecoverUserRequest) error {
+	if !isAdmin(ctx) {
+		return ErrorPermissionDenied
+	}
+
 	return o.store.RecoverUser(req.Name)
 }
 
 func (o *jwtOAuth) GetUserByMiner(ctx context.Context, req *GetUserByMinerRequest) (*OutputUser, error) {
+	if !isAdmin(ctx) {
+		return nil, ErrorPermissionDenied
+	}
+
 	user, err := o.store.GetUserByMiner(req.Miner)
 	if err != nil {
 		return nil, err
@@ -329,6 +386,10 @@ func (o *jwtOAuth) GetUserByMiner(ctx context.Context, req *GetUserByMinerReques
 }
 
 func (o *jwtOAuth) GetUserBySigner(ctx context.Context, req *GetUserBySignerReq) ([]*OutputUser, error) {
+	if !isAdmin(ctx) {
+		return nil, ErrorPermissionDenied
+	}
+
 	users, err := o.store.GetUserBySigner(req.Signer)
 	if err != nil {
 		return nil, err
@@ -343,6 +404,9 @@ func (o *jwtOAuth) GetUserBySigner(ctx context.Context, req *GetUserBySignerReq)
 }
 
 func (o *jwtOAuth) GetUser(ctx context.Context, req *GetUserRequest) (*OutputUser, error) {
+	if !isAdmin(ctx) && !isUserOwner(ctx, req.Name) {
+		return nil, ErrorPermissionDenied
+	}
 	user, err := o.store.GetUser(req.Name)
 	if err != nil {
 		return nil, err
@@ -351,18 +415,34 @@ func (o *jwtOAuth) GetUser(ctx context.Context, req *GetUserRequest) (*OutputUse
 }
 
 func (o jwtOAuth) GetUserRateLimits(ctx context.Context, req *GetUserRateLimitsReq) (GetUserRateLimitResponse, error) {
+	if !isAdmin(ctx) {
+		return nil, ErrorPermissionDenied
+	}
+
 	return o.store.GetRateLimits(req.Name, req.Id)
 }
 
 func (o *jwtOAuth) UpsertUserRateLimit(ctx context.Context, req *UpsertUserRateLimitReq) (string, error) {
+	if !isAdmin(ctx) {
+		return "", ErrorPermissionDenied
+	}
+
 	return o.store.PutRateLimit((*storage.UserRateLimit)(req))
 }
 
 func (o jwtOAuth) DelUserRateLimit(ctx context.Context, req *DelUserRateLimitReq) error {
+	if !isAdmin(ctx) {
+		return ErrorPermissionDenied
+	}
+
 	return o.store.DelRateLimit(req.Name, req.Id)
 }
 
 func (o *jwtOAuth) UpsertMiner(ctx context.Context, req *UpsertMinerReq) (bool, error) {
+	if !isAdmin(ctx) {
+		return false, ErrorPermissionDenied
+	}
+
 	mAddr := req.Miner
 	if mAddr.Protocol() != address.ID {
 		return false, fmt.Errorf("invalid protocol type: %v", mAddr.Protocol())
@@ -372,6 +452,10 @@ func (o *jwtOAuth) UpsertMiner(ctx context.Context, req *UpsertMinerReq) (bool, 
 }
 
 func (o *jwtOAuth) HasMiner(ctx context.Context, req *HasMinerRequest) (bool, error) {
+	if !isAdmin(ctx) {
+		return false, ErrorPermissionDenied
+	}
+
 	has, err := o.store.HasMiner(req.Miner)
 	if err != nil {
 		return false, err
@@ -380,6 +464,10 @@ func (o *jwtOAuth) HasMiner(ctx context.Context, req *HasMinerRequest) (bool, er
 }
 
 func (o *jwtOAuth) MinerExistInUser(ctx context.Context, req *MinerExistInUserRequest) (bool, error) {
+	if !isAdmin(ctx) && !isUserOwner(ctx, req.User) {
+		return false, ErrorPermissionDenied
+	}
+
 	exist, err := o.store.MinerExistInUser(req.Miner, req.User)
 	if err != nil {
 		return false, err
@@ -388,6 +476,10 @@ func (o *jwtOAuth) MinerExistInUser(ctx context.Context, req *MinerExistInUserRe
 }
 
 func (o *jwtOAuth) ListMiners(ctx context.Context, req *ListMinerReq) (ListMinerResp, error) {
+	if !isAdmin(ctx) && !isUserOwner(ctx, req.User) {
+		return nil, ErrorPermissionDenied
+	}
+
 	miners, err := o.store.ListMiners(req.User)
 	if err != nil {
 		return nil, xerrors.Errorf("list user:%s miners failed:%w", req.User, err)
@@ -407,10 +499,19 @@ func (o *jwtOAuth) ListMiners(ctx context.Context, req *ListMinerReq) (ListMiner
 }
 
 func (o jwtOAuth) DelMiner(ctx context.Context, req *DelMinerReq) (bool, error) {
+
+	if !isAdmin(ctx) && !isMinerOwner(ctx, o.store, req.Miner) {
+		return false, ErrorPermissionDenied
+	}
+
 	return o.store.DelMiner(req.Miner)
 }
 
 func (o *jwtOAuth) RegisterSigners(ctx context.Context, req *RegisterSignersReq) error {
+	if !isAdmin(ctx) {
+		return ErrorPermissionDenied
+	}
+
 	for _, signer := range req.Signers {
 		if !isSignerAddress(signer) {
 			return fmt.Errorf("invalid protocol type: %v", signer.Protocol())
@@ -426,6 +527,10 @@ func (o *jwtOAuth) RegisterSigners(ctx context.Context, req *RegisterSignersReq)
 }
 
 func (o *jwtOAuth) SignerExistInUser(ctx context.Context, req *SignerExistInUserReq) (bool, error) {
+	if !isAdmin(ctx) && !isUserOwner(ctx, req.User) {
+		return false, ErrorPermissionDenied
+	}
+
 	addr := req.Signer
 	if !isSignerAddress(addr) {
 		return false, fmt.Errorf("invalid protocol type: %v", addr.Protocol())
@@ -439,6 +544,10 @@ func (o *jwtOAuth) SignerExistInUser(ctx context.Context, req *SignerExistInUser
 }
 
 func (o *jwtOAuth) ListSigner(ctx context.Context, req *ListSignerReq) (ListSignerResp, error) {
+	if !isAdmin(ctx) && !isUserOwner(ctx, req.User) {
+		return nil, ErrorPermissionDenied
+	}
+
 	signers, err := o.store.ListSigner(req.User)
 	if err != nil {
 		return nil, xerrors.Errorf("list user:%s signer failed: %w", req.User, err)
@@ -457,6 +566,10 @@ func (o *jwtOAuth) ListSigner(ctx context.Context, req *ListSignerReq) (ListSign
 }
 
 func (o *jwtOAuth) UnregisterSigners(ctx context.Context, req *UnregisterSignersReq) error {
+	if !isAdmin(ctx) {
+		return ErrorPermissionDenied
+	}
+
 	for _, signer := range req.Signers {
 		if !isSignerAddress(signer) {
 			return fmt.Errorf("invalid protocol type: %v", signer.Protocol())
@@ -472,6 +585,10 @@ func (o *jwtOAuth) UnregisterSigners(ctx context.Context, req *UnregisterSigners
 }
 
 func (o jwtOAuth) HasSigner(ctx context.Context, req *HasSignerReq) (bool, error) {
+	if !isAdmin(ctx) {
+		return false, ErrorPermissionDenied
+	}
+
 	addr := req.Signer
 	if !isSignerAddress(addr) {
 		return false, fmt.Errorf("invalid protocol type: %v", addr.Protocol())
@@ -482,6 +599,10 @@ func (o jwtOAuth) HasSigner(ctx context.Context, req *HasSignerReq) (bool, error
 
 func (o jwtOAuth) DelSigner(ctx context.Context, req *DelSignerReq) (bool, error) {
 	addr := req.Signer
+	if !isAdmin(ctx) && !isSignerOwner(ctx, o.store, addr) {
+		return false, ErrorPermissionDenied
+	}
+
 	if !isSignerAddress(addr) {
 		return false, fmt.Errorf("invalid protocol type: %v", addr.Protocol())
 	}
@@ -515,4 +636,64 @@ func JwtUserFromToken(token string) (string, error) {
 
 func isSignerAddress(addr address.Address) bool {
 	return addr.Protocol() == address.SECP256K1 || addr.Protocol() == address.BLS
+}
+
+func isAdmin(ctx context.Context) bool {
+	callerPerms := ctxGetPerm(ctx)
+	for _, callerPerm := range callerPerms {
+		if callerPerm == core.PermAdmin {
+			return true
+		}
+	}
+	return false
+}
+
+func hasPerm(ctx context.Context, perm core.Permission) bool {
+	callerPerms := ctxGetPerm(ctx)
+	for _, callerPerm := range callerPerms {
+		if callerPerm == perm {
+			return true
+		}
+	}
+	return false
+}
+
+func isTokenOwner(ctx context.Context, token string) bool {
+	userName := ctxGetName(ctx)
+	tokenName, err := JwtUserFromToken(token)
+	if err != nil {
+		return false
+	}
+	return userName == tokenName
+}
+
+func isUserOwner(ctx context.Context, user string) bool {
+	userName := ctxGetName(ctx)
+	return userName == user
+}
+
+type minerOwnershipChecker interface {
+	MinerExistInUser(maddr address.Address, userName string) (bool, error)
+}
+
+func isMinerOwner(ctx context.Context, checker minerOwnershipChecker, miner address.Address) bool {
+	userName := ctxGetName(ctx)
+	has, err := checker.MinerExistInUser(miner, userName)
+	if err != nil {
+		return false
+	}
+	return has
+}
+
+type signerOwnershipChecker interface {
+	SignerExistInUser(signer address.Address, userName string) (bool, error)
+}
+
+func isSignerOwner(ctx context.Context, checker signerOwnershipChecker, signer address.Address) bool {
+	userName := ctxGetName(ctx)
+	has, err := checker.SignerExistInUser(signer, userName)
+	if err != nil {
+		return false
+	}
+	return has
 }

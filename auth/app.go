@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"net/http"
 
 	"golang.org/x/xerrors"
@@ -8,9 +9,16 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/filecoin-project/venus-auth/config"
+	"github.com/filecoin-project/venus-auth/core"
 )
 
+// DefaultAdminToken is the default admin token which is for local client user
+const DefaultAdminTokenName = "defaultLocalToken"
+
 type OAuthApp interface {
+	verify(token string) (*JWTPayload, error)
+	GetDefaultAdminToken() (string, error)
+
 	Verify(c *gin.Context)
 	GenerateToken(c *gin.Context)
 	RemoveToken(c *gin.Context)
@@ -79,6 +87,34 @@ func Response(c *gin.Context, err error) {
 	c.AbortWithStatus(http.StatusOK)
 }
 
+// verify only called by inner, so use readCtx constant to bypass perm check
+func (o *oauthApp) verify(token string) (*JWTPayload, error) {
+	return o.srv.Verify(readCtx, token)
+}
+
+func (o *oauthApp) GetDefaultAdminToken() (string, error) {
+	// if not found, create one
+	token, err := o.srv.GetTokenByName(adminCtx, DefaultAdminTokenName)
+	if err != nil {
+		return "", err
+	}
+	for _, t := range token {
+		if t.Perm == core.PermAdmin {
+			return t.Token, nil
+		}
+	}
+	// create one
+	ret, err := o.srv.GenerateToken(adminCtx, &JWTPayload{
+		Name: DefaultAdminTokenName,
+		Perm: core.PermAdmin,
+	})
+	if err != nil {
+		return "", fmt.Errorf("create default admin token: %w", err)
+	}
+
+	return ret, nil
+}
+
 func (o *oauthApp) Verify(c *gin.Context) {
 	req := new(VerifyRequest)
 	if err := c.ShouldBind(req); err != nil {
@@ -112,6 +148,7 @@ func (o *oauthApp) GenerateToken(c *gin.Context) {
 	})
 	if err != nil {
 		BadResponse(c, err)
+		return
 	}
 	output := &GenTokenResponse{
 		Token: res,

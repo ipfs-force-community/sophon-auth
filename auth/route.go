@@ -13,7 +13,6 @@ import (
 
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/log"
-	"github.com/filecoin-project/venus/venus-shared/api"
 	"github.com/gin-gonic/gin"
 )
 
@@ -172,7 +171,7 @@ func RewriteAddressInUrl() gin.HandlerFunc {
 
 func permMiddleWare(app OAuthApp) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		token := c.Request.Header.Get(api.AuthorizationHeader)
+		token := c.Request.Header.Get(core.AuthorizationHeader)
 
 		if token == "" {
 			token = c.Request.FormValue("token")

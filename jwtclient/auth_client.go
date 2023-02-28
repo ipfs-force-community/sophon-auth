@@ -16,7 +16,6 @@ import (
 	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/errcode"
-	"github.com/filecoin-project/venus/venus-shared/api"
 )
 
 //go:generate mockgen -destination=mocks/mock_auth_client.go -package=mocks github.com/filecoin-project/venus-auth/jwtclient IAuthClient
@@ -58,7 +57,7 @@ func NewAuthClient(url string, token string) (*AuthClient, error) {
 	client := resty.New().
 		SetHostURL(url).
 		SetHeader("Accept", "application/json").
-		SetHeader(api.AuthorizationHeader, "Bearer "+token)
+		SetHeader(core.AuthorizationHeader, "Bearer "+token)
 	return &AuthClient{cli: client}, nil
 }
 

@@ -208,13 +208,13 @@ func (s *badgerStore) MigrateToV1() error {
 		}
 
 		for _, u := range users {
-			maddr, err := address.NewFromString(u.Miner)
-			if err != nil || maddr.Empty() {
+			mAddr, err := address.NewFromString(u.Miner)
+			if err != nil || mAddr.Empty() {
 				log.Warnf("won't migrate miner:%s, invalid miner address", u.Miner)
 				continue
 			}
 			b, err := (&Miner{
-				Miner:        storedAddress(maddr),
+				Miner:        storedAddress(mAddr),
 				User:         u.Name,
 				OrmTimestamp: OrmTimestamp{CreatedAt: now, UpdatedAt: now},
 			}).Bytes()

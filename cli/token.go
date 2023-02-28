@@ -56,7 +56,7 @@ var genTokenCmd = &cli.Command{
 		}
 
 		extra := ctx.String("extra")
-		tk, err := client.GenerateToken(name, perm, extra)
+		tk, err := client.GenerateToken(ctx.Context, name, perm, extra)
 		if err != nil {
 			return err
 		}
@@ -84,7 +84,7 @@ var getTokenCmd = &cli.Command{
 		if err != nil {
 			return err
 		}
-		tokens, err := client.GetToken(name, token)
+		tokens, err := client.GetToken(ctx.Context, name, token)
 		if err != nil {
 			return err
 		}
@@ -121,7 +121,7 @@ var listTokensCmd = &cli.Command{
 		}
 		skip := int64(ctx.Uint("skip"))
 		limit := int64(ctx.Uint("limit"))
-		tks, err := client.Tokens(skip, limit)
+		tks, err := client.Tokens(ctx.Context, skip, limit)
 		if err != nil {
 			return err
 		}
@@ -153,7 +153,7 @@ var removeTokenCmd = &cli.Command{
 			return err
 		}
 		tk := ctx.Args().First()
-		err = client.RemoveToken(tk)
+		err = client.RemoveToken(ctx.Context, tk)
 		if err != nil {
 			return err
 		}
@@ -175,7 +175,7 @@ var recoverTokenCmd = &cli.Command{
 			return err
 		}
 		tk := ctx.Args().First()
-		err = client.RecoverToken(tk)
+		err = client.RecoverToken(ctx.Context, tk)
 		if err != nil {
 			return err
 		}

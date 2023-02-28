@@ -37,7 +37,7 @@ var signerHasCommand = &cli.Command{
 			return err
 		}
 
-		exist, err := client.HasSigner(addr.String())
+		exist, err := client.HasSigner(ctx.Context, addr)
 		if err != nil {
 			return err
 		}
@@ -78,7 +78,7 @@ var signerDelCommand = &cli.Command{
 			return err
 		}
 
-		_, err = client.DelSigner(addr.String())
+		_, err = client.DelSigner(ctx.Context, addr.String())
 		if err != nil {
 			return err
 		}

@@ -365,9 +365,9 @@ func (s *badgerStore) updateUserRateLimit(name string, limits mapedRatelimit) er
 }
 
 // miner
-func (s *badgerStore) getMiner(maddr address.Address) (*Miner, error) {
+func (s *badgerStore) getMiner(mAddr address.Address) (*Miner, error) {
 	var miner Miner
-	if err := s.getUsableObj(minerKey(maddr.String()), &miner); err != nil {
+	if err := s.getUsableObj(minerKey(mAddr.String()), &miner); err != nil {
 		return nil, err
 	}
 	return &miner, nil
@@ -381,26 +381,26 @@ func (s *badgerStore) GetUserByMiner(mAddr address.Address) (*User, error) {
 	return s.GetUser(miner.User)
 }
 
-func (s *badgerStore) UpsertMiner(maddr address.Address, userName string, openMining *bool) (bool, error) {
+func (s *badgerStore) UpsertMiner(mAddr address.Address, userName string, openMining *bool) (bool, error) {
 	miner := &Miner{}
 	now := time.Now()
 	var isCreate bool
-	userkey, minerkey := userKey(userName), minerKey(maddr.String())
+	userkey, minerkey := userKey(userName), minerKey(mAddr.String())
 	return isCreate, s.db.Update(func(txn *badger.Txn) error {
 		// this 'get(userKey)' purpose to makesure 'user' exist
 		if _, err := txn.Get(userkey); err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
 				return xerrors.Errorf("can't bind miner:%s to not exist user:%s",
-					maddr.String(), userName)
+					mAddr.String(), userName)
 			}
 			return xerrors.Errorf("bound miner:%s to user:%s failed, %w",
-				maddr.String(), userName, err)
+				mAddr.String(), userName, err)
 		}
 
 		// if miner already exists, update it
 		if item, err := txn.Get(minerkey); err != nil {
 			if errors.Is(err, badger.ErrKeyNotFound) {
-				miner.Miner = storedAddress(maddr)
+				miner.Miner = storedAddress(mAddr)
 				miner.CreatedAt = now
 				isCreate = true
 			} else {
@@ -426,12 +426,12 @@ func (s *badgerStore) UpsertMiner(maddr address.Address, userName string, openMi
 	})
 }
 
-func (s *badgerStore) HasMiner(maddr address.Address) (bool, error) {
-	miner := &Miner{Miner: storedAddress(maddr)}
+func (s *badgerStore) HasMiner(mAddr address.Address) (bool, error) {
+	miner := &Miner{Miner: storedAddress(mAddr)}
 	return s.isExist(miner)
 }
 
-func (s *badgerStore) MinerExistInUser(maddr address.Address, userName string) (bool, error) {
+func (s *badgerStore) MinerExistInUser(mAddr address.Address, userName string) (bool, error) {
 	bExist := false
 	if err := s.walkThroughPrefix([]byte(PrefixMiner), func(item *badger.Item) (isContinueWalk bool, err error) {
 		var miner Miner
@@ -440,7 +440,7 @@ func (s *badgerStore) MinerExistInUser(maddr address.Address, userName string) (
 				return err
 			}
 
-			if miner.User == userName && miner.Miner.Address().String() == maddr.String() && !miner.isDeleted() {
+			if miner.User == userName && miner.Miner.Address().String() == mAddr.String() && !miner.isDeleted() {
 				bExist = true
 			}
 

@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/storage"
@@ -555,9 +556,11 @@ func addUsersAndMiners(t *testing.T, userMiners map[string][]string) {
 		// Add miners
 		openMining := true
 		for _, minerID := range miners {
+			mAddr, err := address.NewFromString(minerID)
+			assert.Nil(t, err)
 			ifCreate, err := jwtOAuthInstance.UpsertMiner(ctx, &UpsertMinerReq{
 				User:       userName,
-				Miner:      minerID,
+				Miner:      mAddr,
 				OpenMining: &openMining,
 			})
 			assert.Nil(t, err)
@@ -578,19 +581,23 @@ func testUpsertMiner(t *testing.T, userMiners map[string][]string) {
 		Name:  "user_01",
 		State: 1,
 	})
-	isCreate, err := jwtOAuthInstance.UpsertMiner(adminCtx, &UpsertMinerReq{User: "user_01", Miner: "f01034"})
+	mAddr, err := address.NewFromString("f01034")
+	assert.Nil(t, err)
+	isCreate, err := jwtOAuthInstance.UpsertMiner(adminCtx, &UpsertMinerReq{User: "user_01", Miner: mAddr})
 	assert.Nil(t, err)
 	assert.True(t, isCreate)
 
+	mAddr, err = address.NewFromString("f1mpvdqt2acgihevibd4greavlsfn3dfph5sckc2a")
+	assert.Nil(t, err)
 	_, err = jwtOAuthInstance.UpsertMiner(adminCtx, &UpsertMinerReq{
 		User:  "user_01",
-		Miner: "f1mpvdqt2acgihevibd4greavlsfn3dfph5sckc2a",
+		Miner: mAddr,
 	})
 	assert.NotNil(t, err)
 	require.Contains(t, err.Error(), "invalid protocol type")
 
 	// with signCtx
-	_, err = jwtOAuthInstance.UpsertMiner(signCtx, &UpsertMinerReq{User: "user_01", Miner: "f01034"})
+	_, err = jwtOAuthInstance.UpsertMiner(signCtx, &UpsertMinerReq{User: "user_01", Miner: mAddr})
 	assert.True(t, errors.Is(err, ErrorPermissionDenied))
 }
 
@@ -608,9 +615,9 @@ func testListMiner(t *testing.T, userMiners map[string][]string) {
 		resp, err := jwtOAuthInstance.ListMiners(ctx, &ListMinerReq{User: validUser1})
 		assert.Nil(t, err)
 		assert.Equal(t, len(user1Miners), len(resp))
-		sort.Slice(resp, func(i, j int) bool { return resp[i].Miner < resp[j].Miner })
+		sort.Slice(resp, func(i, j int) bool { return resp[i].Miner.String() < resp[j].Miner.String() })
 		for i := 0; i < len(user1Miners); i++ {
-			assert.Equal(t, user1Miners[i], resp[i].Miner)
+			assert.Equal(t, user1Miners[i], resp[i].Miner.String())
 			assert.Equal(t, validUser1, resp[i].User)
 			assert.Equal(t, true, resp[i].OpenMining)
 		}
@@ -634,18 +641,23 @@ func testMinerExistInMiner(t *testing.T, userMiners map[string][]string) {
 	addUsersAndMiners(t, userMiners)
 
 	validPermTest := func(ctx context.Context) {
+		mAddr1, err := address.NewFromString("t01000")
+		assert.Nil(t, err)
 		// Miner Exist In Account
-		exist, err := jwtOAuthInstance.MinerExistInUser(ctx, &MinerExistInUserRequest{Miner: "t01000", User: "test_user_001"})
+		exist, err := jwtOAuthInstance.MinerExistInUser(ctx, &MinerExistInUserRequest{Miner: mAddr1, User: "test_user_001"})
 		assert.Nil(t, err)
 		assert.True(t, exist)
 
-		exist, err = jwtOAuthInstance.MinerExistInUser(ctx, &MinerExistInUserRequest{Miner: "t01004", User: "test_user_001"})
+		mAddr4, err := address.NewFromString("t01004")
+		assert.Nil(t, err)
+		exist, err = jwtOAuthInstance.MinerExistInUser(ctx, &MinerExistInUserRequest{Miner: mAddr4, User: "test_user_001"})
 		assert.Nil(t, err)
 		assert.False(t, exist)
 	}
 	invalidPermTest := func(ctx context.Context) {
+		mAddr, _ := address.NewFromString("t01000")
 		// Miner Exist In Account
-		_, err := jwtOAuthInstance.MinerExistInUser(ctx, &MinerExistInUserRequest{Miner: "t01000", User: "test_user_001"})
+		_, err := jwtOAuthInstance.MinerExistInUser(ctx, &MinerExistInUserRequest{Miner: mAddr, User: "test_user_001"})
 		assert.True(t, errors.Is(err, ErrorPermissionDenied))
 	}
 
@@ -656,12 +668,14 @@ func testMinerExistInMiner(t *testing.T, userMiners map[string][]string) {
 	invalidPermTest(context.Background())
 
 	// Has Miner
-	has, err := jwtOAuthInstance.HasMiner(adminCtx, &HasMinerRequest{Miner: "t01000"})
+	mAddr, _ := address.NewFromString("t01000")
+	has, err := jwtOAuthInstance.HasMiner(adminCtx, &HasMinerRequest{Miner: mAddr})
 	assert.Nil(t, err)
 	assert.True(t, has)
-	_, err = jwtOAuthInstance.HasMiner(adminCtx, &HasMinerRequest{Miner: "invalid address"})
-	assert.Error(t, err)
-	_, err = jwtOAuthInstance.HasMiner(signCtx, &HasMinerRequest{Miner: "t01000"})
+	invalidMiner, _ := address.NewFromString("t01014")
+	has, _ = jwtOAuthInstance.HasMiner(adminCtx, &HasMinerRequest{Miner: invalidMiner})
+	assert.False(t, has)
+	_, err = jwtOAuthInstance.HasMiner(signCtx, &HasMinerRequest{Miner: mAddr})
 	assert.True(t, errors.Is(err, ErrorPermissionDenied))
 }
 
@@ -674,29 +688,27 @@ func testGetUserByMiner(t *testing.T, userMiners map[string][]string) {
 	// with ctx admin perm
 	// Get User By Miner
 	validUser1 := "test_user_001"
-	user1Miners := []string{"t01000", "t01002", "t01003"}
+	miner := "t01002"
+	mAddr, err := address.NewFromString(miner)
+	assert.Nil(t, err)
 	userInfo, err := jwtOAuthInstance.GetUserByMiner(adminCtx, &GetUserByMinerRequest{
-		Miner: user1Miners[1],
+		Miner: mAddr,
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, validUser1, userInfo.Name)
 
-	// invalid miner address
-	_, err = jwtOAuthInstance.GetUserByMiner(adminCtx, &GetUserByMinerRequest{
-		Miner: "invalid address",
-	})
-	assert.Error(t, err)
-
 	// miner address not exist
+	mAddr, err = address.NewFromString("f01989787")
+	assert.Nil(t, err)
 	_, err = jwtOAuthInstance.GetUserByMiner(adminCtx, &GetUserByMinerRequest{
-		Miner: "f01989787",
+		Miner: mAddr,
 	})
 	assert.Error(t, err)
 
 	// with ctx no perm
 	// Get User By Mine
 	_, err = jwtOAuthInstance.GetUserByMiner(signCtx, &GetUserByMinerRequest{
-		Miner: user1Miners[1],
+		Miner: mAddr,
 	})
 	assert.True(t, errors.Is(err, ErrorPermissionDenied))
 }
@@ -713,25 +725,28 @@ func testDeleteMiner(t *testing.T, userMiners map[string][]string) {
 
 	validPermTest := func(ctx context.Context) {
 		// Delete miner
-		deleted, err := jwtOAuthInstance.DelMiner(ctx, &DelMinerReq{Miner: user1Miners[0]})
+		mAddr, err := address.NewFromString(user1Miners[0])
+		assert.Nil(t, err)
+		deleted, err := jwtOAuthInstance.DelMiner(ctx, &DelMinerReq{Miner: mAddr})
 		assert.Nil(t, err)
 		assert.True(t, deleted)
 		// Then get this miner
-		has, err := jwtOAuthInstance.HasMiner(adminCtx, &HasMinerRequest{Miner: user1Miners[0]})
+		has, err := jwtOAuthInstance.HasMiner(adminCtx, &HasMinerRequest{Miner: mAddr})
 		assert.Nil(t, err)
 		assert.False(t, has)
 
 		ok, err := jwtOAuthInstance.UpsertMiner(adminCtx, &UpsertMinerReq{
 			User:  user1,
-			Miner: user1Miners[0],
+			Miner: mAddr,
 		})
 		assert.Nil(t, err)
 		assert.False(t, ok)
 
 	}
 	invalidPermTest := func(ctx context.Context) {
+		mAddr, _ := address.NewFromString(user1Miners[0])
 		// Delete miner
-		_, err := jwtOAuthInstance.DelMiner(ctx, &DelMinerReq{Miner: user1Miners[0]})
+		_, err := jwtOAuthInstance.DelMiner(ctx, &DelMinerReq{Miner: mAddr})
 		assert.True(t, errors.Is(err, ErrorPermissionDenied))
 	}
 	userCtx := newUserCtx(user1)
@@ -741,7 +756,8 @@ func testDeleteMiner(t *testing.T, userMiners map[string][]string) {
 	invalidPermTest(signCtx)
 
 	// Delete an invalid miner
-	deleted, err := jwtOAuthInstance.DelMiner(adminCtx, &DelMinerReq{Miner: invalidMiner})
+	mAddr, _ := address.NewFromString(invalidMiner)
+	deleted, err := jwtOAuthInstance.DelMiner(adminCtx, &DelMinerReq{Miner: mAddr})
 	assert.Nil(t, err)
 	assert.False(t, deleted)
 }
@@ -757,9 +773,15 @@ func addUsersAndSigners(t *testing.T, userSigners map[string][]string) {
 		// Create users.
 		_, _ = jwtOAuthInstance.CreateUser(adminCtx, createUserReq)
 		// Add Signer
+		signerAddrs := make([]address.Address, 0)
+		for _, signer := range signers {
+			signerAddr, err := address.NewFromString(signer)
+			assert.Nil(t, err)
+			signerAddrs = append(signerAddrs, signerAddr)
+		}
 		err := jwtOAuthInstance.RegisterSigners(adminCtx, &RegisterSignersReq{
 			User:    userName,
-			Signers: signers,
+			Signers: signerAddrs,
 		})
 		assert.Nil(t, err)
 
@@ -767,7 +789,7 @@ func addUsersAndSigners(t *testing.T, userSigners map[string][]string) {
 		// Add Signer
 		err = jwtOAuthInstance.RegisterSigners(signCtx, &RegisterSignersReq{
 			User:    userName,
-			Signers: signers,
+			Signers: signerAddrs,
 		})
 		assert.True(t, errors.Is(err, ErrorPermissionDenied))
 	}
@@ -786,19 +808,14 @@ func testRegisterSigner(t *testing.T, userSigners map[string][]string) {
 		Name:  "user_01",
 		State: 1,
 	})
-	err := jwtOAuthInstance.RegisterSigners(ctx, &RegisterSignersReq{
+	sAddr, err := address.NewFromString("f0128788")
+	assert.Nil(t, err)
+	err = jwtOAuthInstance.RegisterSigners(ctx, &RegisterSignersReq{
 		User:    "user_01",
-		Signers: []string{"f0128788"},
+		Signers: []address.Address{sAddr},
 	})
 	assert.NotNil(t, err)
 	require.Contains(t, err.Error(), "invalid protocol type")
-
-	err = jwtOAuthInstance.RegisterSigners(ctx, &RegisterSignersReq{
-		User:    "user_01",
-		Signers: []string{"128788"},
-	})
-	assert.NotNil(t, err)
-	require.Contains(t, err.Error(), "invalid signer address")
 }
 
 func testSignerExistInUser(t *testing.T, userSigners map[string][]string) {
@@ -812,9 +829,11 @@ func testSignerExistInUser(t *testing.T, userSigners map[string][]string) {
 
 		validPermTest := func(ctx context.Context) {
 			for _, signer := range signers {
+				sAddr, err := address.NewFromString(signer)
+				assert.Nil(t, err)
 				bExist, err := jwtOAuthInstance.SignerExistInUser(ctx, &SignerExistInUserReq{
 					User:   user,
-					Signer: signer,
+					Signer: sAddr,
 				})
 				assert.Nil(t, err)
 				assert.True(t, bExist)
@@ -822,9 +841,10 @@ func testSignerExistInUser(t *testing.T, userSigners map[string][]string) {
 		}
 		invalidPermTest := func(ctx context.Context) {
 			for _, signer := range signers {
+				sAddr, _ := address.NewFromString(signer)
 				_, err := jwtOAuthInstance.SignerExistInUser(ctx, &SignerExistInUserReq{
 					User:   user,
-					Signer: signer,
+					Signer: sAddr,
 				})
 				assert.True(t, errors.Is(err, ErrorPermissionDenied))
 			}
@@ -854,7 +874,7 @@ func testListSigner(t *testing.T, userSigners map[string][]string) {
 		assert.Nil(t, err)
 		assert.Equal(t, len(user1Signers), len(resp))
 		for _, signer := range resp {
-			require.Contains(t, user1Signers, signer.Signer)
+			require.Contains(t, user1Signers, signer.Signer.String())
 		}
 	}
 	invalidPermTest := func(ctx context.Context) {
@@ -876,17 +896,22 @@ func testHasSigner(t *testing.T, userSigners map[string][]string) {
 	defer shutdown(&cfg, t)
 	addUsersAndSigners(t, userSigners)
 
+	sAddr, err := address.NewFromString("t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua")
+	assert.Nil(t, err)
 	// with adminCtx
-	has, err := jwtOAuthInstance.HasSigner(adminCtx, &HasSignerReq{Signer: "t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua"})
+	has, err := jwtOAuthInstance.HasSigner(adminCtx, &HasSignerReq{Signer: sAddr})
 	assert.Nil(t, err)
 	assert.True(t, has)
 
-	has, err = jwtOAuthInstance.HasSigner(adminCtx, &HasSignerReq{Signer: "f3r72mrymha6wrtb6dzynkzjbnl572az27ddbiq3aovj3d235h2jjgsya4afbf3d37vzfbtsy3dssfnitnhklq"})
+	sAddr, err = address.NewFromString("f3r72mrymha6wrtb6dzynkzjbnl572az27ddbiq3aovj3d235h2jjgsya4afbf3d37vzfbtsy3dssfnitnhklq")
+	assert.Nil(t, err)
+	has, err = jwtOAuthInstance.HasSigner(adminCtx, &HasSignerReq{Signer: sAddr})
 	assert.Nil(t, err)
 	assert.False(t, has)
 
 	// with signCtx
-	has, err = jwtOAuthInstance.HasSigner(signCtx, &HasSignerReq{Signer: "t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua"})
+	sAddr, _ = address.NewFromString("t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua")
+	has, err = jwtOAuthInstance.HasSigner(signCtx, &HasSignerReq{Signer: sAddr})
 	assert.True(t, errors.Is(err, ErrorPermissionDenied))
 	assert.False(t, has)
 }
@@ -899,9 +924,10 @@ func testGetUserBySigner(t *testing.T, userSigners map[string][]string) {
 
 	// with adminCtx
 	// Get User By Signer
-	signer := "t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua"
+	sAddr, err := address.NewFromString("t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua")
+	assert.Nil(t, err)
 	users, err := jwtOAuthInstance.GetUserBySigner(adminCtx, &GetUserBySignerReq{
-		Signer: signer,
+		Signer: sAddr,
 	})
 
 	names := make([]string, len(users))
@@ -915,7 +941,7 @@ func testGetUserBySigner(t *testing.T, userSigners map[string][]string) {
 
 	// with signCtx
 	_, err = jwtOAuthInstance.GetUserBySigner(signCtx, &GetUserBySignerReq{
-		Signer: signer,
+		Signer: sAddr,
 	})
 	assert.True(t, errors.Is(err, ErrorPermissionDenied))
 }
@@ -927,18 +953,19 @@ func testUnregisterSigner(t *testing.T, userSigners map[string][]string) {
 	addUsersAndSigners(t, userSigners)
 
 	username := "test_user_001"
-	signer := "t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua"
+	sAddr, err := address.NewFromString("t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua")
+	assert.Nil(t, err)
 
 	// with adminCtx admin perm
 	adminCtx := adminCtx
-	err := jwtOAuthInstance.UnregisterSigners(adminCtx, &UnregisterSignersReq{
-		Signers: []string{signer},
+	err = jwtOAuthInstance.UnregisterSigners(adminCtx, &UnregisterSignersReq{
+		Signers: []address.Address{sAddr},
 		User:    username,
 	})
 	assert.Nil(t, err)
 
 	bExist, err := jwtOAuthInstance.SignerExistInUser(adminCtx, &SignerExistInUserReq{
-		Signer: signer,
+		Signer: sAddr,
 		User:   username,
 	})
 	assert.Nil(t, err)
@@ -946,7 +973,7 @@ func testUnregisterSigner(t *testing.T, userSigners map[string][]string) {
 
 	// with ctx sign perm
 	err = jwtOAuthInstance.UnregisterSigners(signCtx, &UnregisterSignersReq{
-		Signers: []string{signer},
+		Signers: []address.Address{sAddr},
 		User:    username,
 	})
 	assert.True(t, errors.Is(err, ErrorPermissionDenied))
@@ -959,8 +986,9 @@ func testDeleteSigner(t *testing.T, userSigners map[string][]string) {
 	addUsersAndSigners(t, userSigners)
 
 	// Delete signer
-	signer := "t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua"
-	signers := []string{signer}
+	signer, err := address.NewFromString("t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua")
+	assert.Nil(t, err)
+	signers := []address.Address{signer}
 	userName := "test_user_001"
 	validPermTest := func(ctx context.Context) {
 		deleted, err := jwtOAuthInstance.DelSigner(ctx, &DelSignerReq{Signer: signer})

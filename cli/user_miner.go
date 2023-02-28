@@ -10,8 +10,6 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/go-address"
-
-	"github.com/filecoin-project/venus-auth/auth"
 )
 
 var minerSubCmds = &cli.Command{
@@ -49,7 +47,7 @@ var minerAddCmd = &cli.Command{
 		openMining := ctx.Bool("openMining")
 
 		var isCreate bool
-		if isCreate, err = client.UpsertMiner(user, miner, openMining); err != nil {
+		if isCreate, err = client.UpsertMiner(ctx.Context, user, miner, openMining); err != nil {
 			return err
 		}
 		var opStr string
@@ -92,7 +90,7 @@ var minerExistCmd = &cli.Command{
 			return err
 		}
 
-		exist, err := client.MinerExistInUser(user, addr.String())
+		exist, err := client.MinerExistInUser(ctx.Context, user, addr)
 		if err != nil {
 			return err
 		}
@@ -118,11 +116,11 @@ var minerListCmd = &cli.Command{
 		}
 
 		user := args.First()
-		if _, err := client.GetUser(&auth.GetUserRequest{Name: user}); err != nil {
+		if _, err := client.GetUser(ctx.Context, user); err != nil {
 			return xerrors.Errorf("list user:%s miner failed: %w", user, err)
 		}
 
-		miners, err := client.ListMiners(user)
+		miners, err := client.ListMiners(ctx.Context, user)
 		if err != nil {
 			return err
 		}
@@ -160,7 +158,7 @@ var minerDeleteCmd = &cli.Command{
 		}
 
 		miner := args.First()
-		exists, err := client.DelMiner(miner)
+		exists, err := client.DelMiner(ctx.Context, miner)
 		if err != nil {
 			return xerrors.Errorf("delete miner:%s failed: %w", miner, err)
 		}

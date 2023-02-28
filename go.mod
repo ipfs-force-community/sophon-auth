@@ -6,6 +6,7 @@ require (
 	github.com/BurntSushi/toml v1.1.0
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/dgraph-io/badger/v3 v3.2011.1
+	github.com/etherlabsio/healthcheck/v2 v2.0.0
 	github.com/filecoin-project/go-address v1.0.0
 	github.com/filecoin-project/go-jsonrpc v0.1.5
 	github.com/filecoin-project/venus v1.9.0-rc1.0.20230110072447-c4bf086f7bc9
@@ -14,6 +15,7 @@ require (
 	github.com/gin-gonic/gin v1.7.0
 	github.com/go-resty/resty/v2 v2.4.0
 	github.com/go-sql-driver/mysql v1.6.0
+	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.3.0
 	github.com/influxdata/influxdb-client-go/v2 v2.2.2
 	github.com/ipfs-force-community/metrics v1.0.1-0.20211022060227-11142a08b729
@@ -174,4 +176,4 @@ require (
 	lukechampine.com/blake3 v1.1.7 // indirect
 )
 
-replace github.com/filecoin-project/go-jsonrpc => github.com/ipfs-force-community/go-jsonrpc v0.1.4-0.20210721095535-a67dff16de21
+replace github.com/filecoin-project/go-jsonrpc => github.com/ipfs-force-community/go-jsonrpc v0.1.7-0.20230214070559-dbe74781184a

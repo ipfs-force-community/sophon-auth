@@ -301,16 +301,16 @@ func (s *mysqlStore) GetUserByMiner(miner address.Address) (*User, error) {
 	return &user, nil
 }
 
-func (s *mysqlStore) UpsertMiner(maddr address.Address, userName string, openMining *bool) (bool, error) {
+func (s *mysqlStore) UpsertMiner(mAddr address.Address, userName string, openMining *bool) (bool, error) {
 	var isCreate bool
-	stoMiner := storedAddress(maddr)
+	stoMiner := storedAddress(mAddr)
 	return isCreate, s.db.Transaction(func(tx *gorm.DB) error {
 		var user User
 		if err := tx.Model(&user).First(&user, "name = ?", userName).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return xerrors.Errorf("can't bind miner:%s to not exist user:%s", maddr.String(), userName)
+				return xerrors.Errorf("can't bind miner:%s to not exist user:%s", mAddr.String(), userName)
 			}
-			return xerrors.Errorf("bind miner:%s to user:%s failed:%w", maddr.String(), userName, err)
+			return xerrors.Errorf("bind miner:%s to user:%s failed:%w", mAddr.String(), userName, err)
 		}
 		var count int64
 		if err := tx.Model(&Miner{}).Where("miner = ?", stoMiner).Count(&count).Error; err != nil {
@@ -326,18 +326,18 @@ func (s *mysqlStore) UpsertMiner(maddr address.Address, userName string, openMin
 	}, &sql.TxOptions{Isolation: sql.LevelDefault, ReadOnly: false})
 }
 
-func (s mysqlStore) HasMiner(maddr address.Address) (bool, error) {
+func (s mysqlStore) HasMiner(mAddr address.Address) (bool, error) {
 	var count int64
-	if err := s.db.Table("miners").Where("miner = ? AND deleted_at IS NULL", storedAddress(maddr)).Count(&count).Error; err != nil {
+	if err := s.db.Table("miners").Where("miner = ? AND deleted_at IS NULL", storedAddress(mAddr)).Count(&count).Error; err != nil {
 		return false, nil
 	}
 
 	return count > 0, nil
 }
 
-func (s mysqlStore) MinerExistInUser(maddr address.Address, userName string) (bool, error) {
+func (s mysqlStore) MinerExistInUser(mAddr address.Address, userName string) (bool, error) {
 	var count int64
-	if err := s.db.Table("miners").Where("miner = ? AND user = ? AND deleted_at IS NULL", storedAddress(maddr), userName).Count(&count).Error; err != nil {
+	if err := s.db.Table("miners").Where("miner = ? AND user = ? AND deleted_at IS NULL", storedAddress(mAddr), userName).Count(&count).Error; err != nil {
 		return false, nil
 	}
 
@@ -469,15 +469,15 @@ func (s *mysqlStore) MigrateToV1() error {
 	now := time.Now()
 	return s.db.Transaction(func(tx *gorm.DB) error {
 		for _, u := range arr {
-			maddr, err := address.NewFromString(u.Miner)
-			if err != nil || maddr.Empty() {
+			mAddr, err := address.NewFromString(u.Miner)
+			if err != nil || mAddr.Empty() {
 				log.Warnf("won't migrate miner:%s, invalid miner address", u.Miner)
 				continue
 			}
 			if err := tx.Model(&Miner{}).
 				Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "miner"}}, UpdateAll: true}).
 				Create(&Miner{
-					Miner: storedAddress(maddr),
+					Miner: storedAddress(mAddr),
 					User:  u.User,
 					OrmTimestamp: OrmTimestamp{
 						CreatedAt: now,

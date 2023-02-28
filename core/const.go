@@ -12,6 +12,8 @@ var Version = BuildVersion + CurrentCommit
 
 const EmptyString = ""
 
+const AuthorizationHeader = "Authorization"
+
 type (
 	DBPrefix   = []byte
 	Permission = string

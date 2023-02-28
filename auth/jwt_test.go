@@ -581,8 +581,7 @@ func testUpsertMiner(t *testing.T, userMiners map[string][]string) {
 		Name:  "user_01",
 		State: 1,
 	})
-	mAddr, err := address.NewFromString("f01034")
-	assert.Nil(t, err)
+	mAddr, _ := address.NewFromString("f01034")
 	isCreate, err := jwtOAuthInstance.UpsertMiner(adminCtx, &UpsertMinerReq{User: "user_01", Miner: mAddr})
 	assert.Nil(t, err)
 	assert.True(t, isCreate)

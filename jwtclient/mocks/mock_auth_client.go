@@ -260,6 +260,21 @@ func (mr *MockIAuthClientMockRecorder) UnregisterSigners(arg0, arg1, arg2 interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnregisterSigners", reflect.TypeOf((*MockIAuthClient)(nil).UnregisterSigners), arg0, arg1, arg2)
 }
 
+// UpsertMiner mocks base method.
+func (m *MockIAuthClient) UpsertMiner(arg0 context.Context, arg1, arg2 string, arg3 bool) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpsertMiner", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpsertMiner indicates an expected call of UpsertMiner.
+func (mr *MockIAuthClientMockRecorder) UpsertMiner(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertMiner", reflect.TypeOf((*MockIAuthClient)(nil).UpsertMiner), arg0, arg1, arg2, arg3)
+}
+
 // Verify mocks base method.
 func (m *MockIAuthClient) Verify(arg0 context.Context, arg1 string) (*auth.JWTPayload, error) {
 	m.ctrl.T.Helper()

@@ -38,7 +38,7 @@ func (c *LocalAuthClient) Verify(ctx context.Context, token string) ([]auth.Perm
 func NewLocalAuthClientWithSecret(secret []byte) (*LocalAuthClient, []byte, error) {
 	payload := venusauth.JWTPayload{
 		Perm: core.PermAdmin,
-		Name: "defaultLocalToken",
+		Name: venusauth.DefaultAdminTokenName,
 	}
 
 	client := &LocalAuthClient{

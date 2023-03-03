@@ -33,7 +33,6 @@ func newApp() (app *cli.App) {
 			&cli.StringFlag{
 				Name:    "repo",
 				EnvVars: []string{"VENUS_AUTH_PATH"},
-				Hidden:  true,
 				Value:   "~/.venus-auth",
 			},
 		},

@@ -1,5 +1,9 @@
 # venus-auth changelog
 
+## v1.10.0
+
+* 升级 go-jsonrpc 到 v0.1.7
+
 ## v1.10.0-rc2
 
 * 简化 authClient 接口，并增加 context [[#126](https://github.com/filecoin-project/venus-auth/pull/126)]

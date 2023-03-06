@@ -80,6 +80,7 @@ func TestJwt(t *testing.T) {
 		"test_user_001": {"t3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha", "t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua"},
 		"test_user_002": {"t3r47fkdzfmtex5ic3jnwlzc7bkpbj7s4d6limyt4f57t3cuqq5nuvhvwv2cu2a6iga2s64vjqcxjqiezyjooq", "t1uqtvvwkkfkkez52ocnqe6vg74qewiwja4t2tiba"},
 		"test_user_003": {"t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua", "t1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q"},
+		"test_user_004": {"f410ffhviosf3a4ymvgm3sxrugj2qkir33qnlhqjrauq"},
 	}
 	t.Run("test register signer", func(t *testing.T) { testRegisterSigner(t, userSigners) })
 	t.Run("test signer exist in user", func(t *testing.T) { testSignerExistInUser(t, userSigners) })
@@ -606,7 +607,8 @@ func addUsersAndSigners(t *testing.T, userSigners map[string][]string) {
 
 		ctx := context.Background()
 		// Create users.
-		_, _ = jwtOAuthInstance.CreateUser(ctx, createUserReq)
+		_, err := jwtOAuthInstance.CreateUser(ctx, createUserReq)
+		assert.NoError(t, err)
 		// Add Signer
 		signerAddrs := make([]address.Address, 0)
 		for _, signer := range signers {
@@ -614,7 +616,7 @@ func addUsersAndSigners(t *testing.T, userSigners map[string][]string) {
 			assert.Nil(t, err)
 			signerAddrs = append(signerAddrs, signerAddr)
 		}
-		err := jwtOAuthInstance.RegisterSigners(ctx, &RegisterSignersReq{
+		err = jwtOAuthInstance.RegisterSigners(ctx, &RegisterSignersReq{
 			User:    userName,
 			Signers: signerAddrs,
 		})

@@ -1,5 +1,10 @@
 # venus-auth changelog
 
+## v1.10.1
+
+* 查询参数为空时不重置请求url [[#153](https://github.com/filecoin-project/venus-auth/pull/153)]
+* 补充对 delegated 地址的支持 [[#154](https://github.com/filecoin-project/venus-auth/pull/154)]
+
 ## v1.10.0
 
 * 升级 go-jsonrpc 到 v0.1.7

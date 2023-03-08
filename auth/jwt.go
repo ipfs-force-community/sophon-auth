@@ -513,7 +513,7 @@ func (o *jwtOAuth) RegisterSigners(ctx context.Context, req *RegisterSignersReq)
 	}
 
 	for _, signer := range req.Signers {
-		if !isSignerAddress(signer) {
+		if !IsSignerAddress(signer) {
 			return fmt.Errorf("invalid protocol type: %v", signer.Protocol())
 		}
 
@@ -532,7 +532,7 @@ func (o *jwtOAuth) SignerExistInUser(ctx context.Context, req *SignerExistInUser
 	}
 
 	addr := req.Signer
-	if !isSignerAddress(addr) {
+	if !IsSignerAddress(addr) {
 		return false, fmt.Errorf("invalid protocol type: %v", addr.Protocol())
 	}
 
@@ -571,7 +571,7 @@ func (o *jwtOAuth) UnregisterSigners(ctx context.Context, req *UnregisterSigners
 	}
 
 	for _, signer := range req.Signers {
-		if !isSignerAddress(signer) {
+		if !IsSignerAddress(signer) {
 			return fmt.Errorf("invalid protocol type: %v", signer.Protocol())
 		}
 
@@ -590,7 +590,7 @@ func (o jwtOAuth) HasSigner(ctx context.Context, req *HasSignerReq) (bool, error
 	}
 
 	addr := req.Signer
-	if !isSignerAddress(addr) {
+	if !IsSignerAddress(addr) {
 		return false, fmt.Errorf("invalid protocol type: %v", addr.Protocol())
 	}
 
@@ -603,7 +603,7 @@ func (o jwtOAuth) DelSigner(ctx context.Context, req *DelSignerReq) (bool, error
 		return false, ErrorPermissionDenied
 	}
 
-	if !isSignerAddress(addr) {
+	if !IsSignerAddress(addr) {
 		return false, fmt.Errorf("invalid protocol type: %v", addr.Protocol())
 	}
 
@@ -634,8 +634,9 @@ func JwtUserFromToken(token string) (string, error) {
 	return payload.Name, err
 }
 
-func isSignerAddress(addr address.Address) bool {
-	return addr.Protocol() == address.SECP256K1 || addr.Protocol() == address.BLS
+func IsSignerAddress(addr address.Address) bool {
+	protocol := addr.Protocol()
+	return protocol == address.SECP256K1 || protocol == address.BLS || protocol == address.Delegated
 }
 
 func isAdmin(ctx context.Context) bool {

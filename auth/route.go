@@ -151,20 +151,24 @@ func CorsMiddleWare() gin.HandlerFunc {
 
 func RewriteAddressInUrl() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		queryParams := c.Request.URL.Query()
-		for key, params := range queryParams {
-			if key == "miner" || key == "signer" {
-				for index, v := range params {
-					params[index] = "\"" + v + "\""
+		if len(c.Request.URL.Query()) > 0 {
+			queryParams := c.Request.URL.Query()
+			for key, params := range queryParams {
+				if key == "miner" || key == "signer" {
+					for index, v := range params {
+						params[index] = "\"" + v + "\""
+					}
 				}
 			}
+			c.Request.RequestURI = c.FullPath() + "?" + queryParams.Encode()
+			var err error
+			c.Request.URL, err = url.ParseRequestURI(c.Request.RequestURI)
+			if err != nil {
+				log.Errorf("parse request url `%s` failed: %v", c.Request.RequestURI, err)
+				_ = c.AbortWithError(http.StatusInternalServerError, errors.New("fail when rewrite request url"))
+			}
 		}
-		c.Request.RequestURI = c.FullPath() + "?" + queryParams.Encode()
-		var err error
-		c.Request.URL, err = url.ParseRequestURI(c.Request.RequestURI)
-		if err != nil {
-			_ = c.AbortWithError(http.StatusInternalServerError, errors.New("fail when rewrite request url"))
-		}
+
 		c.Next()
 	}
 }

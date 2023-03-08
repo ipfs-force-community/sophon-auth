@@ -47,9 +47,9 @@ func TestSignerAPI(t *testing.T) {
 }
 
 func setupAndAddSigners(t *testing.T) (*jwtclient.AuthClient, string) {
-	server, tmpDir := setup(t)
+	server, tmpDir, token := setup(t)
 
-	client, err := jwtclient.NewAuthClient(server.URL)
+	client, err := jwtclient.NewAuthClient(server.URL, token)
 	assert.Nil(t, err)
 	for username, signers := range userSignerAddrs {
 		_, err = client.CreateUser(context.TODO(), &auth.CreateUserRequest{Name: username})

@@ -1,15 +1,13 @@
 package cli
 
 import (
+	"fmt"
 	"net/http"
-	"path"
 
 	"github.com/filecoin-project/venus-auth/auth"
-	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/log"
 	"github.com/gin-gonic/gin"
 	"github.com/ipfs-force-community/metrics"
-	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli/v2"
 	"go.opencensus.io/plugin/ochttp"
 )
@@ -27,61 +25,28 @@ var runCommand = &cli.Command{
 			Name:  "db-type",
 			Usage: "which db to use. sqlite/mysql",
 		},
+		// todo: rm flag disable-perm-check after v1.13.0
+		&cli.BoolFlag{
+			Name:  "disable-perm-check",
+			Usage: "disable permission check for compatible with old version",
+		},
 	},
 	Action: run,
 }
 
-func MakeDir(path string) {
-	exist, err := config.Exist(path)
-	if err != nil {
-		log.Fatalf("Failed to check file exist : %s", err)
-	}
-	if !exist {
-		err = config.MakeDir(path)
-		if err != nil {
-			log.Fatalf("Failed to crate dir : %s", err)
-		}
-	}
-}
-
-func configScan(path string) *config.Config {
-	exist, err := config.Exist(path)
-	if err != nil {
-		log.Fatalf("Failed to check file exist : %s", err)
-	}
-	if exist {
-		cnf, err := config.DecodeConfig(path)
-		if err != nil {
-			log.Fatalf("Failed to decode config : %s", err)
-		}
-		return cnf
-	}
-	cnf, err := config.DefaultConfig()
-	if err != nil {
-		log.Fatalf("Failed to generate secret : %s", err)
-	}
-	err = config.Cover(path, cnf)
-	if err != nil {
-		log.Fatalf("Failed to write config to home dir : %s", err)
-	}
-	return cnf
-}
-
 func run(cliCtx *cli.Context) error {
 	gin.SetMode(gin.ReleaseMode)
-	cnfPath := cliCtx.String("config")
-	repo := cliCtx.String("repo")
-	repo, err := homedir.Expand(repo)
+
+	repoPath := cliCtx.String("repo")
+	repo, err := NewFsRepo(repoPath)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("init repo: %s", err)
 	}
-	if cnfPath == "" {
-		cnfPath = path.Join(repo, "config.toml")
+	cnf, err := repo.GetConfig()
+	if err != nil {
+		return fmt.Errorf("get config: %s", err)
 	}
-	MakeDir(repo)
-	dataPath := path.Join(repo, "data")
-	MakeDir(dataPath)
-	cnf := configScan(cnfPath)
+
 	log.InitLog(cnf.Log)
 
 	if cliCtx.IsSet("mysql-dsn") {
@@ -91,25 +56,36 @@ func run(cliCtx *cli.Context) error {
 		cnf.DB.Type = cliCtx.String("db-type")
 	}
 
-	err = config.Cover(cnfPath, cnf)
+	dataPath, err := repo.GetDataDir()
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("get data dir: %s", err)
 	}
 
 	app, err := auth.NewOAuthApp(cnf.Secret, dataPath, cnf.DB)
 	if err != nil {
-		log.Fatalf("Failed to init venus-auth: %s", err)
+		return fmt.Errorf("init oauth app: %s", err)
 	}
-	router := auth.InitRouter(app)
+
+	token, err := app.GetDefaultAdminToken()
+	if err != nil {
+		return fmt.Errorf("get default admin token: %s", err)
+	}
+
+	err = repo.SaveToken(token)
+	if err != nil {
+		return fmt.Errorf("save token: %s", err)
+	}
+
+	router := auth.InitRouter(app, !cliCtx.Bool("disable-perm-check"))
 
 	if cnf.Trace != nil && cnf.Trace.JaegerTracingEnabled {
 		log.Infof("register jaeger-tracing exporter to %s, with node-name:%s",
 			cnf.Trace.JaegerEndpoint, cnf.Trace.ServerName)
-		if exporter, err := metrics.RegisterJaeger("venus-auth", cnf.Trace); err != nil {
-			log.Fatalf("RegisterJaegerExporter failed:%s", err.Error())
-		} else {
-			defer metrics.UnregisterJaeger(exporter)
+		exporter, err := metrics.RegisterJaeger("venus-auth", cnf.Trace)
+		if err != nil {
+			return fmt.Errorf("RegisterJaegerExporter failed:%w", err)
 		}
+		defer metrics.UnregisterJaeger(exporter)
 		router = &ochttp.Handler{
 			Handler: router,
 		}

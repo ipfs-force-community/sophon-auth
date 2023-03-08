@@ -40,3 +40,6 @@ docker:
 	docker build --build-arg https_proxy=$(BUILD_DOCKER_PROXY) --build-arg BUILD_TARGET=venus-auth  -t venus-auth .
 	docker tag venus-auth filvenus/venus-auth:$(TAG)
 .PHONY: docker
+
+gen:
+	go generate ./...

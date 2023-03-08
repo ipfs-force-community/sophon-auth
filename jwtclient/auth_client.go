@@ -50,10 +50,14 @@ type AuthClient struct {
 	cli *resty.Client
 }
 
-func NewAuthClient(url string) (*AuthClient, error) {
+func NewAuthClient(url string, token string) (*AuthClient, error) {
+	if len(token) == 0 {
+		return nil, xerrors.Errorf("token is empty")
+	}
 	client := resty.New().
 		SetHostURL(url).
-		SetHeader("Accept", "application/json")
+		SetHeader("Accept", "application/json").
+		SetHeader(core.AuthorizationHeader, "Bearer "+token)
 	return &AuthClient{cli: client}, nil
 }
 

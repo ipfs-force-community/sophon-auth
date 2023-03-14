@@ -97,15 +97,21 @@ func (r *FsRepo) GetDataDir() (string, error) {
 }
 
 func NewFsRepo(repoPath string) (Repo, error) {
-	afterExpand, err := homedir.Expand(repoPath)
+	var err error
+	repoPath, err = homedir.Expand(repoPath)
 	if err != nil {
 		return nil, fmt.Errorf("expand home dir: %w", err)
 	}
 	ret := &FsRepo{
-		repoPath:   afterExpand,
+		repoPath:   repoPath,
 		configPath: DefaultConfigFile,
 		dataPath:   DefaultDataDir,
 		tokenPath:  DefaultTokenFile,
+	}
+	// create repo if not exist
+	err = makeDir(repoPath)
+	if err != nil {
+		return nil, fmt.Errorf("make repo dir: %w", err)
 	}
 	return ret, nil
 }

@@ -3,11 +3,14 @@ package cli
 import (
 	"fmt"
 	"net/http"
+	"path/filepath"
 
 	"github.com/filecoin-project/venus-auth/auth"
+	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/log"
-	"github.com/gin-gonic/gin"
+	"github.com/filecoin-project/venus-auth/util"
 	"github.com/ipfs-force-community/metrics"
+	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli/v2"
 	"go.opencensus.io/plugin/ochttp"
 )
@@ -34,21 +37,34 @@ var runCommand = &cli.Command{
 	Action: run,
 }
 
-func run(cliCtx *cli.Context) error {
-	gin.SetMode(gin.ReleaseMode)
-
-	repoPath := cliCtx.String("repo")
-	repo, err := NewFsRepo(repoPath)
+func configScan(path string, cliCtx *cli.Context) (*config.Config, error) {
+	exist, err := util.Exist(path)
 	if err != nil {
-		return fmt.Errorf("init repo: %s", err)
+		return nil, fmt.Errorf("failed to check file exist : %s", err)
 	}
-	cnf, err := repo.GetConfig()
+	if exist {
+		cnf, err := config.DecodeConfig(path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode config : %s", err)
+		}
+
+		return fillConfigByFlag(cnf, cliCtx), nil
+	}
+
+	cnf, err := config.DefaultConfig()
 	if err != nil {
-		return fmt.Errorf("get config: %s", err)
+		return nil, fmt.Errorf("failed to generate secret : %s", err)
+	}
+	cnf = fillConfigByFlag(cnf, cliCtx)
+	err = config.Cover(path, cnf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to write config to home dir : %s", err)
 	}
 
-	log.InitLog(cnf.Log)
+	return cnf, nil
+}
 
+func fillConfigByFlag(cnf *config.Config, cliCtx *cli.Context) *config.Config {
 	if cliCtx.IsSet("mysql-dsn") {
 		cnf.DB.DSN = cliCtx.String("mysql-dsn")
 	}
@@ -56,11 +72,31 @@ func run(cliCtx *cli.Context) error {
 		cnf.DB.Type = cliCtx.String("db-type")
 	}
 
-	dataPath, err := repo.GetDataDir()
+	return cnf
+}
+
+func run(cliCtx *cli.Context) error {
+	repoPath, err := homedir.Expand(cliCtx.String("repo"))
 	if err != nil {
-		return fmt.Errorf("get data dir: %s", err)
+		return fmt.Errorf("expand home dir: %w", err)
+	}
+	repo, err := NewFsRepo(repoPath)
+	if err != nil {
+		return fmt.Errorf("init repo: %s", err)
 	}
 
+	cnfPath := cliCtx.String("config")
+	if len(cnfPath) == 0 {
+		cnfPath = filepath.Join(repoPath, DefaultConfigFile)
+	}
+	cnf, err := configScan(cnfPath, cliCtx)
+	if err != nil {
+		return err
+	}
+
+	log.InitLog(cnf.Log)
+
+	dataPath := repo.GetDataDir()
 	app, err := auth.NewOAuthApp(cnf.Secret, dataPath, cnf.DB)
 	if err != nil {
 		return fmt.Errorf("init oauth app: %s", err)

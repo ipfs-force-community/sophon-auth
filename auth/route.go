@@ -18,6 +18,8 @@ import (
 
 // todo: rm checkPermission after v1.13.0
 func InitRouter(app OAuthApp, checkPermission bool) http.Handler {
+	gin.SetMode(gin.ReleaseMode)
+
 	router := gin.New()
 	router.Use(CorsMiddleWare())
 	router.Use(RewriteAddressInUrl())

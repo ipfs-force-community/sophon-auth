@@ -6,7 +6,7 @@ import (
 	"path"
 
 	"github.com/filecoin-project/venus-auth/config"
-	"github.com/mitchellh/go-homedir"
+	"github.com/filecoin-project/venus-auth/util"
 )
 
 type Repo interface {
@@ -14,7 +14,7 @@ type Repo interface {
 	SaveConfig(*config.Config) error
 	GetToken() (string, error)
 	SaveToken(string) error
-	GetDataDir() (string, error)
+	GetDataDir() string
 }
 
 const (
@@ -38,24 +38,9 @@ type FsRepo struct {
 
 func (r *FsRepo) GetConfig() (*config.Config, error) {
 	path := path.Join(r.repoPath, r.configPath)
-	exist, err := exist(path)
+	cnf, err := config.DecodeConfig(path)
 	if err != nil {
-		return nil, fmt.Errorf("check config exist: %w", err)
-	}
-	if exist {
-		cnf, err := config.DecodeConfig(path)
-		if err != nil {
-			return nil, fmt.Errorf("decode config: %w", err)
-		}
-		return cnf, nil
-	}
-	cnf, err := config.DefaultConfig()
-	if err != nil {
-		return nil, fmt.Errorf("generate secret: %w", err)
-	}
-	err = config.Cover(path, cnf)
-	if err != nil {
-		return nil, fmt.Errorf("save config: %w", err)
+		return nil, fmt.Errorf("decode config: %w", err)
 	}
 	return cnf, nil
 }
@@ -67,7 +52,7 @@ func (r *FsRepo) SaveConfig(cnf *config.Config) error {
 
 func (r *FsRepo) GetToken() (string, error) {
 	path := path.Join(r.repoPath, r.tokenPath)
-	exist, err := exist(path)
+	exist, err := util.Exist(path)
 	if err != nil {
 		return "", fmt.Errorf("check token exist: %w", err)
 	}
@@ -87,60 +72,40 @@ func (r *FsRepo) SaveToken(token string) error {
 	return os.WriteFile(path, []byte(token), os.ModePerm)
 }
 
-func (r *FsRepo) GetDataDir() (string, error) {
-	ret := path.Join(r.repoPath, r.dataPath)
-	err := makeDir(ret)
+func (r *FsRepo) GetDataDir() string {
+	return path.Join(r.repoPath, r.dataPath)
+}
+
+func (r *FsRepo) init() error {
+	exist, err := util.Exist(r.repoPath)
 	if err != nil {
-		return "", fmt.Errorf("make data dir: %w", err)
+		return err
 	}
-	return ret, nil
+	if exist {
+		return nil
+	}
+
+	// create repo if not exist
+	err = util.MakeDir(r.repoPath)
+	if err != nil {
+		return fmt.Errorf("make repo dir: %w", err)
+	}
+
+	err = util.MakeDir(r.GetDataDir())
+	if err != nil {
+		return fmt.Errorf("make data dir: %w", err)
+	}
+
+	return nil
 }
 
 func NewFsRepo(repoPath string) (Repo, error) {
-	var err error
-	repoPath, err = homedir.Expand(repoPath)
-	if err != nil {
-		return nil, fmt.Errorf("expand home dir: %w", err)
-	}
 	ret := &FsRepo{
 		repoPath:   repoPath,
 		configPath: DefaultConfigFile,
 		dataPath:   DefaultDataDir,
 		tokenPath:  DefaultTokenFile,
 	}
-	// create repo if not exist
-	err = makeDir(repoPath)
-	if err != nil {
-		return nil, fmt.Errorf("make repo dir: %w", err)
-	}
-	return ret, nil
-}
 
-func makeDir(path string) error {
-	fi, err := os.Stat(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			err = os.MkdirAll(path, os.ModePerm)
-			if err != nil {
-				return fmt.Errorf("make dir: %w", err)
-			}
-		} else {
-			return fmt.Errorf("stat dir: %w", err)
-		}
-	} else {
-		if !fi.IsDir() {
-			return fmt.Errorf("path %s is not a dir", path)
-		}
-	}
-	return nil
-}
-
-func exist(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	} else if !os.IsNotExist(err) {
-		return false, err
-	}
-	return false, nil
+	return ret, ret.init()
 }

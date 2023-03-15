@@ -4,12 +4,17 @@ import (
 	"fmt"
 
 	"github.com/filecoin-project/venus-auth/jwtclient"
+	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli/v2"
 )
 
-// nolint
 func GetCli(ctx *cli.Context) (*jwtclient.AuthClient, error) {
-	repo, err := NewFsRepo(ctx.String("repo"))
+	repoPath, err := homedir.Expand(ctx.String("repo"))
+	if err != nil {
+		return nil, err
+	}
+
+	repo, err := NewFsRepo(repoPath)
 	if err != nil {
 		return nil, fmt.Errorf("create repo: %w", err)
 	}

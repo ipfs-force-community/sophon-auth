@@ -4,8 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/filecoin-project/venus-auth/jwtclient"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/filecoin-project/venus-auth/auth"
+	"github.com/filecoin-project/venus-auth/jwtclient"
 )
 
 func TestTokenApis(t *testing.T) {
@@ -22,6 +24,8 @@ func setupAndGenerateToken(t *testing.T, name string, perm string) (*jwtclient.A
 	assert.Nil(t, err)
 
 	// Generate a token
+	_, err = client.CreateUser(context.TODO(), &auth.CreateUserRequest{Name: name})
+	assert.Nil(t, err)
 	token, err := client.GenerateToken(context.TODO(), name, perm, "")
 	assert.Nil(t, err)
 	return client, tmpDir, token

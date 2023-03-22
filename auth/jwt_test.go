@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/go-address"
+
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/storage"
@@ -109,13 +110,23 @@ func testGenerateToken(t *testing.T) {
 		Extra: "",
 	}
 
-	token1, err := jwtOAuthInstance.GenerateToken(adminCtx, pl1)
+	_, err := jwtOAuthInstance.GenerateToken(adminCtx, pl1)
+	assert.NotNil(t, err)
+	require.Contains(t, err.Error(), "token must be based on an existing user")
+
+	createUserReq := &CreateUserRequest{
+		Name:  "test-token-01",
+		State: 0,
+	}
+	resp, err := jwtOAuthInstance.CreateUser(adminCtx, createUserReq)
 	assert.Nil(t, err)
-	assert.Equal(t, 3, len(strings.Split(token1, ".")))
+	assert.Equal(t, "test-token-01", resp.Name)
+	token, err := jwtOAuthInstance.GenerateToken(adminCtx, pl1)
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(strings.Split(token, ".")))
 
 	_, err = jwtOAuthInstance.GenerateToken(signCtx, pl1)
 	assert.True(t, errors.Is(err, ErrorPermissionDeny))
-
 }
 
 func testVerifyToken(t *testing.T) {
@@ -130,11 +141,18 @@ func testVerifyToken(t *testing.T) {
 		Extra: "",
 	}
 
-	token1, err := jwtOAuthInstance.GenerateToken(adminCtx, pl1)
+	createUserReq := &CreateUserRequest{
+		Name:  "test-token-01",
+		State: 0,
+	}
+	resp, err := jwtOAuthInstance.CreateUser(adminCtx, createUserReq)
+	assert.Nil(t, err)
+	assert.Equal(t, "test-token-01", resp.Name)
+	token, err := jwtOAuthInstance.GenerateToken(adminCtx, pl1)
 	assert.Nil(t, err)
 
 	// Verify a valid token
-	payload1, err := jwtOAuthInstance.Verify(readCtx, token1)
+	payload1, err := jwtOAuthInstance.Verify(readCtx, token)
 	assert.Nil(t, err)
 	assert.True(t, reflect.DeepEqual(payload1, pl1))
 
@@ -144,7 +162,7 @@ func testVerifyToken(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// with ctx no perm
-	_, err = jwtOAuthInstance.Verify(context.Background(), token1)
+	_, err = jwtOAuthInstance.Verify(context.Background(), token)
 	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 }
 
@@ -160,12 +178,18 @@ func testGetToken(t *testing.T) {
 		Extra: "",
 	}
 
-	// with ctx admin perm
-	token1, err := jwtOAuthInstance.GenerateToken(adminCtx, pl1)
+	createUserReq := &CreateUserRequest{
+		Name:  "test-token-01",
+		State: 0,
+	}
+	resp, err := jwtOAuthInstance.CreateUser(adminCtx, createUserReq)
+	assert.Nil(t, err)
+	assert.Equal(t, "test-token-01", resp.Name)
+	token, err := jwtOAuthInstance.GenerateToken(adminCtx, pl1)
 	assert.Nil(t, err)
 
 	// Get token
-	tokenInfo1, err := jwtOAuthInstance.GetToken(adminCtx, token1)
+	tokenInfo1, err := jwtOAuthInstance.GetToken(adminCtx, token)
 	assert.Nil(t, err)
 	assert.Equal(t, pl1.Name, tokenInfo1.Name)
 	assert.Equal(t, pl1.Perm, tokenInfo1.Perm)
@@ -175,7 +199,7 @@ func testGetToken(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// with ctx no perm
-	_, err = jwtOAuthInstance.GetToken(context.Background(), token1)
+	_, err = jwtOAuthInstance.GetToken(context.Background(), token)
 	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 	_, err = jwtOAuthInstance.GetToken(signCtx, invalidToken)
 	assert.True(t, errors.Is(err, ErrorPermissionDeny))
@@ -193,7 +217,14 @@ func testGetTokenByName(t *testing.T) {
 		Extra: "",
 	}
 
-	token1, err := jwtOAuthInstance.GenerateToken(adminCtx, pl1)
+	createUserReq := &CreateUserRequest{
+		Name:  "test-token-01",
+		State: 0,
+	}
+	resp, err := jwtOAuthInstance.CreateUser(adminCtx, createUserReq)
+	assert.Nil(t, err)
+	assert.Equal(t, "test-token-01", resp.Name)
+	token, err := jwtOAuthInstance.GenerateToken(adminCtx, pl1)
 	assert.Nil(t, err)
 	userCtx := newUserCtx(pl1.Name)
 
@@ -202,7 +233,7 @@ func testGetTokenByName(t *testing.T) {
 		tokenInfoList1, err := jwtOAuthInstance.GetTokenByName(ctx, "test-token-01")
 		assert.Nil(t, err)
 		assert.Equal(t, 1, len(tokenInfoList1))
-		assert.Equal(t, token1, tokenInfoList1[0].Token)
+		assert.Equal(t, token, tokenInfoList1[0].Token)
 
 	}
 	invalidPermTest := func(ctx context.Context) {
@@ -237,8 +268,23 @@ func testTokenList(t *testing.T) {
 		Perm:  "admin",
 		Extra: "",
 	}
-	_, err := jwtOAuthInstance.GenerateToken(adminCtx, pl1)
+
+	createUserReq := &CreateUserRequest{
+		Name:  "test-token-01",
+		State: 0,
+	}
+	resp, err := jwtOAuthInstance.CreateUser(adminCtx, createUserReq)
 	assert.Nil(t, err)
+	assert.Equal(t, "test-token-01", resp.Name)
+	_, err = jwtOAuthInstance.GenerateToken(adminCtx, pl1)
+	assert.Nil(t, err)
+	createUserReq = &CreateUserRequest{
+		Name:  "test-token-02",
+		State: 0,
+	}
+	resp, err = jwtOAuthInstance.CreateUser(adminCtx, createUserReq)
+	assert.Nil(t, err)
+	assert.Equal(t, "test-token-02", resp.Name)
 	_, err = jwtOAuthInstance.GenerateToken(adminCtx, pl2)
 	assert.Nil(t, err)
 
@@ -277,20 +323,27 @@ func testRemoveAndRecoverToken(t *testing.T) {
 		Extra: "",
 	}
 
-	token1, err := jwtOAuthInstance.GenerateToken(adminCtx, pl1)
+	createUserReq := &CreateUserRequest{
+		Name:  "test-token-01",
+		State: 0,
+	}
+	resp, err := jwtOAuthInstance.CreateUser(adminCtx, createUserReq)
+	assert.Nil(t, err)
+	assert.Equal(t, "test-token-01", resp.Name)
+	token, err := jwtOAuthInstance.GenerateToken(adminCtx, pl1)
 	assert.Nil(t, err)
 
 	validPermTest := func(ctx context.Context) {
 
 		// token is usable.
-		err = jwtOAuthInstance.RecoverToken(ctx, token1)
+		err = jwtOAuthInstance.RecoverToken(ctx, token)
 		assert.Error(t, err)
 
 		// Remove a token
-		err = jwtOAuthInstance.RemoveToken(ctx, token1)
+		err = jwtOAuthInstance.RemoveToken(ctx, token)
 		assert.Nil(t, err)
 
-		_, err = jwtOAuthInstance.Verify(ctx, token1)
+		_, err = jwtOAuthInstance.Verify(ctx, token)
 		assert.NotNil(t, err)
 
 		tokenInfoList1, err := jwtOAuthInstance.GetTokenByName(ctx, "test-token-01")
@@ -298,9 +351,9 @@ func testRemoveAndRecoverToken(t *testing.T) {
 		assert.Equal(t, 0, len(tokenInfoList1))
 
 		// Recover a token
-		err = jwtOAuthInstance.RecoverToken(ctx, token1)
+		err = jwtOAuthInstance.RecoverToken(ctx, token)
 		assert.Nil(t, err)
-		payload1, err := jwtOAuthInstance.Verify(ctx, token1)
+		payload1, err := jwtOAuthInstance.Verify(ctx, token)
 		assert.Nil(t, err)
 		assert.True(t, reflect.DeepEqual(payload1, pl1))
 		allTokenInfos, err := jwtOAuthInstance.Tokens(adminCtx, 0, 2)
@@ -310,11 +363,11 @@ func testRemoveAndRecoverToken(t *testing.T) {
 
 	invalidPermTest := func(ctx context.Context) {
 		// Remove a token
-		err = jwtOAuthInstance.RemoveToken(ctx, token1)
+		err = jwtOAuthInstance.RemoveToken(ctx, token)
 		assert.True(t, errors.Is(err, ErrorPermissionDeny))
 
 		// Recover a token
-		err = jwtOAuthInstance.RecoverToken(ctx, token1)
+		err = jwtOAuthInstance.RecoverToken(ctx, token)
 		assert.True(t, errors.Is(err, ErrorPermissionDeny))
 	}
 

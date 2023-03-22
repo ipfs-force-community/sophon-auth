@@ -104,6 +104,10 @@ func (o *oauthApp) GetDefaultAdminToken() (string, error) {
 		}
 	}
 	// create one
+	_, err = o.srv.CreateUser(adminCtx, &CreateUserRequest{Name: DefaultAdminTokenName})
+	if err != nil {
+		return "", fmt.Errorf("create default user for admin token: %w", err)
+	}
 	ret, err := o.srv.GenerateToken(adminCtx, &JWTPayload{
 		Name: DefaultAdminTokenName,
 		Perm: core.PermAdmin,

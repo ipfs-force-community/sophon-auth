@@ -90,12 +90,24 @@ func TestMain(m *testing.M) {
 func TestTokenBusiness(t *testing.T) {
 	ctx := context.TODO()
 	var originTks []string
+	_, err := cli.CreateUser(context.TODO(), &auth.CreateUserRequest{
+		Name: "Rennbon1",
+	})
+	if err != nil {
+		t.Fatalf("create user err:%s", err)
+	}
 	tk1, err := cli.GenerateToken(context.TODO(), "Rennbon1", core.PermAdmin, "custom params")
 	if err != nil {
 		t.Fatalf("gen token err:%s", err)
 	}
 	originTks = append(originTks, tk1)
 
+	_, err = cli.CreateUser(context.TODO(), &auth.CreateUserRequest{
+		Name: "Rennbon2",
+	})
+	if err != nil {
+		t.Fatalf("create user err:%s", err)
+	}
 	tk2, err := cli.GenerateToken(context.TODO(), "Rennbon2", core.PermRead, "custom params")
 	if err != nil {
 		t.Fatalf("gen token err:%s", err)
@@ -241,7 +253,7 @@ func TestUserBusiness(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get user err:%s", err)
 	}
-	assert.DeepEqual(t, users[1].Name, user.Name)
+	assert.DeepEqual(t, "name2", user.Name)
 
 	err = cli.VerifyUsers(context.Background(), []string{"name1", "name2"})
 	if err != nil {

@@ -132,6 +132,14 @@ func (o *jwtOAuth) GenerateToken(ctx context.Context, pl *JWTPayload) (string, e
 		return "", fmt.Errorf("need admin prem: %w", err)
 	}
 
+	exist, err := o.store.HasUser(pl.Name)
+	if err != nil {
+		return "", fmt.Errorf("check user %s exist failed: %w", pl.Name, err)
+	}
+	if !exist {
+		return "", fmt.Errorf("token must be based on an existing user %s to generate", pl.Name)
+	}
+
 	// one token, one secret
 	secret, err := config.RandSecret()
 	if err != nil {

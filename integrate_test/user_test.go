@@ -109,7 +109,8 @@ func testListUser(t *testing.T) {
 	// List users
 	listResp, err := client.ListUsers(context.Background(), 0, 10, core.UserStateUndefined)
 	assert.Nil(t, err)
-	assert.Equal(t, len(listResp), 1)
+	// DefaultAdminTokenName created at setup func
+	assert.Equal(t, len(listResp), 2)
 }
 
 func testDeleteUser(t *testing.T) {

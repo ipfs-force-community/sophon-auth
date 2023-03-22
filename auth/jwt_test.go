@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/filecoin-project/go-address"
+
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/storage"
@@ -109,13 +110,23 @@ func testGenerateToken(t *testing.T) {
 		Extra: "",
 	}
 
-	token1, err := jwtOAuthInstance.GenerateToken(adminCtx, pl1)
+	_, err := jwtOAuthInstance.GenerateToken(adminCtx, pl1)
+	assert.NotNil(t, err)
+	require.Contains(t, err.Error(), "token must be based on an existing user")
+
+	createUserReq := &CreateUserRequest{
+		Name:  "test-token-01",
+		State: 0,
+	}
+	resp, err := jwtOAuthInstance.CreateUser(adminCtx, createUserReq)
 	assert.Nil(t, err)
-	assert.Equal(t, 3, len(strings.Split(token1, ".")))
+	assert.Equal(t, "test-token-01", resp.Name)
+	token, err := jwtOAuthInstance.GenerateToken(adminCtx, pl1)
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(strings.Split(token, ".")))
 
 	_, err = jwtOAuthInstance.GenerateToken(signCtx, pl1)
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
-
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 }
 
 func testVerifyToken(t *testing.T) {
@@ -130,11 +141,18 @@ func testVerifyToken(t *testing.T) {
 		Extra: "",
 	}
 
-	token1, err := jwtOAuthInstance.GenerateToken(adminCtx, pl1)
+	createUserReq := &CreateUserRequest{
+		Name:  "test-token-01",
+		State: 0,
+	}
+	resp, err := jwtOAuthInstance.CreateUser(adminCtx, createUserReq)
+	assert.Nil(t, err)
+	assert.Equal(t, "test-token-01", resp.Name)
+	token, err := jwtOAuthInstance.GenerateToken(adminCtx, pl1)
 	assert.Nil(t, err)
 
 	// Verify a valid token
-	payload1, err := jwtOAuthInstance.Verify(readCtx, token1)
+	payload1, err := jwtOAuthInstance.Verify(readCtx, token)
 	assert.Nil(t, err)
 	assert.True(t, reflect.DeepEqual(payload1, pl1))
 
@@ -144,8 +162,8 @@ func testVerifyToken(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// with ctx no perm
-	_, err = jwtOAuthInstance.Verify(context.Background(), token1)
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	_, err = jwtOAuthInstance.Verify(context.Background(), token)
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 }
 
 func testGetToken(t *testing.T) {
@@ -160,12 +178,18 @@ func testGetToken(t *testing.T) {
 		Extra: "",
 	}
 
-	// with ctx admin perm
-	token1, err := jwtOAuthInstance.GenerateToken(adminCtx, pl1)
+	createUserReq := &CreateUserRequest{
+		Name:  "test-token-01",
+		State: 0,
+	}
+	resp, err := jwtOAuthInstance.CreateUser(adminCtx, createUserReq)
+	assert.Nil(t, err)
+	assert.Equal(t, "test-token-01", resp.Name)
+	token, err := jwtOAuthInstance.GenerateToken(adminCtx, pl1)
 	assert.Nil(t, err)
 
 	// Get token
-	tokenInfo1, err := jwtOAuthInstance.GetToken(adminCtx, token1)
+	tokenInfo1, err := jwtOAuthInstance.GetToken(adminCtx, token)
 	assert.Nil(t, err)
 	assert.Equal(t, pl1.Name, tokenInfo1.Name)
 	assert.Equal(t, pl1.Perm, tokenInfo1.Perm)
@@ -175,10 +199,10 @@ func testGetToken(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// with ctx no perm
-	_, err = jwtOAuthInstance.GetToken(context.Background(), token1)
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	_, err = jwtOAuthInstance.GetToken(context.Background(), token)
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 	_, err = jwtOAuthInstance.GetToken(signCtx, invalidToken)
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 }
 
 func testGetTokenByName(t *testing.T) {
@@ -193,7 +217,14 @@ func testGetTokenByName(t *testing.T) {
 		Extra: "",
 	}
 
-	token1, err := jwtOAuthInstance.GenerateToken(adminCtx, pl1)
+	createUserReq := &CreateUserRequest{
+		Name:  "test-token-01",
+		State: 0,
+	}
+	resp, err := jwtOAuthInstance.CreateUser(adminCtx, createUserReq)
+	assert.Nil(t, err)
+	assert.Equal(t, "test-token-01", resp.Name)
+	token, err := jwtOAuthInstance.GenerateToken(adminCtx, pl1)
 	assert.Nil(t, err)
 	userCtx := newUserCtx(pl1.Name)
 
@@ -202,12 +233,12 @@ func testGetTokenByName(t *testing.T) {
 		tokenInfoList1, err := jwtOAuthInstance.GetTokenByName(ctx, "test-token-01")
 		assert.Nil(t, err)
 		assert.Equal(t, 1, len(tokenInfoList1))
-		assert.Equal(t, token1, tokenInfoList1[0].Token)
+		assert.Equal(t, token, tokenInfoList1[0].Token)
 
 	}
 	invalidPermTest := func(ctx context.Context) {
 		_, err := jwtOAuthInstance.GetTokenByName(ctx, "test-token-01")
-		assert.True(t, errors.Is(err, ErrorPermissionDenied))
+		assert.True(t, errors.Is(err, ErrorPermissionDeny))
 	}
 
 	validPermTest(adminCtx)
@@ -237,8 +268,23 @@ func testTokenList(t *testing.T) {
 		Perm:  "admin",
 		Extra: "",
 	}
-	_, err := jwtOAuthInstance.GenerateToken(adminCtx, pl1)
+
+	createUserReq := &CreateUserRequest{
+		Name:  "test-token-01",
+		State: 0,
+	}
+	resp, err := jwtOAuthInstance.CreateUser(adminCtx, createUserReq)
 	assert.Nil(t, err)
+	assert.Equal(t, "test-token-01", resp.Name)
+	_, err = jwtOAuthInstance.GenerateToken(adminCtx, pl1)
+	assert.Nil(t, err)
+	createUserReq = &CreateUserRequest{
+		Name:  "test-token-02",
+		State: 0,
+	}
+	resp, err = jwtOAuthInstance.CreateUser(adminCtx, createUserReq)
+	assert.Nil(t, err)
+	assert.Equal(t, "test-token-02", resp.Name)
 	_, err = jwtOAuthInstance.GenerateToken(adminCtx, pl2)
 	assert.Nil(t, err)
 
@@ -260,9 +306,9 @@ func testTokenList(t *testing.T) {
 
 	// with ctx no perm
 	_, err = jwtOAuthInstance.Tokens(context.Background(), 0, 2)
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 	_, err = jwtOAuthInstance.Tokens(signCtx, 0, 2)
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 }
 
 func testRemoveAndRecoverToken(t *testing.T) {
@@ -277,20 +323,27 @@ func testRemoveAndRecoverToken(t *testing.T) {
 		Extra: "",
 	}
 
-	token1, err := jwtOAuthInstance.GenerateToken(adminCtx, pl1)
+	createUserReq := &CreateUserRequest{
+		Name:  "test-token-01",
+		State: 0,
+	}
+	resp, err := jwtOAuthInstance.CreateUser(adminCtx, createUserReq)
+	assert.Nil(t, err)
+	assert.Equal(t, "test-token-01", resp.Name)
+	token, err := jwtOAuthInstance.GenerateToken(adminCtx, pl1)
 	assert.Nil(t, err)
 
 	validPermTest := func(ctx context.Context) {
 
 		// token is usable.
-		err = jwtOAuthInstance.RecoverToken(ctx, token1)
+		err = jwtOAuthInstance.RecoverToken(ctx, token)
 		assert.Error(t, err)
 
 		// Remove a token
-		err = jwtOAuthInstance.RemoveToken(ctx, token1)
+		err = jwtOAuthInstance.RemoveToken(ctx, token)
 		assert.Nil(t, err)
 
-		_, err = jwtOAuthInstance.Verify(ctx, token1)
+		_, err = jwtOAuthInstance.Verify(ctx, token)
 		assert.NotNil(t, err)
 
 		tokenInfoList1, err := jwtOAuthInstance.GetTokenByName(ctx, "test-token-01")
@@ -298,9 +351,9 @@ func testRemoveAndRecoverToken(t *testing.T) {
 		assert.Equal(t, 0, len(tokenInfoList1))
 
 		// Recover a token
-		err = jwtOAuthInstance.RecoverToken(ctx, token1)
+		err = jwtOAuthInstance.RecoverToken(ctx, token)
 		assert.Nil(t, err)
-		payload1, err := jwtOAuthInstance.Verify(ctx, token1)
+		payload1, err := jwtOAuthInstance.Verify(ctx, token)
 		assert.Nil(t, err)
 		assert.True(t, reflect.DeepEqual(payload1, pl1))
 		allTokenInfos, err := jwtOAuthInstance.Tokens(adminCtx, 0, 2)
@@ -310,12 +363,12 @@ func testRemoveAndRecoverToken(t *testing.T) {
 
 	invalidPermTest := func(ctx context.Context) {
 		// Remove a token
-		err = jwtOAuthInstance.RemoveToken(ctx, token1)
-		assert.True(t, errors.Is(err, ErrorPermissionDenied))
+		err = jwtOAuthInstance.RemoveToken(ctx, token)
+		assert.True(t, errors.Is(err, ErrorPermissionDeny))
 
 		// Recover a token
-		err = jwtOAuthInstance.RecoverToken(ctx, token1)
-		assert.True(t, errors.Is(err, ErrorPermissionDenied))
+		err = jwtOAuthInstance.RecoverToken(ctx, token)
+		assert.True(t, errors.Is(err, ErrorPermissionDeny))
 	}
 
 	userCtx := newUserCtx(pl1.Name)
@@ -370,9 +423,9 @@ func testCreateUser(t *testing.T, userMiners map[string][]string) {
 
 	// with ctx no perm
 	_, err = jwtOAuthInstance.CreateUser(context.Background(), &CreateUserRequest{Name: "test_user_002"})
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 	_, err = jwtOAuthInstance.CreateUser(signCtx, &CreateUserRequest{Name: "test_user_002"})
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 }
 
 func testGetUser(t *testing.T, userMiners map[string][]string) {
@@ -391,7 +444,7 @@ func testGetUser(t *testing.T, userMiners map[string][]string) {
 	}
 	invalidPermTest := func(ctx context.Context) {
 		_, err := jwtOAuthInstance.GetUser(ctx, &GetUserRequest{Name: existUserName})
-		assert.True(t, errors.Is(err, ErrorPermissionDenied))
+		assert.True(t, errors.Is(err, ErrorPermissionDeny))
 	}
 
 	userCtx := newUserCtx(existUserName)
@@ -423,9 +476,9 @@ func testVerifyUsers(t *testing.T, userMiners map[string][]string) {
 
 	// with ctx no perm
 	err = jwtOAuthInstance.VerifyUsers(context.Background(), &VerifyUsersReq{Names: usernames})
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 	err = jwtOAuthInstance.VerifyUsers(signCtx, &VerifyUsersReq{Names: usernames})
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 }
 
 func testListUser(t *testing.T, userMiners map[string][]string) {
@@ -447,12 +500,12 @@ func testListUser(t *testing.T, userMiners map[string][]string) {
 		Page:  &core.Page{},
 		State: int(core.UserStateUndefined),
 	})
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 	_, err = jwtOAuthInstance.ListUsers(signCtx, &ListUsersRequest{
 		Page:  &core.Page{},
 		State: int(core.UserStateUndefined),
 	})
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 }
 
 func testUpdateUser(t *testing.T, userMiners map[string][]string) {
@@ -484,9 +537,9 @@ func testUpdateUser(t *testing.T, userMiners map[string][]string) {
 
 	// with ctx no perm
 	err = jwtOAuthInstance.UpdateUser(context.Background(), updateUserReq)
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 	err = jwtOAuthInstance.UpdateUser(signCtx, updateUserReq)
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 }
 
 func testDeleteAndRecoverUser(t *testing.T, userMiners map[string][]string) {
@@ -536,13 +589,13 @@ func testDeleteAndRecoverUser(t *testing.T, userMiners map[string][]string) {
 
 	// with ctx no perm
 	err = jwtOAuthInstance.DeleteUser(context.Background(), &DeleteUserRequest{Name: existUserName})
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 	err = jwtOAuthInstance.DeleteUser(signCtx, &DeleteUserRequest{Name: existUserName})
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 	err = jwtOAuthInstance.RecoverUser(context.Background(), &RecoverUserRequest{Name: existUserName})
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 	err = jwtOAuthInstance.RecoverUser(signCtx, &RecoverUserRequest{Name: existUserName})
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 }
 
 func addUsersAndMiners(t *testing.T, userMiners map[string][]string) {
@@ -598,7 +651,7 @@ func testUpsertMiner(t *testing.T, userMiners map[string][]string) {
 
 	// with signCtx
 	_, err = jwtOAuthInstance.UpsertMiner(signCtx, &UpsertMinerReq{User: "user_01", Miner: mAddr})
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 }
 
 func testListMiner(t *testing.T, userMiners map[string][]string) {
@@ -624,7 +677,7 @@ func testListMiner(t *testing.T, userMiners map[string][]string) {
 	}
 	invalidPermTest := func(ctx context.Context) {
 		_, err := jwtOAuthInstance.ListMiners(ctx, &ListMinerReq{User: validUser1})
-		assert.True(t, errors.Is(err, ErrorPermissionDenied))
+		assert.True(t, errors.Is(err, ErrorPermissionDeny))
 	}
 
 	userCtx := newUserCtx(validUser1)
@@ -658,7 +711,7 @@ func testMinerExistInMiner(t *testing.T, userMiners map[string][]string) {
 		mAddr, _ := address.NewFromString("t01000")
 		// Miner Exist In Account
 		_, err := jwtOAuthInstance.MinerExistInUser(ctx, &MinerExistInUserRequest{Miner: mAddr, User: "test_user_001"})
-		assert.True(t, errors.Is(err, ErrorPermissionDenied))
+		assert.True(t, errors.Is(err, ErrorPermissionDeny))
 	}
 
 	userCtx := newUserCtx("test_user_001")
@@ -676,7 +729,7 @@ func testMinerExistInMiner(t *testing.T, userMiners map[string][]string) {
 	has, _ = jwtOAuthInstance.HasMiner(adminCtx, &HasMinerRequest{Miner: invalidMiner})
 	assert.False(t, has)
 	_, err = jwtOAuthInstance.HasMiner(signCtx, &HasMinerRequest{Miner: mAddr})
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 }
 
 func testGetUserByMiner(t *testing.T, userMiners map[string][]string) {
@@ -710,7 +763,7 @@ func testGetUserByMiner(t *testing.T, userMiners map[string][]string) {
 	_, err = jwtOAuthInstance.GetUserByMiner(signCtx, &GetUserByMinerRequest{
 		Miner: mAddr,
 	})
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 }
 
 func testDeleteMiner(t *testing.T, userMiners map[string][]string) {
@@ -747,7 +800,7 @@ func testDeleteMiner(t *testing.T, userMiners map[string][]string) {
 		mAddr, _ := address.NewFromString(user1Miners[0])
 		// Delete miner
 		_, err := jwtOAuthInstance.DelMiner(ctx, &DelMinerReq{Miner: mAddr})
-		assert.True(t, errors.Is(err, ErrorPermissionDenied))
+		assert.True(t, errors.Is(err, ErrorPermissionDeny))
 	}
 	userCtx := newUserCtx(user1)
 	validPermTest(userCtx)
@@ -792,7 +845,7 @@ func addUsersAndSigners(t *testing.T, userSigners map[string][]string) {
 			User:    userName,
 			Signers: signerAddrs,
 		})
-		assert.True(t, errors.Is(err, ErrorPermissionDenied))
+		assert.True(t, errors.Is(err, ErrorPermissionDeny))
 	}
 }
 
@@ -847,7 +900,7 @@ func testSignerExistInUser(t *testing.T, userSigners map[string][]string) {
 					User:   user,
 					Signer: sAddr,
 				})
-				assert.True(t, errors.Is(err, ErrorPermissionDenied))
+				assert.True(t, errors.Is(err, ErrorPermissionDeny))
 			}
 		}
 
@@ -881,7 +934,7 @@ func testListSigner(t *testing.T, userSigners map[string][]string) {
 	invalidPermTest := func(ctx context.Context) {
 		// List miners
 		_, err := jwtOAuthInstance.ListSigner(ctx, &ListSignerReq{User: validUser1})
-		assert.True(t, errors.Is(err, ErrorPermissionDenied))
+		assert.True(t, errors.Is(err, ErrorPermissionDeny))
 	}
 
 	userCtx := newUserCtx(validUser1)
@@ -913,7 +966,7 @@ func testHasSigner(t *testing.T, userSigners map[string][]string) {
 	// with signCtx
 	sAddr, _ = address.NewFromString("t15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua")
 	has, err = jwtOAuthInstance.HasSigner(signCtx, &HasSignerReq{Signer: sAddr})
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 	assert.False(t, has)
 }
 
@@ -944,7 +997,7 @@ func testGetUserBySigner(t *testing.T, userSigners map[string][]string) {
 	_, err = jwtOAuthInstance.GetUserBySigner(signCtx, &GetUserBySignerReq{
 		Signer: sAddr,
 	})
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 }
 
 func testUnregisterSigner(t *testing.T, userSigners map[string][]string) {
@@ -977,7 +1030,7 @@ func testUnregisterSigner(t *testing.T, userSigners map[string][]string) {
 		Signers: []address.Address{sAddr},
 		User:    username,
 	})
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 }
 
 func testDeleteSigner(t *testing.T, userSigners map[string][]string) {
@@ -1010,7 +1063,7 @@ func testDeleteSigner(t *testing.T, userSigners map[string][]string) {
 	}
 	invalidPermTest := func(ctx context.Context) {
 		_, err := jwtOAuthInstance.DelSigner(ctx, &DelSignerReq{Signer: signer})
-		assert.True(t, errors.Is(err, ErrorPermissionDenied))
+		assert.True(t, errors.Is(err, ErrorPermissionDeny))
 	}
 
 	userCtx := newUserCtx(userName)
@@ -1050,7 +1103,7 @@ func addUsersAndRateLimits(t *testing.T, userMiners map[string][]string, originL
 		API:      originLimits[0].API,
 		ReqLimit: originLimits[0].ReqLimit,
 	})
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 
 }
 
@@ -1083,7 +1136,7 @@ func testGetUserRateLimits(t *testing.T, userMiners map[string][]string, originL
 		Id:   existId,
 		Name: userName,
 	})
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 	_ = jwtOAuthInstance.DelUserRateLimit(signCtx, &DelUserRateLimitReq{
 		Name: userName,
 		Id:   existId,
@@ -1125,7 +1178,7 @@ func testDeleteUserRateLimits(t *testing.T, userMiners map[string][]string, orig
 		Name: userName,
 		Id:   existId,
 	})
-	assert.True(t, errors.Is(err, ErrorPermissionDenied))
+	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 }
 
 func TestTokenDecode(t *testing.T) {

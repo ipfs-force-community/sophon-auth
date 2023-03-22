@@ -26,7 +26,7 @@ import (
 var (
 	ErrorNonRegisteredToken = xerrors.New("A non-registered token")
 	ErrorVerificationFailed = xerrors.New("Verification Failed")
-	ErrorPermissionDenied   = xerrors.New("Permission Deny")
+	ErrorPermissionDeny     = xerrors.New("Permission Deny")
 )
 
 var jwtOAuthInstance *jwtOAuth
@@ -127,8 +127,17 @@ func NewOAuthService(secret string, dbPath string, cnf *config.DBConfig) (OAuthS
 }
 
 func (o *jwtOAuth) GenerateToken(ctx context.Context, pl *JWTPayload) (string, error) {
-	if !isAdmin(ctx) {
-		return "", ErrorPermissionDenied
+	err := permCheck(ctx, core.PermAdmin)
+	if err != nil {
+		return "", fmt.Errorf("need admin prem: %w", err)
+	}
+
+	exist, err := o.store.HasUser(pl.Name)
+	if err != nil {
+		return "", fmt.Errorf("check user %s exist failed: %w", pl.Name, err)
+	}
+	if !exist {
+		return "", fmt.Errorf("token must be based on an existing user %s to generate", pl.Name)
 	}
 
 	// one token, one secret
@@ -160,8 +169,9 @@ func (o *jwtOAuth) GenerateToken(ctx context.Context, pl *JWTPayload) (string, e
 }
 
 func (o *jwtOAuth) Verify(ctx context.Context, token string) (*JWTPayload, error) {
-	if !hasPerm(ctx, core.PermRead) {
-		return nil, ErrorPermissionDenied
+	err := permCheck(ctx, core.PermRead)
+	if err != nil {
+		return nil, fmt.Errorf("need read prem: %w", err)
 	}
 
 	p := new(JWTPayload)
@@ -202,9 +212,10 @@ func toTokenInfo(kp *storage.KeyPair) (*TokenInfo, error) {
 	}, nil
 }
 
-func (o *jwtOAuth) GetToken(c context.Context, token string) (*TokenInfo, error) {
-	if !isAdmin(c) {
-		return nil, ErrorPermissionDenied
+func (o *jwtOAuth) GetToken(ctx context.Context, token string) (*TokenInfo, error) {
+	err := permCheck(ctx, core.PermAdmin)
+	if err != nil {
+		return nil, fmt.Errorf("need admin prem: %w", err)
 	}
 
 	pair, err := o.store.Get(storage.Token(token))
@@ -214,12 +225,13 @@ func (o *jwtOAuth) GetToken(c context.Context, token string) (*TokenInfo, error)
 	return toTokenInfo(pair)
 }
 
-func (o *jwtOAuth) GetTokenByName(c context.Context, name string) ([]*TokenInfo, error) {
-	if !isAdmin(c) && !isUserOwner(c, name) {
-		return nil, ErrorPermissionDenied
+func (o *jwtOAuth) GetTokenByName(ctx context.Context, username string) ([]*TokenInfo, error) {
+	err := userPermCheck(ctx, username)
+	if err != nil {
+		return nil, fmt.Errorf("need admin prem or user %s does not match: %w", username, err)
 	}
 
-	pairs, err := o.store.ByName(name)
+	pairs, err := o.store.ByName(username)
 	if err != nil {
 		return nil, err
 	}
@@ -235,8 +247,9 @@ func (o *jwtOAuth) GetTokenByName(c context.Context, name string) ([]*TokenInfo,
 }
 
 func (o *jwtOAuth) Tokens(ctx context.Context, skip, limit int64) ([]*TokenInfo, error) {
-	if !isAdmin(ctx) {
-		return nil, ErrorPermissionDenied
+	err := permCheck(ctx, core.PermAdmin)
+	if err != nil {
+		return nil, fmt.Errorf("need admin prem: %w", err)
 	}
 
 	pairs, err := o.store.List(skip, limit)
@@ -255,11 +268,12 @@ func (o *jwtOAuth) Tokens(ctx context.Context, skip, limit int64) ([]*TokenInfo,
 }
 
 func (o *jwtOAuth) RemoveToken(ctx context.Context, token string) error {
-	if !isAdmin(ctx) && !isTokenOwner(ctx, token) {
-		return ErrorPermissionDenied
+	err := tokenPermCheck(ctx, token)
+	if err != nil {
+		return fmt.Errorf("need admin prem or token %s check failed: %w", token, err)
 	}
 
-	err := o.store.Delete(storage.Token(token))
+	err = o.store.Delete(storage.Token(token))
 	if err != nil {
 		return fmt.Errorf("remove token %s: %w", token, err)
 	}
@@ -267,11 +281,12 @@ func (o *jwtOAuth) RemoveToken(ctx context.Context, token string) error {
 }
 
 func (o *jwtOAuth) RecoverToken(ctx context.Context, token string) error {
-	if !isAdmin(ctx) && !isTokenOwner(ctx, token) {
-		return ErrorPermissionDenied
+	err := tokenPermCheck(ctx, token)
+	if err != nil {
+		return fmt.Errorf("need admin prem or token %s check failed: %w", token, err)
 	}
 
-	err := o.store.Recover(storage.Token(token))
+	err = o.store.Recover(storage.Token(token))
 	if err != nil {
 		return fmt.Errorf("recover token %s: %w", token, err)
 	}
@@ -279,8 +294,9 @@ func (o *jwtOAuth) RecoverToken(ctx context.Context, token string) error {
 }
 
 func (o *jwtOAuth) CreateUser(ctx context.Context, req *CreateUserRequest) (*CreateUserResponse, error) {
-	if !isAdmin(ctx) {
-		return nil, ErrorPermissionDenied
+	err := permCheck(ctx, core.PermAdmin)
+	if err != nil {
+		return nil, fmt.Errorf("need admin prem: %w", err)
 	}
 
 	exist, err := o.store.HasUser(req.Name)
@@ -313,8 +329,9 @@ func (o *jwtOAuth) CreateUser(ctx context.Context, req *CreateUserRequest) (*Cre
 }
 
 func (o *jwtOAuth) UpdateUser(ctx context.Context, req *UpdateUserRequest) error {
-	if !isAdmin(ctx) {
-		return ErrorPermissionDenied
+	err := permCheck(ctx, core.PermAdmin)
+	if err != nil {
+		return fmt.Errorf("need admin prem: %w", err)
 	}
 
 	user, err := o.store.GetUser(req.Name)
@@ -332,15 +349,18 @@ func (o *jwtOAuth) UpdateUser(ctx context.Context, req *UpdateUserRequest) error
 }
 
 func (o *jwtOAuth) VerifyUsers(ctx context.Context, req *VerifyUsersReq) error {
-	if !isAdmin(ctx) {
-		return ErrorPermissionDenied
+	err := permCheck(ctx, core.PermAdmin)
+	if err != nil {
+		return fmt.Errorf("need admin prem: %w", err)
 	}
+
 	return o.store.VerifyUsers(req.Names)
 }
 
 func (o *jwtOAuth) ListUsers(ctx context.Context, req *ListUsersRequest) (ListUsersResponse, error) {
-	if !isAdmin(ctx) {
-		return nil, ErrorPermissionDenied
+	err := permCheck(ctx, core.PermAdmin)
+	if err != nil {
+		return nil, fmt.Errorf("need admin prem: %w", err)
 	}
 
 	users, err := o.store.ListUsers(req.GetSkip(), req.GetLimit(), core.UserState(req.State))
@@ -351,31 +371,35 @@ func (o *jwtOAuth) ListUsers(ctx context.Context, req *ListUsersRequest) (ListUs
 }
 
 func (o *jwtOAuth) HasUser(ctx context.Context, req *HasUserRequest) (bool, error) {
-	if !isAdmin(ctx) {
-		return false, ErrorPermissionDenied
+	err := permCheck(ctx, core.PermAdmin)
+	if err != nil {
+		return false, fmt.Errorf("need admin prem: %w", err)
 	}
 
 	return o.store.HasUser(req.Name)
 }
 
 func (o *jwtOAuth) DeleteUser(ctx context.Context, req *DeleteUserRequest) error {
-	if !isAdmin(ctx) {
-		return ErrorPermissionDenied
+	err := permCheck(ctx, core.PermAdmin)
+	if err != nil {
+		return fmt.Errorf("need admin prem: %w", err)
 	}
+
 	return o.store.DeleteUser(req.Name)
 }
 
 func (o *jwtOAuth) RecoverUser(ctx context.Context, req *RecoverUserRequest) error {
-	if !isAdmin(ctx) {
-		return ErrorPermissionDenied
+	err := permCheck(ctx, core.PermAdmin)
+	if err != nil {
+		return fmt.Errorf("need admin prem: %w", err)
 	}
-
 	return o.store.RecoverUser(req.Name)
 }
 
 func (o *jwtOAuth) GetUserByMiner(ctx context.Context, req *GetUserByMinerRequest) (*OutputUser, error) {
-	if !isAdmin(ctx) {
-		return nil, ErrorPermissionDenied
+	err := permCheck(ctx, core.PermAdmin)
+	if err != nil {
+		return nil, fmt.Errorf("need admin prem: %w", err)
 	}
 
 	user, err := o.store.GetUserByMiner(req.Miner)
@@ -386,8 +410,9 @@ func (o *jwtOAuth) GetUserByMiner(ctx context.Context, req *GetUserByMinerReques
 }
 
 func (o *jwtOAuth) GetUserBySigner(ctx context.Context, req *GetUserBySignerReq) ([]*OutputUser, error) {
-	if !isAdmin(ctx) {
-		return nil, ErrorPermissionDenied
+	err := permCheck(ctx, core.PermAdmin)
+	if err != nil {
+		return nil, fmt.Errorf("need admin prem: %w", err)
 	}
 
 	users, err := o.store.GetUserBySigner(req.Signer)
@@ -404,9 +429,11 @@ func (o *jwtOAuth) GetUserBySigner(ctx context.Context, req *GetUserBySignerReq)
 }
 
 func (o *jwtOAuth) GetUser(ctx context.Context, req *GetUserRequest) (*OutputUser, error) {
-	if !isAdmin(ctx) && !isUserOwner(ctx, req.Name) {
-		return nil, ErrorPermissionDenied
+	err := userPermCheck(ctx, req.Name)
+	if err != nil {
+		return nil, fmt.Errorf("need admin prem or user %s does not match: %w", req.Name, err)
 	}
+
 	user, err := o.store.GetUser(req.Name)
 	if err != nil {
 		return nil, err
@@ -415,32 +442,36 @@ func (o *jwtOAuth) GetUser(ctx context.Context, req *GetUserRequest) (*OutputUse
 }
 
 func (o jwtOAuth) GetUserRateLimits(ctx context.Context, req *GetUserRateLimitsReq) (GetUserRateLimitResponse, error) {
-	if !isAdmin(ctx) {
-		return nil, ErrorPermissionDenied
+	err := permCheck(ctx, core.PermAdmin)
+	if err != nil {
+		return nil, fmt.Errorf("need admin prem: %w", err)
 	}
 
 	return o.store.GetRateLimits(req.Name, req.Id)
 }
 
 func (o *jwtOAuth) UpsertUserRateLimit(ctx context.Context, req *UpsertUserRateLimitReq) (string, error) {
-	if !isAdmin(ctx) {
-		return "", ErrorPermissionDenied
+	err := permCheck(ctx, core.PermAdmin)
+	if err != nil {
+		return "nil", fmt.Errorf("need admin prem: %w", err)
 	}
 
 	return o.store.PutRateLimit((*storage.UserRateLimit)(req))
 }
 
 func (o jwtOAuth) DelUserRateLimit(ctx context.Context, req *DelUserRateLimitReq) error {
-	if !isAdmin(ctx) {
-		return ErrorPermissionDenied
+	err := permCheck(ctx, core.PermAdmin)
+	if err != nil {
+		return fmt.Errorf("need admin prem: %w", err)
 	}
 
 	return o.store.DelRateLimit(req.Name, req.Id)
 }
 
 func (o *jwtOAuth) UpsertMiner(ctx context.Context, req *UpsertMinerReq) (bool, error) {
-	if !isAdmin(ctx) {
-		return false, ErrorPermissionDenied
+	err := permCheck(ctx, core.PermAdmin)
+	if err != nil {
+		return false, fmt.Errorf("need admin prem: %w", err)
 	}
 
 	mAddr := req.Miner
@@ -452,8 +483,9 @@ func (o *jwtOAuth) UpsertMiner(ctx context.Context, req *UpsertMinerReq) (bool, 
 }
 
 func (o *jwtOAuth) HasMiner(ctx context.Context, req *HasMinerRequest) (bool, error) {
-	if !isAdmin(ctx) {
-		return false, ErrorPermissionDenied
+	err := permCheck(ctx, core.PermAdmin)
+	if err != nil {
+		return false, fmt.Errorf("need admin prem: %w", err)
 	}
 
 	has, err := o.store.HasMiner(req.Miner)
@@ -464,8 +496,9 @@ func (o *jwtOAuth) HasMiner(ctx context.Context, req *HasMinerRequest) (bool, er
 }
 
 func (o *jwtOAuth) MinerExistInUser(ctx context.Context, req *MinerExistInUserRequest) (bool, error) {
-	if !isAdmin(ctx) && !isUserOwner(ctx, req.User) {
-		return false, ErrorPermissionDenied
+	err := userPermCheck(ctx, req.User)
+	if err != nil {
+		return false, fmt.Errorf("need admin prem or user %s does not match: %w", req.User, err)
 	}
 
 	exist, err := o.store.MinerExistInUser(req.Miner, req.User)
@@ -476,8 +509,9 @@ func (o *jwtOAuth) MinerExistInUser(ctx context.Context, req *MinerExistInUserRe
 }
 
 func (o *jwtOAuth) ListMiners(ctx context.Context, req *ListMinerReq) (ListMinerResp, error) {
-	if !isAdmin(ctx) && !isUserOwner(ctx, req.User) {
-		return nil, ErrorPermissionDenied
+	err := userPermCheck(ctx, req.User)
+	if err != nil {
+		return nil, fmt.Errorf("need admin prem or user %s does not match: %w", req.User, err)
 	}
 
 	miners, err := o.store.ListMiners(req.User)
@@ -499,17 +533,19 @@ func (o *jwtOAuth) ListMiners(ctx context.Context, req *ListMinerReq) (ListMiner
 }
 
 func (o jwtOAuth) DelMiner(ctx context.Context, req *DelMinerReq) (bool, error) {
-
-	if !isAdmin(ctx) && !isMinerOwner(ctx, o.store, req.Miner) {
-		return false, ErrorPermissionDenied
+	if permCheck(ctx, core.PermAdmin) != nil {
+		if err := ownerOfMinerCheck(ctx, o.store, req.Miner); err != nil {
+			return false, fmt.Errorf("need admin prem or %s ownership check error: %w", req.Miner, err)
+		}
 	}
 
 	return o.store.DelMiner(req.Miner)
 }
 
 func (o *jwtOAuth) RegisterSigners(ctx context.Context, req *RegisterSignersReq) error {
-	if !isAdmin(ctx) {
-		return ErrorPermissionDenied
+	err := permCheck(ctx, core.PermAdmin)
+	if err != nil {
+		return fmt.Errorf("need admin prem: %w", err)
 	}
 
 	for _, signer := range req.Signers {
@@ -527,8 +563,8 @@ func (o *jwtOAuth) RegisterSigners(ctx context.Context, req *RegisterSignersReq)
 }
 
 func (o *jwtOAuth) SignerExistInUser(ctx context.Context, req *SignerExistInUserReq) (bool, error) {
-	if !isAdmin(ctx) && !isUserOwner(ctx, req.User) {
-		return false, ErrorPermissionDenied
+	if err := userPermCheck(ctx, req.User); err != nil {
+		return false, fmt.Errorf("need admin prem or user %s does not match: %w", req.User, err)
 	}
 
 	addr := req.Signer
@@ -544,8 +580,8 @@ func (o *jwtOAuth) SignerExistInUser(ctx context.Context, req *SignerExistInUser
 }
 
 func (o *jwtOAuth) ListSigner(ctx context.Context, req *ListSignerReq) (ListSignerResp, error) {
-	if !isAdmin(ctx) && !isUserOwner(ctx, req.User) {
-		return nil, ErrorPermissionDenied
+	if err := userPermCheck(ctx, req.User); err != nil {
+		return nil, fmt.Errorf("need admin prem or user %s does not match: %w", req.User, err)
 	}
 
 	signers, err := o.store.ListSigner(req.User)
@@ -566,8 +602,9 @@ func (o *jwtOAuth) ListSigner(ctx context.Context, req *ListSignerReq) (ListSign
 }
 
 func (o *jwtOAuth) UnregisterSigners(ctx context.Context, req *UnregisterSignersReq) error {
-	if !isAdmin(ctx) {
-		return ErrorPermissionDenied
+	err := permCheck(ctx, core.PermAdmin)
+	if err != nil {
+		return fmt.Errorf("need admin prem: %w", err)
 	}
 
 	for _, signer := range req.Signers {
@@ -585,8 +622,9 @@ func (o *jwtOAuth) UnregisterSigners(ctx context.Context, req *UnregisterSigners
 }
 
 func (o jwtOAuth) HasSigner(ctx context.Context, req *HasSignerReq) (bool, error) {
-	if !isAdmin(ctx) {
-		return false, ErrorPermissionDenied
+	err := permCheck(ctx, core.PermAdmin)
+	if err != nil {
+		return false, fmt.Errorf("need admin prem: %w", err)
 	}
 
 	addr := req.Signer
@@ -599,12 +637,11 @@ func (o jwtOAuth) HasSigner(ctx context.Context, req *HasSignerReq) (bool, error
 
 func (o jwtOAuth) DelSigner(ctx context.Context, req *DelSignerReq) (bool, error) {
 	addr := req.Signer
-	if !isAdmin(ctx) && !isSignerOwner(ctx, o.store, addr) {
-		return false, ErrorPermissionDenied
-	}
-
-	if !IsSignerAddress(addr) {
-		return false, fmt.Errorf("invalid protocol type: %v", addr.Protocol())
+	err := permCheck(ctx, core.PermAdmin)
+	if err != nil {
+		if err := ownerOfSignerCheck(ctx, o.store, req.Signer); err != nil {
+			return false, fmt.Errorf("need admin prem or %s ownership check error: %w", req.Signer, err)
+		}
 	}
 
 	return o.store.DelSigner(addr)
@@ -639,62 +676,83 @@ func IsSignerAddress(addr address.Address) bool {
 	return protocol == address.SECP256K1 || protocol == address.BLS || protocol == address.Delegated
 }
 
-func isAdmin(ctx context.Context) bool {
+func permCheck(ctx context.Context, needPerm core.Permission) error {
 	callerPerms := ctxGetPerm(ctx)
+
 	for _, callerPerm := range callerPerms {
-		if callerPerm == core.PermAdmin {
-			return true
+		if callerPerm == needPerm {
+			return nil
 		}
 	}
-	return false
+
+	return ErrorPermissionDeny
 }
 
-func hasPerm(ctx context.Context, perm core.Permission) bool {
-	callerPerms := ctxGetPerm(ctx)
-	for _, callerPerm := range callerPerms {
-		if callerPerm == perm {
-			return true
-		}
+func userPermCheck(ctx context.Context, username string) error {
+	err := permCheck(ctx, core.PermAdmin)
+	if err == nil {
+		return nil
 	}
-	return false
+
+	ctxUsername := ctxGetName(ctx)
+	if ctxUsername == username {
+		return nil
+	}
+
+	return ErrorPermissionDeny
 }
 
-func isTokenOwner(ctx context.Context, token string) bool {
-	userName := ctxGetName(ctx)
-	tokenName, err := JwtUserFromToken(token)
+func tokenPermCheck(ctx context.Context, token string) error {
+	err := permCheck(ctx, core.PermAdmin)
+	if err == nil {
+		return nil
+	}
+
+	username, err := JwtUserFromToken(token)
 	if err != nil {
-		return false
+		return fmt.Errorf("get user of token %s failed: %w", token, err)
 	}
-	return userName == tokenName
-}
 
-func isUserOwner(ctx context.Context, user string) bool {
-	userName := ctxGetName(ctx)
-	return userName == user
+	ctxUsername := ctxGetName(ctx)
+	if ctxUsername == username {
+		return nil
+	}
+
+	return ErrorPermissionDeny
 }
 
 type minerOwnershipChecker interface {
 	MinerExistInUser(maddr address.Address, userName string) (bool, error)
 }
 
-func isMinerOwner(ctx context.Context, checker minerOwnershipChecker, miner address.Address) bool {
+func ownerOfMinerCheck(ctx context.Context, checker minerOwnershipChecker, miner address.Address) error {
 	userName := ctxGetName(ctx)
 	has, err := checker.MinerExistInUser(miner, userName)
 	if err != nil {
-		return false
+		return err
 	}
-	return has
+
+	if !has {
+		return ErrorPermissionDeny
+	}
+
+	return nil
 }
 
 type signerOwnershipChecker interface {
 	SignerExistInUser(signer address.Address, userName string) (bool, error)
 }
 
-func isSignerOwner(ctx context.Context, checker signerOwnershipChecker, signer address.Address) bool {
+func ownerOfSignerCheck(ctx context.Context, checker signerOwnershipChecker, signer address.Address) error {
 	userName := ctxGetName(ctx)
 	has, err := checker.SignerExistInUser(signer, userName)
 	if err != nil {
-		return false
+		return err
 	}
-	return has
+
+	if !has {
+		return ErrorPermissionDeny
+	}
+
+	return nil
 }

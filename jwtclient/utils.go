@@ -6,65 +6,72 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-jsonrpc/auth"
+
 	"github.com/filecoin-project/venus-auth/core"
 )
 
 var (
 	// ErrorPermissionDeny is the error message returned when a user does not have permission to perform an action
 	ErrorPermissionDeny = fmt.Errorf("permission deny")
-
-	// ErrorUserNotFound is the error message returned when a user is not found in context
-	ErrorUserNotFound = fmt.Errorf("user not found")
 )
 
-// checkPermissionByUser check weather the user has admin permission or is match the username passed in
-func CheckPermissionByName(ctx context.Context, name string) error {
+// CheckPermissionByName check weather the user has admin permission or is match the username passed in
+func CheckPermissionByName(ctx context.Context, username string) error {
 	if auth.HasPerm(ctx, []auth.Permission{}, core.PermAdmin) {
 		return nil
 	}
+
 	user, exist := CtxGetName(ctx)
-	if !exist || user != name {
-		return ErrorPermissionDeny
+	if !exist {
+		return fmt.Errorf("there is no accountKey in the request")
 	}
+
+	if user != username {
+		return fmt.Errorf("user %s in the request doesn't match %s in the system: %w", username, user, ErrorPermissionDeny)
+	}
+
 	return nil
 }
 
-func CheckPermissionBySigner(ctx context.Context, client IAuthClient, addrs ...address.Address) error {
+func CheckPermissionBySigner(ctx context.Context, client IAuthClient, signers ...address.Address) error {
 	if auth.HasPerm(ctx, []auth.Permission{}, core.PermAdmin) {
 		return nil
 	}
+
 	user, exist := CtxGetName(ctx)
 	if !exist {
-		return ErrorUserNotFound
+		return fmt.Errorf("there is no accountKey in the request")
 	}
 
-	for _, wAddr := range addrs {
-		ok, err := client.SignerExistInUser(ctx, user, wAddr)
+	for _, addr := range signers {
+		ok, err := client.SignerExistInUser(ctx, user, addr)
 		if err != nil {
-			return fmt.Errorf("check signer exist in user fail %s failed when check permission: %s", wAddr.String(), err)
+			return fmt.Errorf("check signer %s exist in user %s failed when check permission: %w", addr.String(), user, err)
 		}
 		if !ok {
-			return ErrorPermissionDeny
+			return fmt.Errorf("signer %s not exist in user %s: %w", addr.String(), user, ErrorPermissionDeny)
 		}
 	}
 	return nil
 }
 
-func CheckPermissionByMiner(ctx context.Context, client IAuthClient, addrs ...address.Address) error {
+func CheckPermissionByMiner(ctx context.Context, client IAuthClient, miners ...address.Address) error {
 	if auth.HasPerm(ctx, []auth.Permission{}, core.PermAdmin) {
 		return nil
 	}
+
 	user, exist := CtxGetName(ctx)
 	if !exist {
-		return ErrorUserNotFound
+		return fmt.Errorf("there is no accountKey in the request")
 	}
-	for _, mAddr := range addrs {
+
+	for _, mAddr := range miners {
 		ok, err := client.MinerExistInUser(ctx, user, mAddr)
 		if err != nil {
-			return fmt.Errorf("check miner exist in user fail %s failed when check permission: %s", mAddr.String(), err)
+			return fmt.Errorf("check miner %s exist in user %s failed when check permission: %w", mAddr.String(), user, err)
 		}
 		if !ok {
-			return ErrorPermissionDeny
+			return fmt.Errorf("miner %s not exist in user %s: %w", mAddr.String(), user, ErrorPermissionDeny)
 		}
 	}
 	return nil

@@ -34,6 +34,9 @@ clean:
 static: clean
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(GOFLAGS) -o venus-auth ./cmd/server/*.go
 
+gen:
+	go generate ./...
+
 TAG:=test
 docker:
 	curl -O https://raw.githubusercontent.com/filecoin-project/venus-docs/master/script/docker/dockerfile
@@ -41,5 +44,5 @@ docker:
 	docker tag venus-auth filvenus/venus-auth:$(TAG)
 .PHONY: docker
 
-gen:
-	go generate ./...
+docker-push: docker
+	docker push filvenus/venus-auth:$(TAG)

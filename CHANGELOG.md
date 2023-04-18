@@ -1,5 +1,21 @@
 # venus-auth changelog
 
+## v1.11.0-rc1
+
+### New Features
+* feat: add status api to detect api ready / 添加状态检测接口 [[#144](https://github.com/filecoin-project/venus-auth/pull/144)]
+* feat: use thirty party healthcheck lib  / 添加healthcheck接口 [[#145](https://github.com/filecoin-project/venus-auth/pull/145)]
+* feat: add api protection / 增加接口保护  [[#140](https://github.com/filecoin-project/venus-auth/pull/140)]
+* feat: return detailed error infor after authentication failure  /鉴权失败后返回更加详细的错误信息 [[#160](https://github.com/filecoin-project/venus-auth/pull/160)]
+* feat: add docker push / 增加推送到镜像仓库的功能 [[#161](https://github.com/filecoin-project/venus-auth/pull/161)]
+
+### Bug Fixes
+
+* fix: repo not exist by 修复启动时目录不存在从而启动失败的问题 [[#157](https://github.com/filecoin-project/venus-auth/pull/157)]
+* fix: not set flag value to config  /修复配置错误 [[#158](https://github.com/filecoin-project/venus-auth/pull/158)]
+* fix: cli not found config  / 修复创建目录失败的问题 [[#159](https://github.com/filecoin-project/venus-auth/pull/159)]
+
+
 ## v1.10.1
 
 * 查询参数为空时不重置请求url [[#153](https://github.com/filecoin-project/venus-auth/pull/153)]

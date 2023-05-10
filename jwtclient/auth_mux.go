@@ -1,25 +1,17 @@
 package jwtclient
 
 import (
-	"context"
 	"net/http"
 	"reflect"
 	"strings"
 
-	"github.com/filecoin-project/go-jsonrpc/auth"
-	auth2 "github.com/filecoin-project/venus-auth/auth"
+	"github.com/filecoin-project/venus-auth/auth"
+	"github.com/filecoin-project/venus-auth/core"
 
 	logging "github.com/ipfs/go-log/v2"
 )
 
 var log = logging.Logger("auth_client")
-
-type CtxKey int
-
-const (
-	accountKey CtxKey = iota
-	tokenLocationKey
-)
 
 // AuthMux used with jsonrpc library to verify whether the request is legal
 type AuthMux struct {
@@ -65,7 +57,7 @@ func (authMux *AuthMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	token := r.Header.Get("Authorization")
+	token := r.Header.Get(core.AuthorizationHeader)
 
 	if token == "" {
 		token = r.FormValue("token")
@@ -82,16 +74,16 @@ func (authMux *AuthMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	token = strings.TrimPrefix(token, "Bearer ")
 
-	var perms []auth.Permission
 	var err error
+	var perm core.Permission
 	host := r.RemoteAddr
 
-	ctx = CtxWithTokenLocation(ctx, host)
+	ctx = core.CtxWithTokenLocation(ctx, host)
 
 	if !isNil(authMux.local) {
-		if perms, err = authMux.local.Verify(ctx, token); err != nil {
+		if perm, err = authMux.local.Verify(ctx, token); err != nil {
 			if !isNil(authMux.remote) {
-				if perms, err = authMux.remote.Verify(ctx, token); err != nil {
+				if perm, err = authMux.remote.Verify(ctx, token); err != nil {
 					log.Warnf("JWT Verification failed (originating from %s): %s", r.RemoteAddr, err)
 					w.WriteHeader(401)
 					return
@@ -104,7 +96,7 @@ func (authMux *AuthMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		if !isNil(authMux.remote) {
-			if perms, err = authMux.remote.Verify(ctx, token); err != nil {
+			if perm, err = authMux.remote.Verify(ctx, token); err != nil {
 				log.Warnf("JWT Verification failed (originating from %s): %s", r.RemoteAddr, err)
 				w.WriteHeader(401)
 				return
@@ -112,10 +104,10 @@ func (authMux *AuthMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	ctx = auth.WithPerm(ctx, perms)
+	ctx = core.CtxWithPerm(ctx, perm)
 
-	if name, _ := auth2.JwtUserFromToken(token); len(name) != 0 {
-		ctx = CtxWithName(ctx, name)
+	if name, _ := auth.JwtUserFromToken(token); len(name) != 0 {
+		ctx = core.CtxWithName(ctx, name)
 	}
 
 	*r = *(r.WithContext(ctx))
@@ -128,39 +120,4 @@ func isNil(ac IJwtAuthClient) bool {
 		return false
 	}
 	return true
-}
-
-func ctxWithString(ctx context.Context, k CtxKey, v string) context.Context {
-	return context.WithValue(ctx, k, v)
-}
-
-func ctxGetString(ctx context.Context, k CtxKey) (v string, exists bool) {
-	v, exists = ctx.Value(k).(string)
-	return
-}
-
-func CtxWithName(ctx context.Context, v string) context.Context {
-	return ctxWithString(ctx, accountKey, v)
-}
-
-func CtxGetName(ctx context.Context) (name string, exists bool) {
-	return ctxGetString(ctx, accountKey)
-}
-
-func CtxWithTokenLocation(ctx context.Context, v string) context.Context {
-	return ctxWithString(ctx, tokenLocationKey, v)
-}
-
-func CtxGetTokenLocation(ctx context.Context) (location string, exists bool) {
-	return ctxGetString(ctx, tokenLocationKey)
-}
-
-type ValueFromCtx struct{}
-
-func (vfc *ValueFromCtx) AccFromCtx(ctx context.Context) (string, bool) {
-	return CtxGetName(ctx)
-}
-
-func (vfc *ValueFromCtx) HostFromCtx(ctx context.Context) (string, bool) {
-	return CtxGetTokenLocation(ctx)
 }

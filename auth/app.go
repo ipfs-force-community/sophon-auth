@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -89,10 +90,11 @@ func Response(c *gin.Context, err error) {
 
 // verify only called by inner, so use readCtx constant to bypass perm check
 func (o *oauthApp) verify(token string) (*JWTPayload, error) {
-	return o.srv.Verify(readCtx, token)
+	return o.srv.Verify(core.CtxWithPerm(context.Background(), core.PermRead), token)
 }
 
 func (o *oauthApp) GetDefaultAdminToken() (string, error) {
+	adminCtx := core.CtxWithPerm(context.Background(), core.PermAdmin)
 	// if not found, create one
 	token, err := o.srv.GetTokenByName(adminCtx, DefaultAdminTokenName)
 	if err != nil {

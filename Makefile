@@ -55,9 +55,5 @@ ifdef PRIVATE_REGISTRY
 endif
 
 
-
-
-
-
 docker-push: docker
 	docker push $(PRIVATE_REGISTRY)/filvenus/venus-auth:$(TAG)

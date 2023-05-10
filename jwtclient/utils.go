@@ -21,7 +21,7 @@ func CheckPermissionByName(ctx context.Context, username string) error {
 		return nil
 	}
 
-	user, exist := CtxGetName(ctx)
+	user, exist := core.CtxGetName(ctx)
 	if !exist {
 		return fmt.Errorf("there is no accountKey in the request")
 	}
@@ -38,7 +38,7 @@ func CheckPermissionBySigner(ctx context.Context, client IAuthClient, signers ..
 		return nil
 	}
 
-	user, exist := CtxGetName(ctx)
+	user, exist := core.CtxGetName(ctx)
 	if !exist {
 		return fmt.Errorf("there is no accountKey in the request")
 	}
@@ -60,7 +60,7 @@ func CheckPermissionByMiner(ctx context.Context, client IAuthClient, miners ...a
 		return nil
 	}
 
-	user, exist := CtxGetName(ctx)
+	user, exist := core.CtxGetName(ctx)
 	if !exist {
 		return fmt.Errorf("there is no accountKey in the request")
 	}

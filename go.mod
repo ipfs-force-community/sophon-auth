@@ -28,7 +28,6 @@ require (
 	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f
 	gorm.io/driver/mysql v1.1.1
 	gorm.io/gorm v1.21.12
-	gotest.tools v2.2.0+incompatible
 )
 
 require (
@@ -59,7 +58,6 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/flatbuffers v2.0.0+incompatible // indirect
-	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20190812055157-5d271430af9f // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/influxdata/line-protocol v0.0.0-20200327222509-2487e7298839 // indirect

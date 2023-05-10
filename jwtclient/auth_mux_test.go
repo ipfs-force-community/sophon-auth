@@ -6,12 +6,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/filecoin-project/go-jsonrpc/auth"
+	"github.com/filecoin-project/venus-auth/core"
 )
 
 type mockImp struct{}
 
-func (m mockImp) Verify(ctx context.Context, token string) ([]auth.Permission, error) {
+func (m mockImp) Verify(ctx context.Context, token string) (core.Permission, error) {
 	panic("implement me")
 }
 

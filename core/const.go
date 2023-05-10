@@ -1,9 +1,5 @@
 package core
 
-import (
-	"context"
-)
-
 var CurrentCommit string
 
 const BuildVersion = "1.11.0"
@@ -20,6 +16,7 @@ type (
 )
 
 const (
+	PermUndefine Permission = "undefine"
 	// When changing these, update docs/API.md too
 	PermRead  Permission = "read" // default
 	PermWrite Permission = "write"
@@ -54,14 +51,6 @@ func AdaptOldStrategy(perm Permission) []Permission {
 	default:
 	}
 	return perms
-}
-
-type PermKey int
-
-var PermCtxKey PermKey
-
-func WithPerm(ctx context.Context, perm Permission) context.Context {
-	return context.WithValue(ctx, PermCtxKey, AdaptOldStrategy(perm))
 }
 
 type (

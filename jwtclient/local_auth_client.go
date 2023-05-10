@@ -3,8 +3,7 @@ package jwtclient
 import (
 	"context"
 
-	"github.com/filecoin-project/go-jsonrpc/auth"
-	venusauth "github.com/filecoin-project/venus-auth/auth"
+	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/core"
 	jwt3 "github.com/gbrlsnchs/jwt/v3"
 )
@@ -22,23 +21,20 @@ func NewLocalAuthClient() (*LocalAuthClient, []byte, error) {
 	return NewLocalAuthClientWithSecret(secret)
 }
 
-func (c *LocalAuthClient) Verify(ctx context.Context, token string) ([]auth.Permission, error) {
-	var payload venusauth.JWTPayload
+func (c *LocalAuthClient) Verify(ctx context.Context, token string) (core.Permission, error) {
+	var payload auth.JWTPayload
 	_, err := jwt3.Verify([]byte(token), c.alg, &payload)
 	if err != nil {
-		return nil, err
+		return core.PermUndefine, err
 	}
 
-	jwtPerms := core.AdaptOldStrategy(payload.Perm)
-	perms := make([]auth.Permission, len(jwtPerms))
-	copy(perms, jwtPerms)
-	return perms, nil
+	return payload.Perm, nil
 }
 
 func NewLocalAuthClientWithSecret(secret []byte) (*LocalAuthClient, []byte, error) {
-	payload := venusauth.JWTPayload{
+	payload := auth.JWTPayload{
 		Perm: core.PermAdmin,
-		Name: venusauth.DefaultAdminTokenName,
+		Name: auth.DefaultAdminTokenName,
 	}
 
 	client := &LocalAuthClient{

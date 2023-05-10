@@ -25,7 +25,7 @@ func (c *LocalAuthClient) Verify(ctx context.Context, token string) (core.Permis
 	var payload auth.JWTPayload
 	_, err := jwt3.Verify([]byte(token), c.alg, &payload)
 	if err != nil {
-		return core.PermUndefine, err
+		return "", err
 	}
 
 	return payload.Perm, nil

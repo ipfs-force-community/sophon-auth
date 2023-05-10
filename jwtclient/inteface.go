@@ -22,7 +22,7 @@ var _ IJwtAuthClient = &jwtAuthClient{}
 func (c *jwtAuthClient) Verify(ctx context.Context, token string) (core.Permission, error) {
 	res, err := c.IAuthClient.Verify(ctx, token)
 	if err != nil {
-		return core.PermUndefine, err
+		return "", err
 	}
 
 	return res.Perm, nil

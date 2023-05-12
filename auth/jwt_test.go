@@ -3,7 +3,6 @@ package auth
 
 import (
 	"context"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,7 +14,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gbrlsnchs/jwt/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -1228,18 +1226,9 @@ func setup(cfg *config.DBConfig, t *testing.T) {
 		t.Fatal(err)
 	}
 
-	secret, err := config.RandSecret()
-	if err != nil {
-		t.Fatal(err)
-	}
-	sec, err := hex.DecodeString(hex.EncodeToString(secret))
-	if err != nil {
-		t.Fatal(err)
-	}
 	jwtOAuthInstance = &jwtOAuth{
-		secret: jwt.NewHS256(sec),
-		store:  theStore,
-		mp:     newMapper(),
+		store: theStore,
+		mp:    newMapper(),
 	}
 }
 

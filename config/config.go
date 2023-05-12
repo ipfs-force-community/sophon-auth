@@ -3,7 +3,6 @@ package config
 import (
 	"bytes"
 	"crypto/rand"
-	"encoding/hex"
 	"io"
 	"io/ioutil"
 	"os"
@@ -16,7 +15,6 @@ import (
 
 type Config struct {
 	Port         string               `json:"port"`
-	Secret       string               `json:"secret"`
 	ReadTimeout  time.Duration        `json:"readTimeout"`
 	WriteTimeout time.Duration        `json:"writeTimeout"`
 	IdleTimeout  time.Duration        `json:"idleTimeout"`
@@ -51,14 +49,9 @@ func RandSecret() ([]byte, error) {
 	return sk, nil
 }
 
-func DefaultConfig() (*Config, error) {
-	secret, err := RandSecret()
-	if err != nil {
-		return nil, err
-	}
+func DefaultConfig() *Config {
 	return &Config{
 		Port:         "8989",
-		Secret:       hex.EncodeToString(secret),
 		ReadTimeout:  time.Minute,
 		WriteTimeout: time.Minute,
 		IdleTimeout:  time.Minute,
@@ -75,7 +68,7 @@ func DefaultConfig() (*Config, error) {
 		DB: &DBConfig{
 			Type: Badger,
 		},
-	}, nil
+	}
 }
 
 type LogHookType = int

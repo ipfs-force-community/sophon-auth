@@ -164,7 +164,6 @@ remove token success: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidG9rZW4xI
 >the default config path is "~/.auth-auth/config.toml"
 ```
 Port = "8989" 
-Secret = "88b8a61690ee648bef9bc73463b8a05917f1916df169c775a3896719466be04a"
 ReadTimeout = "1m"
 WriteTimeout = "1m"
 IdleTimeout = "1m"

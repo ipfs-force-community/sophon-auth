@@ -26,10 +26,7 @@ var cli *AuthClient
 
 // nolint
 func TestMain(m *testing.M) {
-	cnf, err := config.DefaultConfig()
-	if err != nil {
-		log.Fatalf("failed to get default config err:%s", err)
-	}
+	cnf := config.DefaultConfig()
 	flag.StringVar(&cnf.DB.Type, "db", "badger", "mysql or badger")
 	flag.StringVar(&cnf.DB.DSN, "dns", "", "sql connection string or badger data path")
 	flag.Parse()
@@ -51,7 +48,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// stm: @VENUSAUTH_JWT_NEW_OAUTH_SERVICE_001
-	app, err := auth.NewOAuthApp(cnf.Secret, tmpPath, cnf.DB)
+	app, err := auth.NewOAuthApp(tmpPath, cnf.DB)
 	if err != nil {
 		log.Fatalf("Failed to init oauthApp : %s", err)
 	}

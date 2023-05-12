@@ -18,7 +18,6 @@ import (
 
 	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/core"
-	"github.com/filecoin-project/venus-auth/log"
 	"github.com/filecoin-project/venus-auth/storage"
 	"github.com/filecoin-project/venus-auth/util"
 )
@@ -76,9 +75,8 @@ type OAuthService interface {
 }
 
 type jwtOAuth struct {
-	secret *jwt.HMACSHA
-	store  storage.Store
-	mp     Mapper
+	store storage.Store
+	mp    Mapper
 }
 
 type JWTPayload struct {
@@ -87,43 +85,15 @@ type JWTPayload struct {
 	Extra string          `json:"ext"`
 }
 
-func NewOAuthService(secret string, dbPath string, cnf *config.DBConfig) (OAuthService, error) {
-	sec, err := hex.DecodeString(secret)
-	if err != nil {
-		return nil, err
-	}
+func NewOAuthService(dbPath string, cnf *config.DBConfig) (OAuthService, error) {
 	store, err := storage.NewStore(cnf, dbPath)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: remove it next version
-	skip, limit := int64(0), int64(20)
-	for {
-		kps, err := store.List(skip, limit)
-		if err != nil {
-			return nil, xerrors.Errorf("list token %v", err)
-		}
-		for _, kp := range kps {
-			if len(kp.Secret) == 0 {
-				kp.Secret = secret
-				log.Infof("update token %s secret %s", kp.Token, secret)
-				if err := store.UpdateToken(kp); err != nil {
-					return nil, xerrors.Errorf("update token(%s) %v", kp.Token, err)
-				}
-			}
-		}
-		if len(kps) == 0 {
-			break
-		}
-
-		skip += limit
-	}
-
 	jwtOAuthInstance = &jwtOAuth{
-		secret: jwt.NewHS256(sec),
-		store:  store,
-		mp:     newMapper(),
+		store: store,
+		mp:    newMapper(),
 	}
 	return jwtOAuthInstance, nil
 }

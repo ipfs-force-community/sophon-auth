@@ -27,6 +27,8 @@ var (
 	ErrorNonRegisteredToken = xerrors.New("A non-registered token")
 	ErrorVerificationFailed = xerrors.New("Verification Failed")
 	ErrorPermissionDeny     = xerrors.New("Permission Deny")
+	ErrorPermissionNotFound = errors.New("permission not found")
+	ErrorUsernameNotFound   = errors.New("username not found")
 )
 
 var jwtOAuthInstance *jwtOAuth
@@ -677,7 +679,10 @@ func IsSignerAddress(addr address.Address) bool {
 }
 
 func permCheck(ctx context.Context, needPerm core.Permission) error {
-	callerPerms := ctxGetPerm(ctx)
+	callerPerms, ok := core.CtxGetPerm(ctx)
+	if !ok {
+		return ErrorPermissionNotFound
+	}
 
 	for _, callerPerm := range callerPerms {
 		if callerPerm == needPerm {
@@ -694,7 +699,10 @@ func userPermCheck(ctx context.Context, username string) error {
 		return nil
 	}
 
-	ctxUsername := ctxGetName(ctx)
+	ctxUsername, ok := core.CtxGetName(ctx)
+	if !ok {
+		return ErrorUsernameNotFound
+	}
 	if ctxUsername == username {
 		return nil
 	}
@@ -713,7 +721,10 @@ func tokenPermCheck(ctx context.Context, token string) error {
 		return fmt.Errorf("get user of token %s failed: %w", token, err)
 	}
 
-	ctxUsername := ctxGetName(ctx)
+	ctxUsername, ok := core.CtxGetName(ctx)
+	if !ok {
+		return ErrorUsernameNotFound
+	}
 	if ctxUsername == username {
 		return nil
 	}
@@ -726,7 +737,10 @@ type minerOwnershipChecker interface {
 }
 
 func ownerOfMinerCheck(ctx context.Context, checker minerOwnershipChecker, miner address.Address) error {
-	userName := ctxGetName(ctx)
+	userName, ok := core.CtxGetName(ctx)
+	if !ok {
+		return ErrorUsernameNotFound
+	}
 	has, err := checker.MinerExistInUser(miner, userName)
 	if err != nil {
 		return err
@@ -744,7 +758,10 @@ type signerOwnershipChecker interface {
 }
 
 func ownerOfSignerCheck(ctx context.Context, checker signerOwnershipChecker, signer address.Address) error {
-	userName := ctxGetName(ctx)
+	userName, ok := core.CtxGetName(ctx)
+	if !ok {
+		return ErrorUsernameNotFound
+	}
 	has, err := checker.SignerExistInUser(signer, userName)
 	if err != nil {
 		return err

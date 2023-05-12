@@ -14,7 +14,7 @@ import (
 
 	"github.com/filecoin-project/go-address"
 	"github.com/gin-gonic/gin"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/filecoin-project/venus-auth/auth"
 	"github.com/filecoin-project/venus-auth/config"
@@ -173,7 +173,7 @@ func TestUserBusiness(t *testing.T) {
 			// user already exists error is ok
 			if strings.Index(err.Error(), "already exists") > 0 {
 				resp, err := cli.GetUser(context.Background(), req.Name)
-				assert.NilError(t, err)
+				assert.NoError(t, err)
 				originUsers[resp.Id] = resp
 				continue
 			}
@@ -195,9 +195,9 @@ func TestUserBusiness(t *testing.T) {
 	for id, u := range originUsers {
 		tmpU, find := listUserMaps[id]
 		assert.Equal(t, find, true)
-		assert.DeepEqual(t, u.Name, tmpU.Name)
-		assert.DeepEqual(t, u.Comment, tmpU.Comment)
-		assert.DeepEqual(t, u.State, tmpU.State)
+		assert.Equal(t, u.Name, tmpU.Name)
+		assert.Equal(t, u.Comment, tmpU.Comment)
+		assert.Equal(t, u.State, tmpU.State)
 	}
 
 	newComment := "this is a new comment"
@@ -211,14 +211,14 @@ func TestUserBusiness(t *testing.T) {
 			t.Fatal(err)
 		}
 		_, err = cli.UpsertMiner(context.TODO(), res1.Name, "f02345", true)
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 		break
 	}
 
 	mAddr1, err := address.NewFromString("f02345")
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 	mAddr2, err := address.NewFromString("f023452")
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 
 	user, err := cli.GetUserByMiner(context.Background(), mAddr1)
 	if err != nil {
@@ -229,31 +229,31 @@ func TestUserBusiness(t *testing.T) {
 	if err != nil {
 		fmt.Printf("err: %s\n", err.Error())
 	}
-	assert.DeepEqual(t, true, has)
+	assert.Equal(t, true, has)
 
 	has, err = cli.HasMiner(context.Background(), mAddr2)
 	if err != nil {
 		t.Fatalf("has miner err:%s", err)
 	}
-	assert.DeepEqual(t, false, has)
+	assert.Equal(t, false, has)
 
 	exist, err := cli.MinerExistInUser(context.Background(), user.Name, mAddr1)
 	if err != nil {
 		t.Fatalf("check miner exist in user err:%s", err)
 	}
-	assert.DeepEqual(t, true, exist)
+	assert.Equal(t, true, exist)
 
 	exist, err = cli.MinerExistInUser(context.Background(), user.Name, mAddr2)
 	if err != nil {
 		t.Fatalf("check miner exist in user err:%s", err)
 	}
-	assert.DeepEqual(t, false, exist)
+	assert.Equal(t, false, exist)
 
 	user, err = cli.GetUser(context.Background(), "name2")
 	if err != nil {
 		t.Fatalf("get user err:%s", err)
 	}
-	assert.DeepEqual(t, "name2", user.Name)
+	assert.Equal(t, "name2", user.Name)
 
 	err = cli.VerifyUsers(context.Background(), []string{"name1", "name2"})
 	if err != nil {
@@ -274,7 +274,7 @@ func TestClient_Verify(t *testing.T) {
 	ctx := context.TODO()
 	for _, kp := range kps {
 		res, err := cli.Verify(ctx, kp.Token)
-		assert.NilError(t, err)
+		assert.NoError(t, err)
 		assert.Equal(t, res.Name, kp.Name)
 		assert.Equal(t, res.Perm, kp.Perm)
 	}

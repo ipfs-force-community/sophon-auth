@@ -2,7 +2,6 @@ package auth
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"net/http"
 	"net/url"
@@ -21,6 +20,7 @@ func InitRouter(app OAuthApp, checkPermission bool) http.Handler {
 	gin.SetMode(gin.ReleaseMode)
 
 	router := gin.New()
+	router.ContextWithFallback = true
 	router.Use(CorsMiddleWare())
 	router.Use(RewriteAddressInUrl())
 
@@ -196,16 +196,16 @@ func permMiddleWare(app OAuthApp) gin.HandlerFunc {
 
 		jwtPayload, err := app.verify(token)
 		if err != nil {
-			log.Warnf("verify token failed: %s", err)
+			log.Warnf("verify token %s failed: %s", token, err)
 			c.Writer.WriteHeader(401)
 			return
 		}
 
-		ginCtxWithPerm(c, core.AdaptOldStrategy(jwtPayload.Perm))
-
+		reqCtx := core.CtxWithPerm(c.Request.Context(), jwtPayload.Perm)
 		if len(jwtPayload.Name) != 0 {
-			ginCtxWithName(c, jwtPayload.Name)
+			reqCtx = core.CtxWithName(reqCtx, jwtPayload.Name)
 		}
+		c.Request = c.Request.WithContext(reqCtx)
 
 		c.Next()
 	}
@@ -213,42 +213,8 @@ func permMiddleWare(app OAuthApp) gin.HandlerFunc {
 
 func noPermMiddleWare() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		ginCtxWithPerm(c, core.AdaptOldStrategy(core.PermAdmin))
+		reqCtx := core.CtxWithPerm(c.Request.Context(), core.PermAdmin)
+		c.Request = c.Request.WithContext(reqCtx)
 		c.Next()
 	}
-}
-
-type ginCtxKey = string
-
-const (
-	nameCtxKey = ginCtxKey("name")
-	permCtxKey = ginCtxKey("perm")
-)
-
-var adminCtx = context.WithValue(context.Background(), permCtxKey, core.AdaptOldStrategy(core.PermAdmin)) //nolint
-var signCtx = context.WithValue(context.Background(), permCtxKey, core.AdaptOldStrategy(core.PermSign))   //nolint
-var readCtx = context.WithValue(context.Background(), permCtxKey, core.AdaptOldStrategy(core.PermRead))   //nolint
-
-func ginCtxWithPerm(ctx *gin.Context, perm []core.Permission) {
-	ctx.Set(permCtxKey, perm)
-}
-
-func ctxGetPerm(ctx context.Context) []core.Permission {
-	perm, ok := ctx.Value(permCtxKey).([]core.Permission)
-	if !ok {
-		return nil
-	}
-	return perm
-}
-
-func ginCtxWithName(ctx *gin.Context, name string) {
-	ctx.Set(nameCtxKey, name)
-}
-
-func ctxGetName(ctx context.Context) string {
-	name, ok := ctx.Value(nameCtxKey).(string)
-	if !ok {
-		return ""
-	}
-	return name
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-jsonrpc/auth"
 
 	"github.com/filecoin-project/venus-auth/core"
 )
@@ -17,11 +16,11 @@ var (
 
 // CheckPermissionByName check weather the user has admin permission or is match the username passed in
 func CheckPermissionByName(ctx context.Context, username string) error {
-	if auth.HasPerm(ctx, []auth.Permission{}, core.PermAdmin) {
+	if core.HasPerm(ctx, []core.Permission{}, core.PermAdmin) {
 		return nil
 	}
 
-	user, exist := CtxGetName(ctx)
+	user, exist := core.CtxGetName(ctx)
 	if !exist {
 		return fmt.Errorf("there is no accountKey in the request")
 	}
@@ -34,11 +33,11 @@ func CheckPermissionByName(ctx context.Context, username string) error {
 }
 
 func CheckPermissionBySigner(ctx context.Context, client IAuthClient, signers ...address.Address) error {
-	if auth.HasPerm(ctx, []auth.Permission{}, core.PermAdmin) {
+	if core.HasPerm(ctx, []core.Permission{}, core.PermAdmin) {
 		return nil
 	}
 
-	user, exist := CtxGetName(ctx)
+	user, exist := core.CtxGetName(ctx)
 	if !exist {
 		return fmt.Errorf("there is no accountKey in the request")
 	}
@@ -56,11 +55,11 @@ func CheckPermissionBySigner(ctx context.Context, client IAuthClient, signers ..
 }
 
 func CheckPermissionByMiner(ctx context.Context, client IAuthClient, miners ...address.Address) error {
-	if auth.HasPerm(ctx, []auth.Permission{}, core.PermAdmin) {
+	if core.HasPerm(ctx, []core.Permission{}, core.PermAdmin) {
 		return nil
 	}
 
-	user, exist := CtxGetName(ctx)
+	user, exist := core.CtxGetName(ctx)
 	if !exist {
 		return fmt.Errorf("there is no accountKey in the request")
 	}

@@ -29,13 +29,9 @@ func TestLocalAuthClient(t *testing.T) {
 
 func testClientWithAdminPerm(t *testing.T, client *LocalAuthClient, token string) {
 	ctx := context.Background()
-	permissions, err := client.Verify(ctx, token)
+	permission, err := client.Verify(ctx, token)
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, 4, len(permissions))
-	assert.Contains(t, permissions, core.PermAdmin)
-	assert.Contains(t, permissions, core.PermRead)
-	assert.Contains(t, permissions, core.PermWrite)
-	assert.Contains(t, permissions, core.PermSign)
+	assert.Equal(t, core.PermAdmin, permission)
 }

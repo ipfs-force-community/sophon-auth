@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gbrlsnchs/jwt/v3"
 	"github.com/stretchr/testify/assert"
@@ -24,6 +25,17 @@ import (
 	"github.com/filecoin-project/venus-auth/core"
 	"github.com/filecoin-project/venus-auth/storage"
 )
+
+var (
+	adminCtx = core.CtxWithPerm(context.Background(), core.PermAdmin)
+	signCtx  = core.CtxWithPerm(context.Background(), core.PermSign)
+	readCtx  = core.CtxWithPerm(context.Background(), core.PermRead)
+)
+
+func signPermAndRandomUsername() context.Context {
+	ctx := core.CtxWithPerm(context.Background(), core.PermSign)
+	return core.CtxWithName(ctx, time.Now().String())
+}
 
 func TestJwt(t *testing.T) {
 	limitStrs := `[{"Id":"794fc9a4-2b80-4503-835a-7e8e27360b3d","Name":"test_user_01","Service":"","API":"","ReqLimit":{"Cap":10,"ResetDur":120000000000}},{"Id":"252f581e-cbd2-4a61-a517-0b7df65013aa","Name":"test_user_02","Service":"","API":"","ReqLimit":{"Cap":10,"ResetDur":72000000000000}}]`
@@ -163,7 +175,7 @@ func testVerifyToken(t *testing.T) {
 
 	// with ctx no perm
 	_, err = jwtOAuthInstance.Verify(context.Background(), token)
-	assert.True(t, errors.Is(err, ErrorPermissionDeny))
+	assert.Equal(t, ErrorPermissionNotFound, errors.Unwrap(err))
 }
 
 func testGetToken(t *testing.T) {
@@ -200,7 +212,8 @@ func testGetToken(t *testing.T) {
 
 	// with ctx no perm
 	_, err = jwtOAuthInstance.GetToken(context.Background(), token)
-	assert.True(t, errors.Is(err, ErrorPermissionDeny))
+	assert.Equal(t, ErrorPermissionNotFound, errors.Unwrap(err))
+
 	_, err = jwtOAuthInstance.GetToken(signCtx, invalidToken)
 	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 }
@@ -226,7 +239,7 @@ func testGetTokenByName(t *testing.T) {
 	assert.Equal(t, "test-token-01", resp.Name)
 	token, err := jwtOAuthInstance.GenerateToken(adminCtx, pl1)
 	assert.Nil(t, err)
-	userCtx := newUserCtx(pl1.Name)
+	userCtx := ctxWithUserNameAndAdminPerm(pl1.Name)
 
 	validPermTest := func(ctx context.Context) {
 		// Get token by name
@@ -236,15 +249,15 @@ func testGetTokenByName(t *testing.T) {
 		assert.Equal(t, token, tokenInfoList1[0].Token)
 
 	}
-	invalidPermTest := func(ctx context.Context) {
+	invalidPermTest := func(ctx context.Context, expect error) {
 		_, err := jwtOAuthInstance.GetTokenByName(ctx, "test-token-01")
-		assert.True(t, errors.Is(err, ErrorPermissionDeny))
+		assert.Equal(t, expect, errors.Unwrap(err))
 	}
 
 	validPermTest(adminCtx)
 	validPermTest(userCtx)
-	invalidPermTest(signCtx)
-	invalidPermTest(context.Background())
+	invalidPermTest(signPermAndRandomUsername(), ErrorPermissionDeny)
+	invalidPermTest(context.Background(), ErrorUsernameNotFound)
 
 	// Try to get token by wrong name
 	tokenInfoInvalid, err := jwtOAuthInstance.GetTokenByName(adminCtx, "invalid_name")
@@ -306,7 +319,8 @@ func testTokenList(t *testing.T) {
 
 	// with ctx no perm
 	_, err = jwtOAuthInstance.Tokens(context.Background(), 0, 2)
-	assert.True(t, errors.Is(err, ErrorPermissionDeny))
+	assert.Equal(t, ErrorPermissionNotFound, errors.Unwrap(err))
+
 	_, err = jwtOAuthInstance.Tokens(signCtx, 0, 2)
 	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 }
@@ -361,25 +375,23 @@ func testRemoveAndRecoverToken(t *testing.T) {
 		assert.Equal(t, 1, len(allTokenInfos))
 	}
 
-	invalidPermTest := func(ctx context.Context) {
+	invalidPermTest := func(ctx context.Context, expect error) {
 		// Remove a token
-		err = jwtOAuthInstance.RemoveToken(ctx, token)
-		assert.True(t, errors.Is(err, ErrorPermissionDeny))
+		err := jwtOAuthInstance.RemoveToken(ctx, token)
+		assert.Equal(t, expect, errors.Unwrap(err))
 
 		// Recover a token
 		err = jwtOAuthInstance.RecoverToken(ctx, token)
-		assert.True(t, errors.Is(err, ErrorPermissionDeny))
+		assert.Equal(t, expect, errors.Unwrap(err))
 	}
 
-	userCtx := newUserCtx(pl1.Name)
-	nilCtx := context.Background()
+	userCtx := ctxWithUserNameAndAdminPerm(pl1.Name)
 
 	validPermTest(userCtx)
 	validPermTest(adminCtx)
 
-	invalidPermTest(nilCtx)
-	invalidPermTest(signCtx)
-
+	invalidPermTest(context.Background(), ErrorUsernameNotFound)
+	invalidPermTest(signCtx, ErrorUsernameNotFound)
 }
 
 func createUsers(t *testing.T, userMiners map[string][]string) {
@@ -423,7 +435,8 @@ func testCreateUser(t *testing.T, userMiners map[string][]string) {
 
 	// with ctx no perm
 	_, err = jwtOAuthInstance.CreateUser(context.Background(), &CreateUserRequest{Name: "test_user_002"})
-	assert.True(t, errors.Is(err, ErrorPermissionDeny))
+	assert.Equal(t, ErrorPermissionNotFound, errors.Unwrap(err))
+
 	_, err = jwtOAuthInstance.CreateUser(signCtx, &CreateUserRequest{Name: "test_user_002"})
 	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 }
@@ -442,16 +455,16 @@ func testGetUser(t *testing.T, userMiners map[string][]string) {
 		assert.Nil(t, err)
 		assert.Equal(t, u.Name, existUserName)
 	}
-	invalidPermTest := func(ctx context.Context) {
+	invalidPermTest := func(ctx context.Context, expect error) {
 		_, err := jwtOAuthInstance.GetUser(ctx, &GetUserRequest{Name: existUserName})
-		assert.True(t, errors.Is(err, ErrorPermissionDeny))
+		assert.Equal(t, expect, errors.Unwrap(err))
 	}
 
-	userCtx := newUserCtx(existUserName)
+	userCtx := ctxWithUserNameAndAdminPerm(existUserName)
 	validPermTest(adminCtx)
 	validPermTest(userCtx)
-	invalidPermTest(context.Background())
-	invalidPermTest(signCtx)
+	invalidPermTest(context.Background(), ErrorUsernameNotFound)
+	invalidPermTest(signPermAndRandomUsername(), ErrorPermissionDeny)
 
 	exist, err := jwtOAuthInstance.HasUser(adminCtx, &HasUserRequest{Name: invalidUserName})
 	assert.Nil(t, err)
@@ -476,7 +489,8 @@ func testVerifyUsers(t *testing.T, userMiners map[string][]string) {
 
 	// with ctx no perm
 	err = jwtOAuthInstance.VerifyUsers(context.Background(), &VerifyUsersReq{Names: usernames})
-	assert.True(t, errors.Is(err, ErrorPermissionDeny))
+	assert.Equal(t, ErrorPermissionNotFound, errors.Unwrap(err))
+
 	err = jwtOAuthInstance.VerifyUsers(signCtx, &VerifyUsersReq{Names: usernames})
 	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 }
@@ -500,7 +514,8 @@ func testListUser(t *testing.T, userMiners map[string][]string) {
 		Page:  &core.Page{},
 		State: int(core.UserStateUndefined),
 	})
-	assert.True(t, errors.Is(err, ErrorPermissionDeny))
+	assert.Equal(t, ErrorPermissionNotFound, errors.Unwrap(err))
+
 	_, err = jwtOAuthInstance.ListUsers(signCtx, &ListUsersRequest{
 		Page:  &core.Page{},
 		State: int(core.UserStateUndefined),
@@ -537,7 +552,8 @@ func testUpdateUser(t *testing.T, userMiners map[string][]string) {
 
 	// with ctx no perm
 	err = jwtOAuthInstance.UpdateUser(context.Background(), updateUserReq)
-	assert.True(t, errors.Is(err, ErrorPermissionDeny))
+	assert.Equal(t, ErrorPermissionNotFound, errors.Unwrap(err))
+
 	err = jwtOAuthInstance.UpdateUser(signCtx, updateUserReq)
 	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 }
@@ -589,11 +605,12 @@ func testDeleteAndRecoverUser(t *testing.T, userMiners map[string][]string) {
 
 	// with ctx no perm
 	err = jwtOAuthInstance.DeleteUser(context.Background(), &DeleteUserRequest{Name: existUserName})
-	assert.True(t, errors.Is(err, ErrorPermissionDeny))
+	assert.Equal(t, ErrorPermissionNotFound, errors.Unwrap(err))
 	err = jwtOAuthInstance.DeleteUser(signCtx, &DeleteUserRequest{Name: existUserName})
 	assert.True(t, errors.Is(err, ErrorPermissionDeny))
+
 	err = jwtOAuthInstance.RecoverUser(context.Background(), &RecoverUserRequest{Name: existUserName})
-	assert.True(t, errors.Is(err, ErrorPermissionDeny))
+	assert.Equal(t, ErrorPermissionNotFound, errors.Unwrap(err))
 	err = jwtOAuthInstance.RecoverUser(signCtx, &RecoverUserRequest{Name: existUserName})
 	assert.True(t, errors.Is(err, ErrorPermissionDeny))
 }
@@ -675,16 +692,17 @@ func testListMiner(t *testing.T, userMiners map[string][]string) {
 			assert.Equal(t, true, resp[i].OpenMining)
 		}
 	}
-	invalidPermTest := func(ctx context.Context) {
+	invalidPermTest := func(ctx context.Context, expect error) {
 		_, err := jwtOAuthInstance.ListMiners(ctx, &ListMinerReq{User: validUser1})
-		assert.True(t, errors.Is(err, ErrorPermissionDeny))
+		assert.Equal(t, expect, errors.Unwrap(err))
 	}
 
-	userCtx := newUserCtx(validUser1)
+	userCtx := ctxWithUserNameAndAdminPerm(validUser1)
 	validPermTest(userCtx)
 	validPermTest(adminCtx)
-	invalidPermTest(context.Background())
-	invalidPermTest(signCtx)
+
+	invalidPermTest(context.Background(), ErrorUsernameNotFound)
+	invalidPermTest(signPermAndRandomUsername(), ErrorPermissionDeny)
 }
 
 func testMinerExistInMiner(t *testing.T, userMiners map[string][]string) {
@@ -707,18 +725,19 @@ func testMinerExistInMiner(t *testing.T, userMiners map[string][]string) {
 		assert.Nil(t, err)
 		assert.False(t, exist)
 	}
-	invalidPermTest := func(ctx context.Context) {
+	invalidPermTest := func(ctx context.Context, expect error) {
 		mAddr, _ := address.NewFromString("t01000")
 		// Miner Exist In Account
 		_, err := jwtOAuthInstance.MinerExistInUser(ctx, &MinerExistInUserRequest{Miner: mAddr, User: "test_user_001"})
-		assert.True(t, errors.Is(err, ErrorPermissionDeny))
+		assert.Equal(t, expect, errors.Unwrap(err))
 	}
 
-	userCtx := newUserCtx("test_user_001")
+	userCtx := ctxWithUserNameAndAdminPerm("test_user_001")
 	validPermTest(userCtx)
 	validPermTest(adminCtx)
-	invalidPermTest(signCtx)
-	invalidPermTest(context.Background())
+
+	invalidPermTest(signPermAndRandomUsername(), ErrorPermissionDeny)
+	invalidPermTest(context.Background(), ErrorUsernameNotFound)
 
 	// Has Miner
 	mAddr, _ := address.NewFromString("t01000")
@@ -796,17 +815,18 @@ func testDeleteMiner(t *testing.T, userMiners map[string][]string) {
 		assert.False(t, ok)
 
 	}
-	invalidPermTest := func(ctx context.Context) {
+	invalidPermTest := func(ctx context.Context, expect error) {
 		mAddr, _ := address.NewFromString(user1Miners[0])
 		// Delete miner
 		_, err := jwtOAuthInstance.DelMiner(ctx, &DelMinerReq{Miner: mAddr})
-		assert.True(t, errors.Is(err, ErrorPermissionDeny))
+		assert.Equal(t, expect, errors.Unwrap(err))
 	}
-	userCtx := newUserCtx(user1)
+	userCtx := ctxWithUserNameAndAdminPerm(user1)
 	validPermTest(userCtx)
 	validPermTest(adminCtx)
-	invalidPermTest(context.Background())
-	invalidPermTest(signCtx)
+
+	invalidPermTest(context.Background(), ErrorUsernameNotFound)
+	invalidPermTest(signPermAndRandomUsername(), ErrorPermissionDeny)
 
 	// Delete an invalid miner
 	mAddr, _ := address.NewFromString(invalidMiner)
@@ -893,24 +913,23 @@ func testSignerExistInUser(t *testing.T, userSigners map[string][]string) {
 				assert.True(t, bExist)
 			}
 		}
-		invalidPermTest := func(ctx context.Context) {
+		invalidPermTest := func(ctx context.Context, expect error) {
 			for _, signer := range signers {
 				sAddr, _ := address.NewFromString(signer)
 				_, err := jwtOAuthInstance.SignerExistInUser(ctx, &SignerExistInUserReq{
 					User:   user,
 					Signer: sAddr,
 				})
-				assert.True(t, errors.Is(err, ErrorPermissionDeny))
+				assert.Equal(t, expect, errors.Unwrap(err))
 			}
 		}
 
-		userCtx := newUserCtx(user)
+		userCtx := ctxWithUserNameAndAdminPerm(user)
 		validPermTest(userCtx)
 		validPermTest(adminCtx)
-		invalidPermTest(context.Background())
-		invalidPermTest(signCtx)
+		invalidPermTest(context.Background(), ErrorUsernameNotFound)
+		invalidPermTest(signPermAndRandomUsername(), ErrorPermissionDeny)
 	}
-
 }
 
 func testListSigner(t *testing.T, userSigners map[string][]string) {
@@ -931,17 +950,17 @@ func testListSigner(t *testing.T, userSigners map[string][]string) {
 			require.Contains(t, user1Signers, signer.Signer.String())
 		}
 	}
-	invalidPermTest := func(ctx context.Context) {
+	invalidPermTest := func(ctx context.Context, expect error) {
 		// List miners
 		_, err := jwtOAuthInstance.ListSigner(ctx, &ListSignerReq{User: validUser1})
-		assert.True(t, errors.Is(err, ErrorPermissionDeny))
+		assert.Equal(t, expect, errors.Unwrap(err))
 	}
 
-	userCtx := newUserCtx(validUser1)
+	userCtx := ctxWithUserNameAndAdminPerm(validUser1)
 	validPermTest(userCtx)
 	validPermTest(adminCtx)
-	invalidPermTest(context.Background())
-	invalidPermTest(signCtx)
+	invalidPermTest(context.Background(), ErrorUsernameNotFound)
+	invalidPermTest(signPermAndRandomUsername(), ErrorPermissionDeny)
 }
 
 func testHasSigner(t *testing.T, userSigners map[string][]string) {
@@ -1061,16 +1080,16 @@ func testDeleteSigner(t *testing.T, userSigners map[string][]string) {
 		})
 		assert.Nil(t, err)
 	}
-	invalidPermTest := func(ctx context.Context) {
+	invalidPermTest := func(ctx context.Context, expect error) {
 		_, err := jwtOAuthInstance.DelSigner(ctx, &DelSignerReq{Signer: signer})
-		assert.True(t, errors.Is(err, ErrorPermissionDeny))
+		assert.Equal(t, expect, errors.Unwrap(err))
 	}
 
-	userCtx := newUserCtx(userName)
+	userCtx := ctxWithUserNameAndAdminPerm(userName)
 	validPermTest(userCtx)
 	validPermTest(adminCtx)
-	invalidPermTest(context.Background())
-	invalidPermTest(signCtx)
+	invalidPermTest(context.Background(), ErrorUsernameNotFound)
+	invalidPermTest(signPermAndRandomUsername(), ErrorPermissionDeny)
 }
 
 func addUsersAndRateLimits(t *testing.T, userMiners map[string][]string, originLimits []*storage.UserRateLimit) {
@@ -1136,7 +1155,8 @@ func testGetUserRateLimits(t *testing.T, userMiners map[string][]string, originL
 		Id:   existId,
 		Name: userName,
 	})
-	assert.True(t, errors.Is(err, ErrorPermissionDeny))
+	assert.Equal(t, ErrorPermissionNotFound, errors.Unwrap(err))
+
 	_ = jwtOAuthInstance.DelUserRateLimit(signCtx, &DelUserRateLimitReq{
 		Name: userName,
 		Id:   existId,
@@ -1231,8 +1251,6 @@ func shutdown(cfg *config.DBConfig, t *testing.T) {
 	}
 }
 
-func newUserCtx(name string) context.Context {
-	userCtx := context.WithValue(context.Background(), nameCtxKey, name)                   //nolint
-	userCtx = context.WithValue(userCtx, permCtxKey, core.AdaptOldStrategy(core.PermRead)) //nolint
-	return userCtx
+func ctxWithUserNameAndAdminPerm(userName string) context.Context {
+	return core.CtxWithName(adminCtx, userName)
 }

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/rand"
 	"io"
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -42,7 +41,7 @@ type DBConfig struct {
 
 // RandSecret If the daemon does not have a secret key configured, it is automatically generated
 func RandSecret() ([]byte, error) {
-	sk, err := ioutil.ReadAll(io.LimitReader(rand.Reader, 32))
+	sk, err := io.ReadAll(io.LimitReader(rand.Reader, 32))
 	if err != nil {
 		return nil, err
 	}

@@ -36,13 +36,13 @@ func main() {
 	}
 	router := auth.InitRouter(app, true)
 	server := &http.Server{
-		Addr:         ":8989",
+		Addr:         "127.0.0.1:8989",
 		Handler:      router,
 		ReadTimeout:  cnf.ReadTimeout,
 		WriteTimeout: cnf.WriteTimeout,
 		IdleTimeout:  cnf.IdleTimeout,
 	}
-	log.Infof("server start and listen on %s", cnf.Port)
+	log.Infof("server start and listen on %s", cnf.Listen)
 	server.ListenAndServe() //nolint
 	select {}
 }

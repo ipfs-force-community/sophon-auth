@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -36,7 +35,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("failed to get available port err:%s", err)
 	}
-	cnf.Port = strconv.FormatInt(int64(port), 10)
+	cnf.Listen = fmt.Sprintf("127.0.0.1:%d", port)
 
 	var tmpPath string
 	if cnf.DB.Type == "badger" {
@@ -57,7 +56,7 @@ func TestMain(m *testing.M) {
 
 	router := auth.InitRouter(app, true)
 	server := &http.Server{
-		Addr:         ":" + cnf.Port,
+		Addr:         cnf.Listen,
 		Handler:      router,
 		ReadTimeout:  cnf.ReadTimeout,
 		WriteTimeout: cnf.WriteTimeout,
@@ -65,11 +64,13 @@ func TestMain(m *testing.M) {
 	}
 
 	go func() {
-		log.Infof("server start and listen on %s", cnf.Port)
-		_ = server.ListenAndServe()
+		log.Infof("server start and listen on %s", cnf.Listen)
+		if err = server.ListenAndServe(); err != nil {
+			log.Errorf("start serve failed: %v", err)
+		}
 	}() //nolint
 
-	if cli, err = NewAuthClient("http://localhost:"+cnf.Port, token); err != nil {
+	if cli, err = NewAuthClient("http://"+cnf.Listen, token); err != nil {
 		log.Fatalf("create auth client failed:%s\n", err.Error())
 		return
 	}

@@ -163,7 +163,7 @@ remove token success: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidG9rZW4xI
 # Config
 >the default config path is "~/.auth-auth/config.toml"
 ```
-Port = "8989" 
+Listen = "127.0.0.1:8989"
 ReadTimeout = "1m"
 WriteTimeout = "1m"
 IdleTimeout = "1m"

@@ -1,4 +1,4 @@
-Port = "8989"
+Listen = "127.0.0.1:8989"
 ReadTimeout = 60000000000
 WriteTimeout = 60000000000
 IdleTimeout = 60000000000

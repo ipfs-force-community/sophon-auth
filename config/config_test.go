@@ -14,15 +14,6 @@ func TestDecodeConfig(t *testing.T) {
 	t.Log(cnf)
 }
 
-func TestDefaultConfig(t *testing.T) {
-	cnf, err := DefaultConfig()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(cnf.Secret)
-	t.Log(cnf.Log)
-}
-
 func TestSafeWriteConfig(t *testing.T) {
 	path := "./config.toml"
 	cnf, err := DecodeConfig(path)

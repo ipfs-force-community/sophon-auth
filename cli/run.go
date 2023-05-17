@@ -51,10 +51,7 @@ func configScan(path string, cliCtx *cli.Context) (*config.Config, error) {
 		return fillConfigByFlag(cnf, cliCtx), nil
 	}
 
-	cnf, err := config.DefaultConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate secret : %s", err)
-	}
+	cnf := config.DefaultConfig()
 	cnf = fillConfigByFlag(cnf, cliCtx)
 	err = config.Cover(path, cnf)
 	if err != nil {
@@ -97,7 +94,7 @@ func run(cliCtx *cli.Context) error {
 	log.InitLog(cnf.Log)
 
 	dataPath := repo.GetDataDir()
-	app, err := auth.NewOAuthApp(cnf.Secret, dataPath, cnf.DB)
+	app, err := auth.NewOAuthApp(dataPath, cnf.DB)
 	if err != nil {
 		return fmt.Errorf("init oauth app: %s", err)
 	}

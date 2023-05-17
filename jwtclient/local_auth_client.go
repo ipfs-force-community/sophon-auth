@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/filecoin-project/venus-auth/auth"
+	"github.com/filecoin-project/venus-auth/config"
 	"github.com/filecoin-project/venus-auth/core"
 	jwt3 "github.com/gbrlsnchs/jwt/v3"
 )
@@ -13,7 +14,7 @@ type LocalAuthClient struct {
 }
 
 func NewLocalAuthClient() (*LocalAuthClient, []byte, error) {
-	secret, err := RandSecret()
+	secret, err := config.RandSecret()
 	if err != nil {
 		return nil, nil, err
 	}

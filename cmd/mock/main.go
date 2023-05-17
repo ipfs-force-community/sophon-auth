@@ -30,7 +30,7 @@ func main() {
 		return
 	}
 	log.InitLog(cnf.Log)
-	app, err := auth.NewOAuthApp(cnf.Secret, dataPath, cnf.DB)
+	app, err := auth.NewOAuthApp(dataPath, cnf.DB)
 	if err != nil {
 		log.Fatalf("Failed to init venus-auth: %s", err)
 	}

@@ -61,8 +61,8 @@ type oauthApp struct {
 	srv OAuthService
 }
 
-func NewOAuthApp(secret, dbPath string, cnf *config.DBConfig) (OAuthApp, error) {
-	srv, err := NewOAuthService(secret, dbPath, cnf)
+func NewOAuthApp(dbPath string, cnf *config.DBConfig) (OAuthApp, error) {
+	srv, err := NewOAuthService(dbPath, cnf)
 	if err != nil {
 		return nil, err
 	}

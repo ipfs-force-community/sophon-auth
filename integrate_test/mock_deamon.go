@@ -21,10 +21,7 @@ func setup(t *testing.T) (server *httptest.Server, dir string, token string) {
 	}
 	log.Infof("create storage temp dir: %s", tempDir)
 
-	cnf, err := config.DefaultConfig()
-	if err != nil {
-		t.Fatal(err)
-	}
+	cnf := config.DefaultConfig()
 	cnf.DB.DSN = tempDir
 
 	dir, err = homedir.Expand(tempDir)
@@ -36,7 +33,7 @@ func setup(t *testing.T) (server *httptest.Server, dir string, token string) {
 	gin.SetMode(gin.DebugMode)
 	dataPath := path.Join(dir, "data")
 
-	app, err := auth.NewOAuthApp(cnf.Secret, dataPath, cnf.DB)
+	app, err := auth.NewOAuthApp(dataPath, cnf.DB)
 	if err != nil {
 		t.Fatalf("Failed to init venus-auth: %s", err)
 	}

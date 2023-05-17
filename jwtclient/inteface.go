@@ -2,9 +2,6 @@ package jwtclient
 
 import (
 	"context"
-	"crypto/rand"
-	"io"
-	"io/ioutil"
 
 	"github.com/filecoin-project/venus-auth/core"
 )
@@ -41,8 +38,4 @@ type Logger interface {
 	Errorf(template string, args ...interface{})
 	Debug(args ...interface{})
 	Debugf(template string, args ...interface{})
-}
-
-func RandSecret() ([]byte, error) {
-	return ioutil.ReadAll(io.LimitReader(rand.Reader, 32))
 }

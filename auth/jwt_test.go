@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"sort"
@@ -1215,13 +1214,11 @@ func TestTokenDecode(t *testing.T) {
 
 func setup(cfg *config.DBConfig, t *testing.T) {
 	var err error
+	var dataPath string
 	if cfg.Type == "badger" {
-		if cfg.DSN, err = ioutil.TempDir("", "auth-datastore"); err != nil {
-			t.Fatal(err)
-		}
-		fmt.Printf("tmp badger store : %s\n", cfg.DSN)
+		dataPath = t.TempDir()
 	}
-	theStore, err := storage.NewStore(cfg, cfg.DSN)
+	theStore, err := storage.NewStore(cfg, dataPath)
 	if err != nil {
 		t.Fatal(err)
 	}

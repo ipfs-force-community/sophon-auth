@@ -5,7 +5,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
@@ -38,13 +37,12 @@ func TestMain(m *testing.M) {
 		log.Fatalf("failed to get available port err:%s", err)
 	}
 	cnf.Port = strconv.FormatInt(int64(port), 10)
-	var tmpPath string
 
+	var tmpPath string
 	if cnf.DB.Type == "badger" {
-		if tmpPath, err = ioutil.TempDir("", "auth-serve"); err != nil {
+		if tmpPath, err = os.MkdirTemp("", "auth-serve"); err != nil {
 			log.Fatalf("failed to create temp dir err:%s", err)
 		}
-		defer os.RemoveAll(tmpPath)
 	}
 
 	// stm: @VENUSAUTH_JWT_NEW_OAUTH_SERVICE_001

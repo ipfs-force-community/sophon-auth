@@ -1,7 +1,6 @@
 package integrate
 
 import (
-	"io/ioutil"
 	"net/http/httptest"
 	"os"
 	"path"
@@ -15,16 +14,11 @@ import (
 )
 
 func setup(t *testing.T) (server *httptest.Server, dir string, token string) {
-	tempDir, err := ioutil.TempDir("/var/tmp", "venus-auth")
-	if err != nil {
-		t.Fatal(err)
-	}
+	tempDir := t.TempDir()
 	log.Infof("create storage temp dir: %s", tempDir)
 
 	cnf := config.DefaultConfig()
-	cnf.DB.DSN = tempDir
-
-	dir, err = homedir.Expand(tempDir)
+	dir, err := homedir.Expand(tempDir)
 	if err != nil {
 		t.Fatalf("could not expand repo location error:%s", err)
 	} else {

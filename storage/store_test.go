@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -38,8 +37,8 @@ func TestMain(m *testing.M) {
 	}
 
 	if err := setup(&cfg); err != nil {
-		fmt.Printf("setup store(%s:%s) failed:%s\n", cfg.Type, cfg.DSN, err.Error())
-		os.Exit(-1)
+		fmt.Printf("setup store(%s) failed:%s\n", cfg.Type, err.Error())
+		return
 	}
 
 	code := m.Run()
@@ -401,13 +400,13 @@ func TestStore(t *testing.T) {
 
 func setup(cfg *config.DBConfig) error {
 	var err error
+	var dataPath string
 	if cfg.Type == "badger" {
-		if cfg.DSN, err = ioutil.TempDir("", "auth-datastore"); err != nil {
+		if dataPath, err = os.MkdirTemp("", "auth-datastore"); err != nil {
 			return err
 		}
-		fmt.Printf("tmp badger store : %s\n", cfg.DSN)
 	}
-	theStore, err = NewStore(cfg, cfg.DSN)
+	theStore, err = NewStore(cfg, dataPath)
 	return err
 }
 

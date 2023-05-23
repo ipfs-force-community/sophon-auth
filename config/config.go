@@ -65,7 +65,11 @@ func DefaultConfig() *Config {
 			HookSwitch: false,
 		},
 		DB: &DBConfig{
-			Type: Badger,
+			Type:         Badger,
+			MaxOpenConns: 64,
+			MaxIdleConns: 128,
+			MaxLifeTime:  120 * time.Second,
+			MaxIdleTime:  60 * time.Second,
 		},
 	}
 }

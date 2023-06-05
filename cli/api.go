@@ -19,15 +19,21 @@ func GetCli(ctx *cli.Context) (*jwtclient.AuthClient, error) {
 		return nil, fmt.Errorf("create repo: %w", err)
 	}
 
-	cnf, err := repo.GetConfig()
-	if err != nil {
-		return nil, fmt.Errorf("get config: %w", err)
-	}
-
 	token, err := repo.GetToken()
 	if err != nil {
 		return nil, fmt.Errorf("get token: %w", err)
 	}
 
-	return jwtclient.NewAuthClient("http://localhost:"+cnf.Port, token)
+	var listen string
+	if ctx.IsSet("listen") {
+		listen = ctx.String("listen")
+	} else {
+		cnf, err := repo.GetConfig()
+		if err != nil {
+			return nil, fmt.Errorf("get config: %w", err)
+		}
+		listen = cnf.Listen
+	}
+
+	return jwtclient.NewAuthClient("http://"+listen, token)
 }

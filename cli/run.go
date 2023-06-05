@@ -47,6 +47,13 @@ func configScan(path string, cliCtx *cli.Context) (*config.Config, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to decode config : %s", err)
 		}
+		// todo: remove after v1.12
+		if len(cnf.Listen) == 0 {
+			cnf.Listen = cliCtx.String("listen")
+			if err := config.Cover(path, cnf); err != nil {
+				return nil, err
+			}
+		}
 
 		return fillConfigByFlag(cnf, cliCtx), nil
 	}
@@ -67,6 +74,9 @@ func fillConfigByFlag(cnf *config.Config, cliCtx *cli.Context) *config.Config {
 	}
 	if cliCtx.IsSet("db-type") {
 		cnf.DB.Type = cliCtx.String("db-type")
+	}
+	if cliCtx.IsSet("listen") {
+		cnf.Listen = cliCtx.String("listen")
 	}
 
 	return cnf
@@ -125,12 +135,12 @@ func run(cliCtx *cli.Context) error {
 	}
 
 	server := &http.Server{
-		Addr:         ":" + cnf.Port,
+		Addr:         cnf.Listen,
 		Handler:      router,
 		ReadTimeout:  cnf.ReadTimeout,
 		WriteTimeout: cnf.WriteTimeout,
 		IdleTimeout:  cnf.IdleTimeout,
 	}
-	log.Infof("server start and listen on %s", cnf.Port)
+	log.Infof("server start and listen on %s", cnf.Listen)
 	return server.ListenAndServe()
 }

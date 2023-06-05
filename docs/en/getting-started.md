@@ -33,7 +33,7 @@ $ ./venus-auth run
 
 ```toml
 # Service Ports
-Port = "8989"
+Listen = "127.0.0.1:8989"
 ReadTimeout = "1m"
 WriteTimeout = "1m"
 IdleTimeout = "1m"

@@ -35,6 +35,10 @@ func newApp() (app *cli.App) {
 				EnvVars: []string{"VENUS_AUTH_PATH"},
 				Value:   "~/.venus-auth",
 			},
+			&cli.StringFlag{
+				Name:  "listen",
+				Value: "127.0.0.1:8989",
+			},
 		},
 	}
 	return app

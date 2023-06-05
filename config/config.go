@@ -13,7 +13,7 @@ import (
 )
 
 type Config struct {
-	Port         string               `json:"port"`
+	Listen       string               `json:"listen"`
 	ReadTimeout  time.Duration        `json:"readTimeout"`
 	WriteTimeout time.Duration        `json:"writeTimeout"`
 	IdleTimeout  time.Duration        `json:"idleTimeout"`
@@ -50,7 +50,7 @@ func RandSecret() ([]byte, error) {
 
 func DefaultConfig() *Config {
 	return &Config{
-		Port:         "8989",
+		Listen:       "127.0.0.1:8989",
 		ReadTimeout:  time.Minute,
 		WriteTimeout: time.Minute,
 		IdleTimeout:  time.Minute,

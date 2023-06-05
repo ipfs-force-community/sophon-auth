@@ -47,6 +47,7 @@ func configScan(path string, cliCtx *cli.Context) (*config.Config, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to decode config : %s", err)
 		}
+		// todo: remove after v1.12
 		if len(cnf.Listen) == 0 {
 			cnf.Listen = cliCtx.String("listen")
 			if err := config.Cover(path, cnf); err != nil {

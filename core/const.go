@@ -24,7 +24,7 @@ const (
 )
 
 var PermArr = []Permission{
-	PermRead, PermWrite, PermSign, PermAdmin, PermSign,
+	PermRead, PermWrite, PermSign, PermAdmin,
 }
 
 func IsValid(perm Permission) bool {

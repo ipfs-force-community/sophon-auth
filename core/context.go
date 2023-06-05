@@ -30,6 +30,10 @@ func CtxWithPerm(ctx context.Context, perm Permission) context.Context {
 	return context.WithValue(ctx, permKey, AdaptOldStrategy(perm))
 }
 
+func CtxWithPerms(ctx context.Context, perms []Permission) context.Context {
+	return context.WithValue(ctx, permKey, perms)
+}
+
 func CtxGetPerm(ctx context.Context) ([]Permission, bool) {
 	v, exist := ctx.Value(permKey).([]Permission)
 

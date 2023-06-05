@@ -24,7 +24,7 @@ const (
 )
 
 var PermArr = []Permission{
-	PermAdmin, PermSign, PermWrite, PermRead,
+	PermRead, PermWrite, PermSign, PermAdmin, PermSign,
 }
 
 func IsValid(perm Permission) bool {
@@ -37,14 +37,14 @@ func IsValid(perm Permission) bool {
 }
 
 func AdaptOldStrategy(perm Permission) []Permission {
-	perms := make([]Permission, 0)
+	perms := make([]Permission, 0, 4)
 	switch perm {
 	case PermAdmin:
-		perms = append(perms, PermAdmin, PermSign, PermWrite, PermRead)
+		perms = append(perms, PermRead, PermWrite, PermSign, PermAdmin)
 	case PermSign:
-		perms = append(perms, PermSign, PermWrite, PermRead)
+		perms = append(perms, PermRead, PermWrite, PermSign)
 	case PermWrite:
-		perms = append(perms, PermWrite, PermRead)
+		perms = append(perms, PermRead, PermWrite)
 	case PermRead:
 		perms = append(perms, PermRead)
 	default:

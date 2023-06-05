@@ -9,12 +9,19 @@ import (
 
 func TestAdaptOldStrategy(t *testing.T) {
 	perms := AdaptOldStrategy(PermAdmin)
-	assert.Equal(t, perms, []Permission{PermAdmin, PermSign, PermWrite, PermRead})
+	assert.Equal(t, perms, []Permission{PermRead, PermWrite, PermSign, PermAdmin})
 }
 
 func TestWithPerm(t *testing.T) {
-	ctx := CtxWithPerm(context.Background(), PermAdmin)
-	callerPerms, ok := CtxGetPerm(ctx)
-	assert.Equal(t, true, ok)
-	assert.Equal(t, AdaptOldStrategy(PermAdmin), callerPerms)
+	for _, perm := range PermArr {
+		ctx := CtxWithPerm(context.Background(), perm)
+		callerPerms, ok := CtxGetPerm(ctx)
+		assert.Equal(t, true, ok)
+		assert.Equal(t, AdaptOldStrategy(perm), callerPerms)
+
+		ctx = CtxWithPerms(context.Background(), AdaptOldStrategy(perm))
+		callerPerms, ok = CtxGetPerm(ctx)
+		assert.Equal(t, true, ok)
+		assert.Equal(t, AdaptOldStrategy(perm), callerPerms)
+	}
 }

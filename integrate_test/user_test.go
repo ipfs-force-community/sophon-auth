@@ -5,9 +5,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/filecoin-project/venus-auth/auth"
-	"github.com/filecoin-project/venus-auth/core"
-	"github.com/filecoin-project/venus-auth/jwtclient"
+	"github.com/ipfs-force-community/sophon-auth/auth"
+	"github.com/ipfs-force-community/sophon-auth/core"
+	"github.com/ipfs-force-community/sophon-auth/jwtclient"
 	"github.com/stretchr/testify/assert"
 )
 

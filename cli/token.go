@@ -5,7 +5,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/filecoin-project/venus-auth/core"
+	"github.com/ipfs-force-community/sophon-auth/core"
 )
 
 var tokenSubCommand = &cli.Command{
@@ -24,7 +24,7 @@ var genTokenCmd = &cli.Command{
 	Name:      "gen",
 	Usage:     "generate token",
 	ArgsUsage: "[name]",
-	UsageText: "./venus-auth token gen --perm=<auth> [name]",
+	UsageText: "./sophon-auth token gen --perm=<auth> [name]",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:  "perm",

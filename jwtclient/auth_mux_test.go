@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/filecoin-project/venus-auth/core"
+	"github.com/ipfs-force-community/sophon-auth/core"
 )
 
 type mockImp struct{}

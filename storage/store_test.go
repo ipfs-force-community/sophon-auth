@@ -15,8 +15,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
-	"github.com/filecoin-project/venus-auth/config"
-	"github.com/filecoin-project/venus-auth/core"
+	"github.com/ipfs-force-community/sophon-auth/config"
+	"github.com/ipfs-force-community/sophon-auth/core"
 )
 
 var (

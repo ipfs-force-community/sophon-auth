@@ -14,10 +14,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/filecoin-project/venus-auth/auth"
-	"github.com/filecoin-project/venus-auth/config"
-	"github.com/filecoin-project/venus-auth/core"
-	"github.com/filecoin-project/venus-auth/util"
+	"github.com/ipfs-force-community/sophon-auth/auth"
+	"github.com/ipfs-force-community/sophon-auth/config"
+	"github.com/ipfs-force-community/sophon-auth/core"
+	"github.com/ipfs-force-community/sophon-auth/util"
 )
 
 var cli *AuthClient

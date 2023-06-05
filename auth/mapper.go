@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"github.com/filecoin-project/venus-auth/storage"
+	"github.com/ipfs-force-community/sophon-auth/storage"
 )
 
 type Mapper interface {

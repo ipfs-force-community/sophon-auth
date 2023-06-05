@@ -4,15 +4,15 @@ import (
 	"net/http"
 	"path"
 
-	"github.com/filecoin-project/venus-auth/auth"
-	"github.com/filecoin-project/venus-auth/config"
-	"github.com/filecoin-project/venus-auth/log"
 	"github.com/gin-gonic/gin"
+	"github.com/ipfs-force-community/sophon-auth/auth"
+	"github.com/ipfs-force-community/sophon-auth/config"
+	"github.com/ipfs-force-community/sophon-auth/log"
 	"github.com/mitchellh/go-homedir"
 )
 
 func main() {
-	absoluteTmp := "~/.venus-auth"
+	absoluteTmp := "~/.sophon-auth"
 	dir, err := homedir.Expand(absoluteTmp)
 	if err != nil {
 		log.Printf("could not expand repo location error:%s", err)
@@ -32,7 +32,7 @@ func main() {
 	log.InitLog(cnf.Log)
 	app, err := auth.NewOAuthApp(dataPath, cnf.DB)
 	if err != nil {
-		log.Fatalf("Failed to init venus-auth: %s", err)
+		log.Fatalf("Failed to init sophon-auth: %s", err)
 	}
 	router := auth.InitRouter(app, true)
 	server := &http.Server{

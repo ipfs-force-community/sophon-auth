@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/filecoin-project/venus-auth/auth"
-	"github.com/filecoin-project/venus-auth/core"
+	"github.com/ipfs-force-community/sophon-auth/auth"
+	"github.com/ipfs-force-community/sophon-auth/core"
 
 	logging "github.com/ipfs/go-log/v2"
 )

@@ -58,7 +58,7 @@ func DefaultConfig() *Config {
 			JaegerTracingEnabled: false,
 			ProbabilitySampler:   1.0,
 			JaegerEndpoint:       "localhost:6831",
-			ServerName:           "venus-auth",
+			ServerName:           "sophon-auth",
 		},
 		Log: &LogConfig{
 			LogLevel:   "trace",

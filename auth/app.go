@@ -9,8 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/filecoin-project/venus-auth/config"
-	"github.com/filecoin-project/venus-auth/core"
+	"github.com/ipfs-force-community/sophon-auth/config"
+	"github.com/ipfs-force-community/sophon-auth/core"
 )
 
 // DefaultAdminToken is the default admin token which is for local client user

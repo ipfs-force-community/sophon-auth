@@ -13,12 +13,12 @@ import (
 
 	"github.com/filecoin-project/go-address"
 
-	"github.com/filecoin-project/venus-auth/auth"
-	"github.com/filecoin-project/venus-auth/core"
-	"github.com/filecoin-project/venus-auth/errcode"
+	"github.com/ipfs-force-community/sophon-auth/auth"
+	"github.com/ipfs-force-community/sophon-auth/core"
+	"github.com/ipfs-force-community/sophon-auth/errcode"
 )
 
-//go:generate mockgen -destination=mocks/mock_auth_client.go -package=mocks github.com/filecoin-project/venus-auth/jwtclient IAuthClient
+//go:generate mockgen -destination=mocks/mock_auth_client.go -package=mocks github.com/ipfs-force-community/sophon-auth/jwtclient IAuthClient
 
 type IAuthClient interface {
 	Verify(ctx context.Context, token string) (*auth.VerifyResponse, error)

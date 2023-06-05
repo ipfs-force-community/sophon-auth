@@ -9,9 +9,9 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/venus-auth/auth"
-	"github.com/filecoin-project/venus-auth/core"
-	"github.com/filecoin-project/venus-auth/storage"
+	"github.com/ipfs-force-community/sophon-auth/auth"
+	"github.com/ipfs-force-community/sophon-auth/core"
+	"github.com/ipfs-force-community/sophon-auth/storage"
 )
 
 var userSubCommand = &cli.Command{

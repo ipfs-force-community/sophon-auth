@@ -3,7 +3,7 @@ package cli
 import (
 	"fmt"
 
-	"github.com/filecoin-project/venus-auth/jwtclient"
+	"github.com/ipfs-force-community/sophon-auth/jwtclient"
 	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli/v2"
 )

@@ -3,7 +3,7 @@ package jwtclient
 import (
 	"context"
 
-	"github.com/filecoin-project/venus-auth/core"
+	"github.com/ipfs-force-community/sophon-auth/core"
 )
 
 type IJwtAuthClient interface {

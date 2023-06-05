@@ -6,7 +6,7 @@ import (
 
 	"github.com/filecoin-project/go-address"
 
-	"github.com/filecoin-project/venus-auth/core"
+	"github.com/ipfs-force-community/sophon-auth/core"
 )
 
 var (

@@ -5,8 +5,8 @@ import (
 	"os"
 	"path"
 
-	"github.com/filecoin-project/venus-auth/config"
-	"github.com/filecoin-project/venus-auth/util"
+	"github.com/ipfs-force-community/sophon-auth/config"
+	"github.com/ipfs-force-community/sophon-auth/util"
 )
 
 type Repo interface {

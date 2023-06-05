@@ -3,10 +3,10 @@ package jwtclient
 import (
 	"context"
 
-	"github.com/filecoin-project/venus-auth/auth"
-	"github.com/filecoin-project/venus-auth/config"
-	"github.com/filecoin-project/venus-auth/core"
 	jwt3 "github.com/gbrlsnchs/jwt/v3"
+	"github.com/ipfs-force-community/sophon-auth/auth"
+	"github.com/ipfs-force-community/sophon-auth/config"
+	"github.com/ipfs-force-community/sophon-auth/core"
 )
 
 type LocalAuthClient struct {

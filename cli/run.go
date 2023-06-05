@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/filecoin-project/venus-auth/auth"
-	"github.com/filecoin-project/venus-auth/config"
-	"github.com/filecoin-project/venus-auth/log"
-	"github.com/filecoin-project/venus-auth/util"
 	"github.com/ipfs-force-community/metrics"
+	"github.com/ipfs-force-community/sophon-auth/auth"
+	"github.com/ipfs-force-community/sophon-auth/config"
+	"github.com/ipfs-force-community/sophon-auth/log"
+	"github.com/ipfs-force-community/sophon-auth/util"
 	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli/v2"
 	"go.opencensus.io/plugin/ochttp"
@@ -17,7 +17,7 @@ import (
 
 var runCommand = &cli.Command{
 	Name:      "run",
-	Usage:     "run venus-auth daemon",
+	Usage:     "run sophon-auth daemon",
 	ArgsUsage: "[name]",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
@@ -87,6 +87,27 @@ func run(cliCtx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("expand home dir: %w", err)
 	}
+	exist, err := util.Exist(repoPath)
+	if err != nil {
+		return fmt.Errorf("check repo exist: %w", err)
+	}
+
+	// todo: rm compatibility for repo when appropriate
+	if !exist {
+		deprecatedRepoPath, err := homedir.Expand("~/.venus-auth")
+		if err != nil {
+			return fmt.Errorf("expand deprecated home dir: %w", err)
+		}
+
+		deprecatedRepoPathExist, err := util.Exist(deprecatedRepoPath)
+		if err != nil {
+			return fmt.Errorf("check deprecated repo exist: %w", err)
+		}
+		if deprecatedRepoPathExist {
+			repoPath = deprecatedRepoPath
+		}
+	}
+
 	repo, err := NewFsRepo(repoPath)
 	if err != nil {
 		return fmt.Errorf("init repo: %s", err)
@@ -124,7 +145,7 @@ func run(cliCtx *cli.Context) error {
 	if cnf.Trace != nil && cnf.Trace.JaegerTracingEnabled {
 		log.Infof("register jaeger-tracing exporter to %s, with node-name:%s",
 			cnf.Trace.JaegerEndpoint, cnf.Trace.ServerName)
-		exporter, err := metrics.RegisterJaeger("venus-auth", cnf.Trace)
+		exporter, err := metrics.RegisterJaeger("sophon-auth", cnf.Trace)
 		if err != nil {
 			return fmt.Errorf("RegisterJaegerExporter failed:%w", err)
 		}

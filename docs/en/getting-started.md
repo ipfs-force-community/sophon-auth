@@ -1,6 +1,6 @@
-# venus-auth
+# sophon-auth
 
-venus-auth is the unified authorization service of venus chain services (venus shared modules/components).
+sophon-auth is the unified authorization service of venus chain services (venus shared modules/components).
 
 * Permission validation
 * Trace collection
@@ -8,12 +8,12 @@ venus-auth is the unified authorization service of venus chain services (venus s
 * Manage users
 * Request rate limit
 
-## Start venus-auth
+## Start sophon-auth
 
 Download source code.
 
 ```shell script
-git clone https://github.com/filecoin-project/venus-auth.git
+git clone https://github.com/ipfs-force-community/sophon-auth.git
 ```
 
 Compile.
@@ -25,7 +25,7 @@ make
 Start daemon.
 
 ```shell script
-$ ./venus-auth run
+$ ./sophon-auth run
 ```
 
 
@@ -64,12 +64,12 @@ IdleTimeout = "1m"
   # collection rate
   ProbabilitySampler = 1.0
   JaegerEndpoint = "127.0.0.1:6831"
-  ServerName = "venus-auth"
+  ServerName = "sophon-auth"
 ```
 
 :::tip
 
-Default config file path is ` ~/.venus-auth/config.tml`.
+Default config file path is ` ~/.sophon-auth/config.tml`.
 
 :::
 
@@ -78,19 +78,19 @@ Default config file path is ` ~/.venus-auth/config.tml`.
 Check help informations.
 
 ```shell script
-./venus-auth -h
+./sophon-auth -h
 
 NAME:
-   venus-auth - A new cli application
+   sophon-auth - A new cli application
 
 USAGE:
-   venus-auth [global options] command [command options] [arguments...]
+   sophon-auth [global options] command [command options] [arguments...]
 
 VERSION:
    1.0.0'+b502a60'
 
 COMMANDS:
-   run      run venus-auth daemon
+   run      run sophon-auth daemon
    token    token command
    user     user command
    help, h  Shows a list of commands or help for one command
@@ -108,7 +108,7 @@ GLOBAL OPTIONS:
 Add user.
 
 ```shell script
-$ ./venus-auth user add test-user01
+$ ./sophon-auth user add test-user01
 
 # res
 Add user success: dc922b61-65ac-4045-8894-f0356879cf7a, next can add miner for this user
@@ -117,7 +117,7 @@ Add user success: dc922b61-65ac-4045-8894-f0356879cf7a, next can add miner for t
 Query user.
 
 ```shell script
-$ ./venus-auth user get test-user01
+$ ./sophon-auth user get test-user01
 
 # res
 name: test-user01
@@ -130,7 +130,7 @@ updateTime: Thu, 08 Sep 2022 02:50:50 UTC
 List users.
 
 ```shell script
-$ ./venus-auth user list
+$ ./sophon-auth user list
 
 # res
 number: 1
@@ -149,7 +149,7 @@ updateTime: Thu, 08 Sep 2022 02:51:09 UTC
 Update user.
 
 ```shell script
-$ ./venus-auth user update --name=test-user01 --state=2 --comment="this is comment"
+$ ./sophon-auth user update --name=test-user01 --state=2 --comment="this is comment"
 
 # res
 update user success
@@ -158,7 +158,7 @@ update user success
 Activate user.
 
 ```shell script
-$ ./venus-auth user active test-user01
+$ ./sophon-auth user active test-user01
 
 # res
 active user success
@@ -167,7 +167,7 @@ active user success
 Remove user
 
 ```shell script
-$ ./venus-auth user delete test-user01
+$ ./sophon-auth user delete test-user01
 
 # res
 remove user success
@@ -176,7 +176,7 @@ remove user success
 Recover user
 
 ```shell script
-$ ./venus-auth user recover test-user01
+$ ./sophon-auth user recover test-user01
 
 # res
 recover user success
@@ -187,7 +187,7 @@ recover user success
 Generate tokens.
 
 ```shell script
-$ ./venus-auth token gen --perm admin test-user01
+$ ./sophon-auth token gen --perm admin test-user01
 
 # output
 generate token success: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidGVzdG1pbmVyIiwicGVybSI6ImFkbWluIiwiZXh0IjoiIn0.8yNodOcALJ8fy4h-Hh5yLfaR27cD4a8ePd9BkmWlfEo
@@ -196,7 +196,7 @@ generate token success: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidGVzdG1
 List all tokens
 
 ```shell script
-$ ./venus-auth token list
+$ ./sophon-auth token list
 
 # output
 num    name             perm    createTime              token
@@ -210,7 +210,7 @@ num    name             perm    createTime              token
 Get token
 
 ```shell script
-$ ./venus-auth token get --name=test-user01
+$ ./sophon-auth token get --name=test-user01
 
 # output
 name:        test-user01
@@ -222,7 +222,7 @@ token:       eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidGVzdC11c2VyMDEiLC
 Remove token.
 
 ```shell script
-$ ./venus-auth token rm eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidGVzdG1pbmVyIiwicGVybSI6ImFkbWluIiwiZXh0IjoiIn0.8yNodOcALJ8fy4h-Hh5yLfaR27cD4a8ePd9BkmWlfEo
+$ ./sophon-auth token rm eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidGVzdG1pbmVyIiwicGVybSI6ImFkbWluIiwiZXh0IjoiIn0.8yNodOcALJ8fy4h-Hh5yLfaR27cD4a8ePd9BkmWlfEo
 
 # output
 remove token success: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidGVzdG1pbmVyIiwicGVybSI6ImFkbWluIiwiZXh0IjoiIn0.8yNodOcALJ8fy4h-Hh5yLfaR27cD4a8ePd9BkmWlfEo
@@ -231,7 +231,7 @@ remove token success: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidGVzdG1pb
 Recover token
 
 ```shell script
-./venus-auth token recover eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidGVzdG1pbmVyIiwicGVybSI6ImFkbWluIiwiZXh0IjoiIn0.8yNodOcALJ8fy4h-Hh5yLfaR27cD4a8ePd9BkmWlfEo
+./sophon-auth token recover eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidGVzdG1pbmVyIiwicGVybSI6ImFkbWluIiwiZXh0IjoiIn0.8yNodOcALJ8fy4h-Hh5yLfaR27cD4a8ePd9BkmWlfEo
 
 # output
 recover token success: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidGVzdG1pbmVyIiwicGVybSI6ImFkbWluIiwiZXh0IjoiIn0.8yNodOcALJ8fy4h-Hh5yLfaR27cD4a8ePd9BkmWlfEo
@@ -242,7 +242,7 @@ recover token success: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidGVzdG1p
 Add miner
 
 ```shell script
-$ ./venus-auth user miner add test-user01 f0128788
+$ ./sophon-auth user miner add test-user01 f0128788
 
 # res
 create user:test-user01 miner:f0128788 success.
@@ -251,7 +251,7 @@ create user:test-user01 miner:f0128788 success.
 List miners by user
 
 ```shell script
-$ ./venus-auth user miner list test-user01
+$ ./sophon-auth user miner list test-user01
 
 # res
 user: test-user01, miner count:1
@@ -262,7 +262,7 @@ idx  miner     create-time
 Miner exist in user
 
 ```shell script
-./venus-auth user miner exist --user=test-user01 f0128788
+./sophon-auth user miner exist --user=test-user01 f0128788
 
 # res
 true
@@ -271,7 +271,7 @@ true
 Has miner in system
 
 ```shell script
-./venus-auth miner has f0128788
+./sophon-auth miner has f0128788
 
 # res
 true
@@ -280,7 +280,7 @@ true
 Remove miner
 
 ```shell script
-./venus-auth user miner delete f0128788
+./sophon-auth user miner delete f0128788
 
 # res
 remove miner:f0128788 success.
@@ -295,7 +295,7 @@ The binding of `signer` is automatically bound when `venus-wallet` is connected 
 Register Signer
 
 ```shell script
-$ ./venus-auth user signer register test-user01 f3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha
+$ ./sophon-auth user signer register test-user01 f3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha
 
 # res
 create user:test-user01 signer address:f3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha success.
@@ -304,7 +304,7 @@ create user:test-user01 signer address:f3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7
 Signer list
 
 ```shell script
-$ ./venus-auth user signer list test-user01
+$ ./sophon-auth user signer list test-user01
 
 # res
 user: test-user01, signer count:3
@@ -317,7 +317,7 @@ idx  signer                                                                     
 Signer exist in User
 
 ```shell script
-$ ./venus-auth user signer exist --user=test-user01 f15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua
+$ ./sophon-auth user signer exist --user=test-user01 f15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua
 
 # res
 true
@@ -326,7 +326,7 @@ true
 Has Signer
 
 ```shell script
-$ ./venus-auth signer has f15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua
+$ ./sophon-auth signer has f15rynkupqyfx5ebvaishg7duutwb5ooq2qpaikua
 
 # res
 true
@@ -335,7 +335,7 @@ true
 Unregister Signer
 
 ```shell script
-$ ./venus-auth user signer unregister --user=test-user03 f1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q
+$ ./sophon-auth user signer unregister --user=test-user03 f1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q
 
 # res
 unregister signer:f1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q of test-user03 success.
@@ -344,7 +344,7 @@ unregister signer:f1sgeoaugenqnzftqp7wvwqebcozkxa5y7i56sy2q of test-user03 succe
 Delete Signer
 
 ```shell script
-$ ./venus-auth signer del --really-do-it f3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha
+$ ./sophon-auth signer del --really-do-it f3wylwd6pclppme4qmbgwled5xpsbgwgqbn2alxa7yahg2gnbfkipsdv6m764xm5coizujmwdmkxeugplmorha
 
 # res
 delete success
@@ -353,14 +353,14 @@ delete success
 #### User request rate limit related
 
 ```shell script
-$ ./venus-auth user rate-limit -h
+$ ./sophon-auth user rate-limit -h
 
 # output
 NAME:
-   venus-auth user rate-limit - A new cli application
+   sophon-auth user rate-limit - A new cli application
 
 USAGE:
-   venus-auth user rate-limit command [command options] [arguments...]
+   sophon-auth user rate-limit command [command options] [arguments...]
 
 COMMANDS:
    add      add user request rate limit
@@ -378,16 +378,16 @@ Add rate limit.
 ```shell script
 # show help
 AME:
-   venus-auth user rate-limit add - add user request rate limit
+   sophon-auth user rate-limit add - add user request rate limit
 
 USAGE:
-   venus-auth user rate-limit add [command options] user rate-limit add <name> <limitAmount> <duration(2h, 1h:20m, 2m10s)>
+   sophon-auth user rate-limit add [command options] user rate-limit add <name> <limitAmount> <duration(2h, 1h:20m, 2m10s)>
 
 OPTIONS:
    --id value  rate limit id to update
    --help, -h  show help (default: false)
 
-$ ./venus-auth user rate-limit add testminer2 10 1m
+$ ./sophon-auth user rate-limit add testminer2 10 1m
 
 # output
 upsert user rate limit success: dee7e326-3b8b-4e38-9de7-1bee9bdffa9d
@@ -396,7 +396,7 @@ upsert user rate limit success: dee7e326-3b8b-4e38-9de7-1bee9bdffa9d
 Update rate limit.
 
 ```shell script
-$ ./venus-auth user rate-limit update testminer2 dee7e326-3b8b-4e38-9de7-1bee9bdffa9d 100 1m
+$ ./sophon-auth user rate-limit update testminer2 dee7e326-3b8b-4e38-9de7-1bee9bdffa9d 100 1m
 
 # output
 upsert user rate limit success: dee7e326-3b8b-4e38-9de7-1bee9bdffa9d
@@ -405,7 +405,7 @@ upsert user rate limit success: dee7e326-3b8b-4e38-9de7-1bee9bdffa9d
 Query rate limit.
 
 ```shell script
-$ ./venus-auth user rate-limit get testminer2
+$ ./sophon-auth user rate-limit get testminer2
 
 # output
 user:testminer2, limit id:dee7e326-3b8b-4e38-9de7-1bee9bdffa9d, request limit amount:100, duration:0.02(h)
@@ -414,9 +414,8 @@ user:testminer2, limit id:dee7e326-3b8b-4e38-9de7-1bee9bdffa9d, request limit am
 Remove rate limit.
 
 ```shell script
-$ ./venus-auth user rate-limit del testminer2 dee7e326-3b8b-4e38-9de7-1bee9bdffa9d
+$ ./sophon-auth user rate-limit del testminer2 dee7e326-3b8b-4e38-9de7-1bee9bdffa9d
 
 # output
 delete rate limit success, dee7e326-3b8b-4e38-9de7-1bee9bdffa9d
 ```
-

@@ -16,10 +16,10 @@ import (
 
 	"github.com/filecoin-project/go-address"
 
-	"github.com/filecoin-project/venus-auth/config"
-	"github.com/filecoin-project/venus-auth/core"
-	"github.com/filecoin-project/venus-auth/storage"
-	"github.com/filecoin-project/venus-auth/util"
+	"github.com/ipfs-force-community/sophon-auth/config"
+	"github.com/ipfs-force-community/sophon-auth/core"
+	"github.com/ipfs-force-community/sophon-auth/storage"
+	"github.com/ipfs-force-community/sophon-auth/util"
 )
 
 var (

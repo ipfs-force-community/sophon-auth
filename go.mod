@@ -1,4 +1,4 @@
-module github.com/filecoin-project/venus-auth
+module github.com/ipfs-force-community/sophon-auth
 
 go 1.18
 

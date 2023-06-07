@@ -6,10 +6,10 @@ import (
 	"path"
 	"testing"
 
-	"github.com/filecoin-project/venus-auth/auth"
-	"github.com/filecoin-project/venus-auth/config"
-	"github.com/filecoin-project/venus-auth/log"
 	"github.com/gin-gonic/gin"
+	"github.com/ipfs-force-community/sophon-auth/auth"
+	"github.com/ipfs-force-community/sophon-auth/config"
+	"github.com/ipfs-force-community/sophon-auth/log"
 	"github.com/mitchellh/go-homedir"
 )
 
@@ -29,7 +29,7 @@ func setup(t *testing.T) (server *httptest.Server, dir string, token string) {
 
 	app, err := auth.NewOAuthApp(dataPath, cnf.DB)
 	if err != nil {
-		t.Fatalf("Failed to init venus-auth: %s", err)
+		t.Fatalf("Failed to init sophon-auth: %s", err)
 	}
 	token, err = app.GetDefaultAdminToken()
 	if err != nil {

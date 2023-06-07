@@ -10,9 +10,9 @@ import (
 
 	"github.com/etherlabsio/healthcheck/v2"
 
-	"github.com/filecoin-project/venus-auth/core"
-	"github.com/filecoin-project/venus-auth/log"
 	"github.com/gin-gonic/gin"
+	"github.com/ipfs-force-community/sophon-auth/core"
+	"github.com/ipfs-force-community/sophon-auth/log"
 )
 
 // todo: rm checkPermission after v1.13.0
@@ -187,7 +187,7 @@ func permMiddleWare(app OAuthApp) gin.HandlerFunc {
 		}
 
 		if !strings.HasPrefix(token, "Bearer ") {
-			log.Warnf("missing Bearer prefix in venus-auth header")
+			log.Warnf("missing Bearer prefix in sophon-auth header")
 			c.Writer.WriteHeader(401)
 			return
 		}

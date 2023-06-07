@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/filecoin-project/venus-auth/config"
-	"github.com/filecoin-project/venus-auth/core"
+	"github.com/ipfs-force-community/sophon-auth/config"
+	"github.com/ipfs-force-community/sophon-auth/core"
 	"github.com/stretchr/testify/assert"
 )
 

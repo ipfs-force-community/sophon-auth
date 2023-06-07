@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/filecoin-project/go-address"
-	locli "github.com/filecoin-project/venus-auth/cli"
-	"github.com/filecoin-project/venus-auth/core"
+	locli "github.com/ipfs-force-community/sophon-auth/cli"
+	"github.com/ipfs-force-community/sophon-auth/core"
 	"github.com/urfave/cli/v2"
 )
 
@@ -33,7 +33,7 @@ func newApp() (app *cli.App) {
 			&cli.StringFlag{
 				Name:    "repo",
 				EnvVars: []string{"VENUS_AUTH_PATH"},
-				Value:   "~/.venus-auth",
+				Value:   "~/.sophon-auth",
 			},
 			&cli.StringFlag{
 				Name:  "listen",

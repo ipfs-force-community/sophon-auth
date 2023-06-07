@@ -8,7 +8,7 @@ import (
 
 	"github.com/dgraph-io/badger/v3"
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/venus-auth/log"
+	"github.com/ipfs-force-community/sophon-auth/log"
 	"golang.org/x/xerrors"
 )
 

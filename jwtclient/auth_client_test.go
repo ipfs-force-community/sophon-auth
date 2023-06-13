@@ -54,7 +54,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Failed to get default admin token : %s", err)
 	}
 
-	router := auth.InitRouter(app, true)
+	router := auth.InitRouter(app)
 	server := &http.Server{
 		Addr:         cnf.Listen,
 		Handler:      router,

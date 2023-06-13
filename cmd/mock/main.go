@@ -34,7 +34,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to init sophon-auth: %s", err)
 	}
-	router := auth.InitRouter(app, true)
+	router := auth.InitRouter(app)
 	server := &http.Server{
 		Addr:         "127.0.0.1:8989",
 		Handler:      router,

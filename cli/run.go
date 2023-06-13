@@ -28,11 +28,6 @@ var runCommand = &cli.Command{
 			Name:  "db-type",
 			Usage: "which db to use. sqlite/mysql",
 		},
-		// todo: rm flag disable-perm-check after v1.13.0
-		&cli.BoolFlag{
-			Name:  "disable-perm-check",
-			Usage: "disable permission check for compatible with old version",
-		},
 	},
 	Action: run,
 }
@@ -104,6 +99,7 @@ func run(cliCtx *cli.Context) error {
 			return fmt.Errorf("check deprecated repo exist: %w", err)
 		}
 		if deprecatedRepoPathExist {
+			fmt.Printf("[WARM]: repo path %s is deprecated, please transfer to %s instead\n", deprecatedRepoPath, repoPath)
 			repoPath = deprecatedRepoPath
 		}
 	}
@@ -140,7 +136,7 @@ func run(cliCtx *cli.Context) error {
 		return fmt.Errorf("save token: %s", err)
 	}
 
-	router := auth.InitRouter(app, !cliCtx.Bool("disable-perm-check"))
+	router := auth.InitRouter(app)
 
 	if cnf.Trace != nil && cnf.Trace.JaegerTracingEnabled {
 		log.Infof("register jaeger-tracing exporter to %s, with node-name:%s",

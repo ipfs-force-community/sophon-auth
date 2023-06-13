@@ -16,19 +16,14 @@ import (
 )
 
 // todo: rm checkPermission after v1.13.0
-func InitRouter(app OAuthApp, checkPermission bool) http.Handler {
+func InitRouter(app OAuthApp) http.Handler {
 	gin.SetMode(gin.ReleaseMode)
 
 	router := gin.New()
 	router.ContextWithFallback = true
 	router.Use(CorsMiddleWare())
 	router.Use(RewriteAddressInUrl())
-
-	if checkPermission {
-		router.Use(permMiddleWare(app))
-	} else {
-		router.Use(noPermMiddleWare())
-	}
+	router.Use(permMiddleWare(app))
 
 	headlerFunc := healthcheck.HandlerFunc()
 	router.GET("/healthcheck", func(c *gin.Context) {
@@ -207,14 +202,6 @@ func permMiddleWare(app OAuthApp) gin.HandlerFunc {
 		}
 		c.Request = c.Request.WithContext(reqCtx)
 
-		c.Next()
-	}
-}
-
-func noPermMiddleWare() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		reqCtx := core.CtxWithPerm(c.Request.Context(), core.PermAdmin)
-		c.Request = c.Request.WithContext(reqCtx)
 		c.Next()
 	}
 }

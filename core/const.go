@@ -2,7 +2,7 @@ package core
 
 var CurrentCommit string
 
-const BuildVersion = "1.11.0"
+const BuildVersion = "1.12-rc1"
 
 var Version = BuildVersion + CurrentCommit
 

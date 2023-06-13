@@ -99,6 +99,7 @@ func run(cliCtx *cli.Context) error {
 			return fmt.Errorf("check deprecated repo exist: %w", err)
 		}
 		if deprecatedRepoPathExist {
+			fmt.Printf("[WARM]: repo path %s is deprecated, please transfer to %s instead\n", deprecatedRepoPath, repoPath)
 			repoPath = deprecatedRepoPath
 		}
 	}

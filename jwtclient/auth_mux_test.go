@@ -2,6 +2,8 @@ package jwtclient
 
 import (
 	"context"
+	"net/http"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,4 +33,13 @@ func TestIsNil(t *testing.T) {
 
 	ac3 := authCli{c: &mockImp{}}
 	assert.False(t, isNil(ac3.c))
+}
+
+func TestTruthHandle(t *testing.T) {
+	reg := regexp.MustCompile(`/piece/[a-z0-9]*`)
+	mux := NewAuthMux(nil, nil, nil)
+	mock := &http.ServeMux{}
+	mux.TrustHandle("/piece/", mock, RegexpOption(reg))
+	path := "/piece/xfdfs1fs"
+	assert.NotNil(t, mux.trustedHandler(path))
 }

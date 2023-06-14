@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/filecoin-project/go-jsonrpc/auth"
@@ -21,12 +22,29 @@ const (
 	tokenLocationKey
 )
 
+type opt struct {
+	reg *regexp.Regexp
+}
+
+type Option func(*opt)
+
+func RegexpOption(reg *regexp.Regexp) Option {
+	return func(o *opt) {
+		o.reg = reg
+	}
+}
+
+type trustHandle struct {
+	http.Handler
+	reg *regexp.Regexp
+}
+
 // AuthMux used with jsonrpc library to verify whether the request is legal
 type AuthMux struct {
 	handler       http.Handler
 	local, remote IJwtAuthClient
 
-	trustHandle map[string]http.Handler
+	trustHandle map[string]trustHandle
 }
 
 func NewAuthMux(local, remote IJwtAuthClient, handler http.Handler) *AuthMux {
@@ -34,25 +52,41 @@ func NewAuthMux(local, remote IJwtAuthClient, handler http.Handler) *AuthMux {
 		handler:     handler,
 		local:       local,
 		remote:      remote,
-		trustHandle: make(map[string]http.Handler),
+		trustHandle: make(map[string]trustHandle),
 	}
 }
 
 // TrustHandle for requests that can be accessed directly
 // if 'pattern' with '/' as suffix, 'TrustHandler' treat it as a root path,
 // that it's all sub-path will be trusted.
+// if 'pattern' have with prefix and 'reg' is not nil, use 'reg' check 'pattern'.
 // if 'pattern' have no '/' with suffix,
 // only the URI exactly matches the 'pattern' would be treat as trusted.
-func (authMux *AuthMux) TrustHandle(pattern string, handler http.Handler) {
-	authMux.trustHandle[pattern] = handler
+func (authMux *AuthMux) TrustHandle(pattern string, handler http.Handler, opts ...Option) {
+	opt := new(opt)
+	for _, o := range opts {
+		o(opt)
+	}
+	authMux.trustHandle[pattern] = trustHandle{
+		Handler: handler,
+		reg:     opt.reg,
+	}
 }
 
 func (authMux *AuthMux) trustedHandler(uri string) http.Handler {
 	// todo: we don't consider the situation that 'trustHandle' is changed in parallelly,
 	//  cause we assume trusted handler is static after application initialized
 	for trustedURI, handler := range authMux.trustHandle {
-		if trustedURI == uri || (trustedURI[len(trustedURI)-1] == '/' && strings.HasPrefix(uri, trustedURI)) {
+		if trustedURI == uri {
 			return handler
+		}
+		if strings.HasPrefix(uri, trustedURI) {
+			if trustedURI[len(trustedURI)-1] == '/' {
+				return handler
+			}
+			if handler.reg != nil && handler.reg.MatchString(uri) {
+				return handler
+			}
 		}
 	}
 	return nil

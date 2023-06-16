@@ -5,7 +5,7 @@
 </p>
 
 
-<h1 align="center">sophon-auth</h1>
+<h1 align="center">Sophon Auth</h1>
 
 <p align="center">
  <a href="https://github.com/ipfs-force-community/sophon-auth/actions"><img src="https://github.com/ipfs-force-community/sophon-auth/actions/workflows/build_upload.yml/badge.svg"/></a>

@@ -1,4 +1,11 @@
-<h1 align="center">Venus Central Authorization</h1>
+<p align="center">
+  <a href="https://damocles.venus-fil.io/" title="Damocles Docs">
+    <img src="https://user-images.githubusercontent.com/1591330/205581370-d467d776-60a4-4b37-b25a-58fa82adb156.png" alt="Sophon Logo" width="128" />
+  </a>
+</p>
+
+
+<h1 align="center">Sophon Auth</h1>
 
 <p align="center">
  <a href="https://github.com/ipfs-force-community/sophon-auth/actions"><img src="https://github.com/ipfs-force-community/sophon-auth/actions/workflows/build_upload.yml/badge.svg"/></a>

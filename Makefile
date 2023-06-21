@@ -56,4 +56,10 @@ endif
 
 
 docker-push: docker
+ifdef PRIVATE_REGISTRY
 	docker push $(PRIVATE_REGISTRY)/filvenus/sophon-auth:$(TAG)
+else
+	docker push filvenus/sophon-auth:$(TAG)
+	docker tag filvenus/sophon-auth:$(TAG) filvenus/sophon-auth:latest
+	docker push filvenus/sophon-auth:latest
+endif

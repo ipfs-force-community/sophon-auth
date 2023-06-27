@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -141,11 +142,11 @@ func run(cliCtx *cli.Context) error {
 	if cnf.Trace != nil && cnf.Trace.JaegerTracingEnabled {
 		log.Infof("register jaeger-tracing exporter to %s, with node-name:%s",
 			cnf.Trace.JaegerEndpoint, cnf.Trace.ServerName)
-		exporter, err := metrics.RegisterJaeger("sophon-auth", cnf.Trace)
+		exporter, err := metrics.SetupJaegerTracing("sophon-auth", cnf.Trace)
 		if err != nil {
 			return fmt.Errorf("RegisterJaegerExporter failed:%w", err)
 		}
-		defer metrics.UnregisterJaeger(exporter)
+		defer metrics.ShutdownJaeger(context.Background(), exporter)
 		router = &ochttp.Handler{
 			Handler: router,
 		}

@@ -1,5 +1,7 @@
 # sophon-auth changelog
 
+## v1.12.0
+
 ## v1.12.1-rc1
 ### New Features
 * feat: add flag --listen and default listening 127.0.0.1  https://github.com/ipfs-force-community/sophon-auth/pull/167

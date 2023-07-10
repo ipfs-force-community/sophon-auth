@@ -1,11 +1,20 @@
 # sophon-auth changelog
 
+## v1.12.0
+
+## v1.12.1-rc1
+### New Features
+* feat: add flag --listen and default listening 127.0.0.1  https://github.com/ipfs-force-community/sophon-auth/pull/167
+
+### Optimize
+* opt: remove perm adapt strategy  https://github.com/ipfs-force-community/sophon-auth/pull/164
+* opt: Remove the configuration field secret  https://github.com/ipfs-force-community/sophon-auth/pull/165
+* opt: add default config for mysql  https://github.com/ipfs-force-community/sophon-auth/pull/168
+* opt: Adjust the order of the permissions array  https://github.com/ipfs-force-community/sophon-auth/pull/169
+* opt: rebranding from venus-auth to sophon-auth  https://github.com/ipfs-force-community/sophon-auth/pull/170
+* opt: rm perm chack falg / 移除兼容权限检查的 flag  https://github.com/ipfs-force-community/sophon-auth/pull/171
+
 ## v1.11.0
-
-* bump up version to v1.11.0
-
-## v1.11.0-rc1
-
 ### New Features
 * feat: add status api to detect api ready / 添加状态检测接口 [[#144](https://github.com/ipfs-force-community/sophon-auth/pull/144)]
 * feat: use thirty party healthcheck lib  / 添加healthcheck接口 [[#145](https://github.com/ipfs-force-community/sophon-auth/pull/145)]

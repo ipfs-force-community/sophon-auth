@@ -11,7 +11,6 @@ import (
 	"github.com/ipfs-force-community/sophon-auth/config"
 	"github.com/ipfs-force-community/sophon-auth/log"
 	"github.com/ipfs-force-community/sophon-auth/util"
-	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli/v2"
 	"go.opencensus.io/plugin/ochttp"
 )
@@ -79,30 +78,9 @@ func fillConfigByFlag(cnf *config.Config, cliCtx *cli.Context) *config.Config {
 }
 
 func run(cliCtx *cli.Context) error {
-	repoPath, err := homedir.Expand(cliCtx.String("repo"))
+	repoPath, err := GetRepoPath(cliCtx)
 	if err != nil {
-		return fmt.Errorf("expand home dir: %w", err)
-	}
-	exist, err := util.Exist(repoPath)
-	if err != nil {
-		return fmt.Errorf("check repo exist: %w", err)
-	}
-
-	// todo: rm compatibility for repo when appropriate
-	if !exist {
-		deprecatedRepoPath, err := homedir.Expand("~/.venus-auth")
-		if err != nil {
-			return fmt.Errorf("expand deprecated home dir: %w", err)
-		}
-
-		deprecatedRepoPathExist, err := util.Exist(deprecatedRepoPath)
-		if err != nil {
-			return fmt.Errorf("check deprecated repo exist: %w", err)
-		}
-		if deprecatedRepoPathExist {
-			fmt.Printf("[WARM]: repo path %s is deprecated, please transfer to %s instead\n", deprecatedRepoPath, repoPath)
-			repoPath = deprecatedRepoPath
-		}
+		return err
 	}
 
 	repo, err := NewFsRepo(repoPath)

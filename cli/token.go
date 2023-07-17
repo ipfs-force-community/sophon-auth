@@ -42,7 +42,7 @@ var genTokenCmd = &cli.Command{
 			return err
 		}
 		if ctx.NArg() < 1 {
-			return fmt.Errorf("usage: genToken name")
+			return fmt.Errorf("usage: username is required")
 		}
 		name := ctx.Args().Get(0)
 

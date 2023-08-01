@@ -57,7 +57,8 @@ func NewAuthClient(url string, token string) (*AuthClient, error) {
 	client := resty.New().
 		SetHostURL(url).
 		SetHeader("Accept", "application/json").
-		SetHeader(core.AuthorizationHeader, "Bearer "+token)
+		SetHeader(core.AuthorizationHeader, "Bearer "+token).
+		SetHeader(core.VenusAPINamespaceHeader, core.APINamespace)
 	return &AuthClient{cli: client}, nil
 }
 

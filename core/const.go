@@ -9,6 +9,8 @@ var Version = BuildVersion + CurrentCommit
 const EmptyString = ""
 
 const AuthorizationHeader = "Authorization"
+const VenusAPINamespaceHeader = "X-VENUS-API-NAMESPACE"
+const APINamespace = "auth.IAuthClient"
 
 type (
 	DBPrefix   = []byte

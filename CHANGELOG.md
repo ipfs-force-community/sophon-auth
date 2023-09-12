@@ -1,5 +1,25 @@
 # sophon-auth changelog
 
+## v1.13.0
+
+## v1.13.0-rc1
+
+### New Features
+
+* feat: add regexp option for truth handle by @simlecode in https://github.com/ipfs-force-community/sophon-auth/pull/173
+* feat: update error info / 改善错误提示 by @elvin-du in https://github.com/ipfs-force-community/sophon-auth/pull/183
+* feat: add venus api header by @LinZexiao in https://github.com/ipfs-force-community/sophon-auth/pull/185
+
+### Documentations and Chores
+
+* Update README.md by @Fatman13 in https://github.com/ipfs-force-community/sophon-auth/pull/175
+* Update README.md by @0x5459 in https://github.com/ipfs-force-community/sophon-auth/pull/177
+* chore(deps): bump github.com/gin-gonic/gin from 1.9.0 to 1.9.1 by @dependabot in https://github.com/ipfs-force-community/sophon-auth/pull/179
+* chore: upgrade ipfs-force-community/metrics by @0x5459 in https://github.com/ipfs-force-community/sophon-auth/pull/180
+* Chore/merge release v1.12 by @simlecode in https://github.com/ipfs-force-community/sophon-auth/pull/184
+* add more description for config / 添加更多注释给config文件 by @elvin-du in https://github.com/ipfs-force-community/sophon-auth/pull/182
+
+
 ## v1.12.0
 
 ## v1.12.1-rc1

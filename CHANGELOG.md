@@ -1,5 +1,10 @@
 # sophon-auth changelog
 
+## v1.14.0-rc1
+
+* chore: update metrics [[#190](https://github.com/ipfs-force-community/sophon-auth/pull/190)]
+* chore(deps): bump golang.org/x/net from 0.10.0 to 0.17.0 [[#191](https://github.com/ipfs-force-community/sophon-auth/pull/191)]
+
 ## v1.13.0
 
 ## v1.13.0-rc1

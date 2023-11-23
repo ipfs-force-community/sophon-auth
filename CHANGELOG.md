@@ -1,5 +1,7 @@
 # sophon-auth changelog
 
+## v1.14.0
+
 ## v1.14.0-rc1
 
 * chore: update metrics [[#190](https://github.com/ipfs-force-community/sophon-auth/pull/190)]

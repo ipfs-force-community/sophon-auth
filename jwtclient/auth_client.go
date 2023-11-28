@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
 	"github.com/go-resty/resty/v2"
+	"github.com/multiformats/go-multiaddr"
 	"go.opencensus.io/trace"
 	"golang.org/x/xerrors"
 
@@ -16,6 +18,8 @@ import (
 	"github.com/ipfs-force-community/sophon-auth/auth"
 	"github.com/ipfs-force-community/sophon-auth/core"
 	"github.com/ipfs-force-community/sophon-auth/errcode"
+
+	maNet "github.com/multiformats/go-multiaddr/net"
 )
 
 //go:generate mockgen -destination=mocks/mock_auth_client.go -package=mocks github.com/ipfs-force-community/sophon-auth/jwtclient IAuthClient
@@ -50,9 +54,13 @@ type AuthClient struct {
 	cli *resty.Client
 }
 
-func NewAuthClient(url string, token string) (*AuthClient, error) {
+func NewAuthClient(addr string, token string) (*AuthClient, error) {
 	if len(token) == 0 {
 		return nil, xerrors.Errorf("token is empty")
+	}
+	url, err := ParseAddr(addr)
+	if err != nil {
+		return nil, fmt.Errorf("parse addr %s: %w", addr, err)
 	}
 	client := resty.New().
 		SetHostURL(url).
@@ -532,4 +540,64 @@ func (lc *AuthClient) GetUserBySigner(ctx context.Context, signer address.Addres
 		return *(resp.Result().(*auth.ListUsersResponse)), nil
 	}
 	return nil, resp.Error().(*errcode.ErrMsg).Err()
+}
+
+// ParseAddr parse a multi addr to a traditional url ( with http scheme as default)
+func ParseAddr(addr string) (string, error) {
+	ret := addr
+	ma, err := multiaddr.NewMultiaddr(addr)
+	if err == nil {
+		_, addr, err := maNet.DialArgs(ma)
+		if err != nil {
+			return "", fmt.Errorf("parser libp2p url fail %w", err)
+		}
+
+		ret = "http://" + addr
+
+		_, err = ma.ValueForProtocol(multiaddr.P_WSS)
+		if err == nil {
+			ret = "wss://" + addr
+		} else if err != multiaddr.ErrProtocolNotFound {
+			return "", err
+		}
+
+		_, err = ma.ValueForProtocol(multiaddr.P_HTTPS)
+		if err == nil {
+			ret = "https://" + addr
+		} else if err != multiaddr.ErrProtocolNotFound {
+			return "", err
+		}
+
+		_, err = ma.ValueForProtocol(multiaddr.P_WS)
+		if err == nil {
+			ret = "ws://" + addr
+		} else if err != multiaddr.ErrProtocolNotFound {
+			return "", err
+		}
+
+		_, err = ma.ValueForProtocol(multiaddr.P_HTTP)
+		if err == nil {
+			ret = "http://" + addr
+		} else if err != multiaddr.ErrProtocolNotFound {
+			return "", err
+		}
+	}
+
+	u, err := url.Parse(ret)
+	if err != nil {
+		return "", fmt.Errorf("parser address fail %w", err)
+	}
+	switch u.Scheme {
+	case "ws":
+		u.Scheme = "http"
+	case "wss":
+		u.Scheme = "https"
+	case "":
+		u.Scheme = "https"
+	case "http", "https":
+	default:
+		return "", fmt.Errorf("invalid scheme %s", u.Scheme)
+	}
+
+	return u.String(), nil
 }

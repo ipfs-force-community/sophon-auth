@@ -294,3 +294,57 @@ func TestJWTClient_ListUsers(t *testing.T) {
 		t.Log(v)
 	}
 }
+
+func TestParseAddr(t *testing.T) {
+	testCase := []struct {
+		Input    string
+		Expected string
+	}{
+		{
+			"http://example.com",
+			"http://example.com",
+		},
+		{
+			"example.com",
+			"https://example.com",
+		},
+		{
+			"https://127.0.0.1",
+			"https://127.0.0.1",
+		},
+		{
+			"/dns/example.com/tcp/88",
+			"http://example.com:88",
+		},
+		{
+			"/dns/example.com/tcp/88/https",
+			"https://example.com:88",
+		},
+		{
+			"/dns/example.com/tcp/88/wss",
+			"https://example.com:88",
+		},
+		{
+			"/dns/example.com/tcp/88/ws",
+			"http://example.com:88",
+		},
+		{
+			"/ip4/127.0.0.1/tcp/88",
+			"http://127.0.0.1:88",
+		},
+		{
+			"ftp://example.com",
+			"",
+		},
+	}
+	for _, v := range testCase {
+		if v.Expected == "" {
+			_, err := ParseAddr(v.Input)
+			assert.Error(t, err)
+		} else {
+			addr, err := ParseAddr(v.Input)
+			assert.NoError(t, err)
+			assert.Equal(t, v.Expected, addr)
+		}
+	}
+}

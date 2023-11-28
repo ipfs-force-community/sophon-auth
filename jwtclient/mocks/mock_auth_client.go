@@ -9,9 +9,9 @@ import (
 	reflect "reflect"
 
 	address "github.com/filecoin-project/go-address"
+	gomock "github.com/golang/mock/gomock"
 	auth "github.com/ipfs-force-community/sophon-auth/auth"
 	core "github.com/ipfs-force-community/sophon-auth/core"
-	gomock "github.com/golang/mock/gomock"
 )
 
 // MockIAuthClient is a mock of IAuthClient interface.

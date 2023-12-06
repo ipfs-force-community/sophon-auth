@@ -43,6 +43,17 @@ issues:
 linters-settings:
   goconst:
     min-occurrences: 6
+  
+
+  revive:
+    rules:
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#unused-parameter
+      - name: unused-parameter
+        severity: warning
+        disabled: true
+        arguments:
+          - allowRegex: "^_"
+
 
 run:
 skip-dirs-use-default: false

@@ -16,7 +16,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.3.0
 	github.com/influxdata/influxdb-client-go/v2 v2.2.2
-	github.com/ipfs-force-community/metrics v1.0.1-0.20231011024528-8c881d456601
+	github.com/ipfs-force-community/metrics v1.0.1-0.20231205060849-0b0d16ed0e8d
 	github.com/ipfs/go-log/v2 v2.5.1
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/multiformats/go-multiaddr v0.8.0

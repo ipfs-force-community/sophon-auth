@@ -9,6 +9,7 @@ import (
 	"github.com/ipfs-force-community/metrics"
 	"github.com/ipfs-force-community/sophon-auth/auth"
 	"github.com/ipfs-force-community/sophon-auth/config"
+	"github.com/ipfs-force-community/sophon-auth/core"
 	"github.com/ipfs-force-community/sophon-auth/log"
 	"github.com/ipfs-force-community/sophon-auth/util"
 	"github.com/urfave/cli/v2"
@@ -78,6 +79,7 @@ func fillConfigByFlag(cnf *config.Config, cliCtx *cli.Context) *config.Config {
 }
 
 func run(cliCtx *cli.Context) error {
+	ctx := cliCtx.Context
 	repoPath, err := GetRepoPath(cliCtx)
 	if err != nil {
 		return err
@@ -136,6 +138,14 @@ func run(cliCtx *cli.Context) error {
 		}
 	}
 
+	// set up metrics
+	if cnf.Metrics != nil {
+		err := metrics.SetupMetrics(ctx, cnf.Metrics)
+		if err != nil {
+			log.Warnf("setup metrics: %s", err)
+		}
+	}
+
 	server := &http.Server{
 		Addr:         cnf.Listen,
 		Handler:      router,
@@ -144,5 +154,8 @@ func run(cliCtx *cli.Context) error {
 		IdleTimeout:  cnf.IdleTimeout,
 	}
 	log.Infof("server start and listen on %s", cnf.Listen)
+
+	core.ApiState.Set(ctx, 1)
+	defer core.ApiState.Set(ctx, 0)
 	return server.ListenAndServe()
 }

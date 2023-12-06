@@ -13,13 +13,15 @@ import (
 )
 
 type Config struct {
-	Listen       string               `json:"listen"`
-	ReadTimeout  time.Duration        `json:"readTimeout"`
-	WriteTimeout time.Duration        `json:"writeTimeout"`
-	IdleTimeout  time.Duration        `json:"idleTimeout"`
-	Log          *LogConfig           `json:"log"`
-	DB           *DBConfig            `json:"db"`
-	Trace        *metrics.TraceConfig `json:"traceConfig"`
+	Listen       string        `json:"listen"`
+	ReadTimeout  time.Duration `json:"readTimeout"`
+	WriteTimeout time.Duration `json:"writeTimeout"`
+	IdleTimeout  time.Duration `json:"idleTimeout"`
+	Log          *LogConfig    `json:"log"`
+	DB           *DBConfig     `json:"db"`
+
+	Trace   *metrics.TraceConfig   `json:"traceConfig"`
+	Metrics *metrics.MetricsConfig `json:"metricsExporter"`
 }
 
 type DBType = string
@@ -49,6 +51,10 @@ func RandSecret() ([]byte, error) {
 }
 
 func DefaultConfig() *Config {
+	defMetricsCfg := metrics.DefaultMetricsConfig()
+	defMetricsCfg.Exporter.Graphite.Namespace = "sophon_auth"
+	defMetricsCfg.Exporter.Prometheus.Namespace = "sophon_auth"
+
 	return &Config{
 		Listen:       "127.0.0.1:8989",
 		ReadTimeout:  time.Minute,
@@ -60,6 +66,7 @@ func DefaultConfig() *Config {
 			JaegerEndpoint:       "localhost:6831",
 			ServerName:           "sophon-auth",
 		},
+		Metrics: defMetricsCfg,
 		Log: &LogConfig{
 			LogLevel:   "trace",
 			HookSwitch: false,

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ipfs-force-community/sophon-auth/jwtclient"
+	"github.com/ipfs-force-community/sophon-auth/log"
 	"github.com/ipfs-force-community/sophon-auth/util"
 	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli/v2"
@@ -62,7 +63,7 @@ func GetRepoPath(ctx *cli.Context) (string, error) {
 			return "", fmt.Errorf("check deprecated repo exist: %w", err)
 		}
 		if deprecatedRepoPathExist {
-			fmt.Printf("[WARM]: repo path %s is deprecated, please transfer to %s instead\n", deprecatedRepoPath, repoPath)
+			log.Infof("[WARM]: repo path %s is deprecated, please transfer to %s instead\n", deprecatedRepoPath, repoPath)
 			repoPath = deprecatedRepoPath
 		}
 	}

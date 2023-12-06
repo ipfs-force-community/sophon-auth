@@ -32,7 +32,7 @@ func newApp() (app *cli.App) {
 			},
 			&cli.StringFlag{
 				Name:    "repo",
-				EnvVars: []string{"VENUS_AUTH_PATH"},
+				EnvVars: []string{"VENUS_AUTH_PATH", "SOPHON_AUTH_PATH"},
 				Value:   "~/.sophon-auth",
 			},
 			&cli.StringFlag{

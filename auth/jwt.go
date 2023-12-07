@@ -12,6 +12,7 @@ import (
 
 	"github.com/gbrlsnchs/jwt/v3"
 	"github.com/google/uuid"
+	"go.opencensus.io/tag"
 	"golang.org/x/xerrors"
 
 	"github.com/filecoin-project/go-address"
@@ -86,9 +87,45 @@ type JWTPayload struct {
 }
 
 func NewOAuthService(dbPath string, cnf *config.DBConfig) (OAuthService, error) {
+	ctx := context.Background()
 	store, err := storage.NewStore(cnf, dbPath)
 	if err != nil {
 		return nil, err
+	}
+
+	// check amount of token and user
+	tokens, err := store.List(0, 0)
+	if err != nil {
+		return nil, fmt.Errorf("check token: %w", err)
+	}
+	tokenCount := map[core.Permission]int64{
+		core.PermRead:  0,
+		core.PermWrite: 0,
+		core.PermSign:  0,
+		core.PermAdmin: 0,
+	}
+	for _, token := range tokens {
+		tokenCount[token.Perm]++
+	}
+	for perm, count := range tokenCount {
+		core.TokenGauge.Set(ctx, perm, count)
+	}
+
+	// check user
+	users, err := store.ListUsers(0, 1, core.UserStateUndefined)
+	if err != nil {
+		return nil, fmt.Errorf("check user: %w", err)
+	}
+	userCount := map[core.UserState]int64{
+		core.UserStateUndefined: 0,
+		core.UserStateEnabled:   0,
+		core.UserStateDisabled:  0,
+	}
+	for _, user := range users {
+		userCount[user.State] += 1
+	}
+	for state, count := range userCount {
+		core.UserGauge.Set(ctx, state.String(), count)
 	}
 
 	jwtOAuthInstance = &jwtOAuth{
@@ -137,30 +174,52 @@ func (o *jwtOAuth) GenerateToken(ctx context.Context, pl *JWTPayload) (string, e
 	if err != nil {
 		return core.EmptyString, xerrors.Errorf("store token failed :%s", err)
 	}
+
+	core.TokenGauge.Inc(ctx, pl.Perm, 1)
 	return token.String(), nil
 }
 
-func (o *jwtOAuth) Verify(ctx context.Context, token string) (*JWTPayload, error) {
-	err := permCheck(ctx, core.PermRead)
+func (o *jwtOAuth) Verify(ctx context.Context, token string) (payload *JWTPayload, err error) {
+	defer func() {
+		if payload != nil {
+			ctx, _ = tag.New(ctx, tag.Upsert(core.TagPerm, payload.Perm), tag.Upsert(core.TagTokenName, payload.Name))
+		}
+		if err != nil {
+			ctx, _ = tag.New(ctx, tag.Upsert(core.TagVerifyState, core.VerifyStateFailed))
+		} else {
+			ctx, _ = tag.New(ctx, tag.Upsert(core.TagVerifyState, core.VerifyStateSuccess))
+		}
+		core.TokenVerifyCounter.Tick(ctx)
+	}()
+
+	payload, err = DecodeToken(token)
 	if err != nil {
-		return nil, fmt.Errorf("need read prem: %w", err)
+		return
 	}
 
-	p := new(JWTPayload)
+	err = permCheck(ctx, core.PermRead)
+	if err != nil {
+		err = fmt.Errorf("need read prem: %w", err)
+		return
+	}
+
 	tk := []byte(token)
 
 	kp, err := o.store.Get(storage.Token(token))
 	if err != nil {
-		return nil, xerrors.Errorf("get token: %v", err)
+		err = xerrors.Errorf("get token: %v", err)
+		return
 	}
 	secret, err := hex.DecodeString(kp.Secret)
 	if err != nil {
-		return nil, xerrors.Errorf("decode secret %v", err)
+		err = xerrors.Errorf("decode secret %v", err)
+		return
 	}
-	if _, err := jwt.Verify(tk, jwt.NewHS256(secret), p); err != nil {
-		return nil, ErrorVerificationFailed
+	if _, err = jwt.Verify(tk, jwt.NewHS256(secret), payload); err != nil {
+		err = ErrorVerificationFailed
+		return
 	}
-	return p, nil
+	return
 }
 
 type TokenInfo struct {
@@ -249,6 +308,9 @@ func (o *jwtOAuth) RemoveToken(ctx context.Context, token string) error {
 	if err != nil {
 		return fmt.Errorf("remove token %s: %w", token, err)
 	}
+
+	payload, _ := DecodeToken(token)
+	core.TokenGauge.Inc(ctx, payload.Perm, -1)
 	return nil
 }
 
@@ -262,6 +324,9 @@ func (o *jwtOAuth) RecoverToken(ctx context.Context, token string) error {
 	if err != nil {
 		return fmt.Errorf("recover token %s: %w", token, err)
 	}
+
+	payload, _ := DecodeToken(token)
+	core.TokenGauge.Inc(ctx, payload.Perm, 1)
 	return nil
 }
 
@@ -297,6 +362,7 @@ func (o *jwtOAuth) CreateUser(ctx context.Context, req *CreateUserRequest) (*Cre
 	if err != nil {
 		return nil, err
 	}
+	core.UserGauge.Inc(ctx, userNew.State.String(), 1)
 	return o.mp.ToOutPutUser(userNew), nil
 }
 
@@ -356,8 +422,12 @@ func (o *jwtOAuth) DeleteUser(ctx context.Context, req *DeleteUserRequest) error
 	if err != nil {
 		return fmt.Errorf("need admin prem: %w", err)
 	}
-
-	return o.store.DeleteUser(req.Name)
+	err = o.store.DeleteUser(req.Name)
+	if err != nil {
+		return err
+	}
+	core.UserGauge.Inc(ctx, core.UserStateDisabled.String(), -1)
+	return nil
 }
 
 func (o *jwtOAuth) RecoverUser(ctx context.Context, req *RecoverUserRequest) error {
@@ -365,7 +435,12 @@ func (o *jwtOAuth) RecoverUser(ctx context.Context, req *RecoverUserRequest) err
 	if err != nil {
 		return fmt.Errorf("need admin prem: %w", err)
 	}
-	return o.store.RecoverUser(req.Name)
+	err = o.store.RecoverUser(req.Name)
+	if err != nil {
+		return err
+	}
+	core.UserGauge.Inc(ctx, core.UserStateDisabled.String(), 1)
+	return nil
 }
 
 func (o *jwtOAuth) GetUserByMiner(ctx context.Context, req *GetUserByMinerRequest) (*OutputUser, error) {
@@ -630,7 +705,7 @@ func DecodeToBytes(enc []byte) ([]byte, error) {
 
 func JwtUserFromToken(token string) (string, error) {
 	sks := strings.Split(token, ".")
-	if len(sks) < 1 {
+	if len(sks) < 2 {
 		return "", fmt.Errorf("can't parse user from input token")
 	}
 	dec, err := DecodeToBytes([]byte(sks[1]))
@@ -641,6 +716,21 @@ func JwtUserFromToken(token string) (string, error) {
 	err = json.Unmarshal(dec, payload)
 
 	return payload.Name, err
+}
+
+func DecodeToken(token string) (*JWTPayload, error) {
+	sks := strings.Split(token, ".")
+	if len(sks) < 2 {
+		return nil, fmt.Errorf("can't parse user from input token")
+	}
+	dec, err := DecodeToBytes([]byte(sks[1]))
+	if err != nil {
+		return nil, err
+	}
+	payload := &JWTPayload{}
+	err = json.Unmarshal(dec, payload)
+
+	return payload, err
 }
 
 func IsSignerAddress(addr address.Address) bool {

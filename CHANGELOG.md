@@ -1,5 +1,12 @@
 # sophon-auth changelog
 
+## v1.15.0-rc1
+
+* feat: compatible with multiaddr [[#194](https://github.com/ipfs-force-community/sophon-auth/pull/194)]
+* chore: add repo env var [[#195](https://github.com/ipfs-force-community/sophon-auth/pull/195)]
+* feat: add more metrics [[#196](https://github.com/ipfs-force-community/sophon-auth/pull/196)]
+* chore(deps): bump golang.org/x/crypto from 0.14.0 to 0.17.0 [[#197](https://github.com/ipfs-force-community/sophon-auth/pull/197)]
+
 ## v1.14.0
 
 ## v1.14.0-rc1
@@ -13,18 +20,18 @@
 
 ### New Features
 
-* feat: add regexp option for truth handle by @simlecode in https://github.com/ipfs-force-community/sophon-auth/pull/173
-* feat: update error info / 改善错误提示 by @elvin-du in https://github.com/ipfs-force-community/sophon-auth/pull/183
-* feat: add venus api header by @LinZexiao in https://github.com/ipfs-force-community/sophon-auth/pull/185
+* feat: add regexp option for truth handle [[#173](https://github.com/ipfs-force-community/sophon-auth/pull/173)]
+* feat: update error info / 改善错误提示 [[#183](https://github.com/ipfs-force-community/sophon-auth/pull/183)]
+* feat: add venus api header [[#185](https://github.com/ipfs-force-community/sophon-auth/pull/185)]
 
 ### Documentations and Chores
 
-* Update README.md by @Fatman13 in https://github.com/ipfs-force-community/sophon-auth/pull/175
-* Update README.md by @0x5459 in https://github.com/ipfs-force-community/sophon-auth/pull/177
-* chore(deps): bump github.com/gin-gonic/gin from 1.9.0 to 1.9.1 by @dependabot in https://github.com/ipfs-force-community/sophon-auth/pull/179
-* chore: upgrade ipfs-force-community/metrics by @0x5459 in https://github.com/ipfs-force-community/sophon-auth/pull/180
-* Chore/merge release v1.12 by @simlecode in https://github.com/ipfs-force-community/sophon-auth/pull/184
-* add more description for config / 添加更多注释给config文件 by @elvin-du in https://github.com/ipfs-force-community/sophon-auth/pull/182
+* Update README.md [[#175](https://github.com/ipfs-force-community/sophon-auth/pull/175)]
+* Update README.md [[#177](https://github.com/ipfs-force-community/sophon-auth/pull/177)]
+* chore(deps): bump github.com/gin-gonic/gin from 1.9.0 to 1.9.1 [[#179](https://github.com/ipfs-force-community/sophon-auth/pull/179)]
+* chore: upgrade ipfs-force-community/metrics [[#180](https://github.com/ipfs-force-community/sophon-auth/pull/180)]
+* Chore/merge release v1.12 [[#184](https://github.com/ipfs-force-community/sophon-auth/pull/184)]
+* add more description for config / 添加更多注释给config文件 [[#182](https://github.com/ipfs-force-community/sophon-auth/pull/182)]
 
 
 ## v1.12.0

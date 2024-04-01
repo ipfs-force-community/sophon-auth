@@ -1,6 +1,6 @@
 # sophon-auth changelog
 
-## v1.15.0-rc1
+## v1.15.0
 
 * feat: compatible with multiaddr [[#194](https://github.com/ipfs-force-community/sophon-auth/pull/194)]
 * chore: add repo env var [[#195](https://github.com/ipfs-force-community/sophon-auth/pull/195)]

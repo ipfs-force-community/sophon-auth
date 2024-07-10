@@ -1,6 +1,6 @@
 module github.com/ipfs-force-community/sophon-auth
 
-go 1.19
+go 1.21
 
 require (
 	github.com/BurntSushi/toml v1.1.0

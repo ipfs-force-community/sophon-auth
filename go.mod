@@ -20,7 +20,7 @@ require (
 	github.com/ipfs/go-log/v2 v2.5.1
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/multiformats/go-multiaddr v0.8.0
-	github.com/sirupsen/logrus v1.9.0
+	github.com/sirupsen/logrus v1.9.1
 	github.com/spf13/viper v1.12.0
 	github.com/stretchr/testify v1.9.0
 	github.com/urfave/cli/v2 v2.16.3

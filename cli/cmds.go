@@ -10,4 +10,6 @@ var Commands = []*cli.Command{
 	userSubCommand,
 	minerSubCommand,
 	signerSubCommand,
+	ExportCmd,
+	ImportCmd,
 }
